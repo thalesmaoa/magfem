@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Compila o núcleo C++.
+#   ./scripts/build-core wasm    -> web/src/wasm/core.{js,wasm} (via Docker emsdk)
+#   ./scripts/build-core native  -> build-native/ e roda os testes (g++/cmake do host)
+set -e
+cd "$(dirname "$0")/.."
+case "${1:-wasm}" in
+  wasm)
+    HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose --env-file stack.env run --rm core sh -c "
+      emcmake cmake -S core -B build-wasm -DCMAKE_BUILD_TYPE=Release &&
+      cmake --build build-wasm -j &&
+      cp build-wasm/core.js build-wasm/core.wasm web/src/wasm/"
+    ;;
+  native)
+    cmake -S core -B build-native -DCMAKE_BUILD_TYPE=Release
+    cmake --build build-native -j
+    ctest --test-dir build-native --output-on-failure
+    ;;
+  *) echo "uso: $0 [wasm|native]"; exit 1 ;;
+esac

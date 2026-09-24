@@ -1,0 +1,373 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import logo from './assets/magfem.svg';
+import planegcsWasm from '@salusoft89/planegcs/dist/planegcs_dist/planegcs.wasm?url';
+import { q } from './cad/code';
+import { SketchDoc } from './cad/doc';
+import { SketchEditor } from './cad/editor';
+import { formatLength } from './cad/expr';
+import { initSolver } from './cad/solver';
+import type { TreeSel } from './cad/tree';
+import { emptySketch } from './cad/types';
+import { setLang, T, useLang, useT, type Lang } from './i18n';
+import { hasFsAccess, loadDraft, openProject, parse, saveDraft, saveProject, serialize } from './io/project';
+import { download, toDXF, toSVG } from './io/export';
+import { Icons } from './ui/icons';
+import { setThemePref, useThemePref, type ThemePref } from './theme';
+import { CiteDialog } from './ui/CiteDialog';
+import { DimInput } from './ui/DimInput';
+import { HistoryConsole } from './ui/HistoryConsole';
+import { PopoutWindow } from './ui/PopoutWindow';
+import { ModelTree } from './ui/ModelTree';
+import { RightDrawer } from './ui/RightDrawer';
+import { Toolbar } from './ui/Toolbar';
+import { LazyInput } from './ui/common';
+import { useDocVersion, useEditor } from './ui/useStore';
+import { solver } from './worker/client';
+
+type Handle = Awaited<ReturnType<typeof saveProject>> extends infer R ? (R extends { handle: infer H } ? H : null) : null;
+
+export default function App() {
+  const t = useT();
+  const doc = useMemo(() => new SketchDoc(), []);
+  const [ready, setReady] = useState<'loading' | 'ok' | string>('loading');
+  const [ed, setEd] = useState<SketchEditor | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [name, setName] = useState<string>(() => T().app.untitled);
+  const handleRef = useRef<Handle>(null);
+  const [savedVersion, setSavedVersion] = useState(0);
+  const version = useDocVersion(doc);
+  const [core, setCore] = useState<{ v?: string; err?: string }>({});
+  const [treeSel, setTreeSel] = useState<TreeSel>({ kind: 'geometry' });
+  const [drawer, setDrawer] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(true);
+  const [consolePopped, setConsolePopped] = useState(false);
+  const [consoleHeight, setConsoleHeightState] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem('magfem-console-height')) || 210;
+    } catch {
+      return 210;
+    }
+  });
+  const setConsoleHeight = (h: number) => {
+    setConsoleHeightState(h);
+    try {
+      localStorage.setItem('magfem-console-height', String(Math.round(h)));
+    } catch {
+      // sem localStorage: vale só nesta sessão
+    }
+  };
+  const [citing, setCiting] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+
+  // Solver de restrições + rascunho salvo.
+  useEffect(() => {
+    (async () => {
+      try {
+        await initSolver(planegcsWasm);
+        const draft = await loadDraft();
+        if (draft) {
+          try {
+            doc.reset(parse(draft.text));
+            setName(draft.name);
+          } catch {
+            doc.reset(emptySketch());
+          }
+        } else doc.reset(emptySketch());
+        setSavedVersion(doc.version);
+        setReady('ok');
+      } catch (e) {
+        setReady(T().app.solverFail(String(e)));
+      }
+    })();
+    solver
+      .call<string>({ cmd: 'version' })
+      .then((v) => setCore({ v }))
+      .catch((e) => setCore({ err: String(e) }));
+  }, [doc]);
+
+  useEffect(() => {
+    if (ready !== 'ok' || !canvasRef.current) return;
+    const editor = new SketchEditor(canvasRef.current, doc);
+    editor.fit();
+    setEd(editor);
+    if (import.meta.env.DEV) (window as unknown as { __magfem: unknown }).__magfem = editor;
+    return () => editor.dispose();
+  }, [ready, doc]);
+
+  // Rascunho automático (debounce).
+  useEffect(() => {
+    if (ready !== 'ok') return;
+    const h = setTimeout(() => saveDraft({ name, text: serialize(doc.sketch), savedAt: Date.now() }), 400);
+    return () => clearTimeout(h);
+  }, [version, name, ready, doc]);
+
+  const dirty = version !== savedVersion;
+
+  const save = useCallback(
+    async (as: boolean) => {
+      try {
+        const r = await saveProject(doc.sketch, name, as ? null : handleRef.current);
+        if (!r) return;
+        handleRef.current = r.handle;
+        setName(r.name.replace(/\.magfem$/, ''));
+        setSavedVersion(doc.version);
+        ed?.flash(hasFsAccess ? T().file.savedTo(r.name) : T().file.downloadedAs(r.name));
+      } catch (e) {
+        ed?.flash(T().file.saveError(String(e)));
+      }
+    },
+    [doc, name, ed],
+  );
+
+  const open = useCallback(async () => {
+    try {
+      const f = await openProject();
+      if (!f) return;
+      doc.load(f.sketch, [`open(${q(f.name)})`]);
+      handleRef.current = f.handle;
+      setName(f.name.replace(/\.magfem$/, ''));
+      setSavedVersion(doc.version);
+      ed?.fit();
+    } catch (e) {
+      ed?.flash(T().file.openError(String(e)));
+    }
+  }, [doc, ed]);
+
+  const newDoc = useCallback(() => {
+    doc.load(emptySketch(), ['new()']);
+    handleRef.current = null;
+    setName(T().app.untitled);
+    setSavedVersion(doc.version);
+    ed?.fit();
+    ed?.flash(T().file.newDone);
+  }, [doc, ed]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 's') {
+        e.preventDefault();
+        save(e.shiftKey);
+      } else if (k === 'o') {
+        e.preventDefault();
+        open();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [save, open]);
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <span className="brand">
+          <img src={logo} alt="" width={24} height={24} />
+          MagFEM
+        </span>
+        <span className="fname" title={t.file.renameHint}>
+          {renaming ? (
+            <LazyInput
+              autoFocus
+              value={name}
+              className="fname-input"
+              ariaLabel={t.file.projectName}
+              onDone={() => setRenaming(false)}
+              onCommit={(v) => {
+                const n = v.trim().replace(/\.magfem$/, '');
+                if (n) setName(n);
+              }}
+            />
+          ) : (
+            <span className="fname-text" onDoubleClick={() => setRenaming(true)}>
+              {name}
+            </span>
+          )}
+          {dirty && (
+            <span className="dirty" title={t.file.unsaved}>
+              ●
+            </span>
+          )}
+        </span>
+        <nav className="filemenu">
+          <button onClick={newDoc} title={t.file.new}>
+            {Icons.newFile}
+            <span>{t.file.new}</span>
+          </button>
+          <button onClick={open} title={`${t.file.open} (Ctrl+O)`}>
+            {Icons.openFile}
+            <span>{t.file.open}</span>
+          </button>
+          <button onClick={() => save(false)} title={`${t.file.saveHint} (Ctrl+S)`}>
+            {Icons.save}
+            <span>{t.file.save}</span>
+          </button>
+          <button onClick={() => save(true)} title={`${t.file.saveAs} (Ctrl+Shift+S)`}>
+            {Icons.saveAs}
+            <span>{t.file.saveAs}</span>
+          </button>
+          {ed && <ExportMenu ed={ed} name={name} />}
+          <span className="sep" />
+          <button onClick={() => setCiting(true)}>{t.cite.button}</button>
+          <LangSwitch />
+          <ThemeSwitch />
+        </nav>
+      </header>
+      {ed && treeSel.kind !== 'node' ? <Toolbar ed={ed} /> : <div className="toolbar" />}
+      <main className={`work${drawer ? ' drawer-open' : ''}`}>
+        {ed ? <ModelTree ed={ed} sel={treeSel} onSelect={setTreeSel} /> : <aside className="side left" />}
+        <div className="center">
+          <div className="canvas-wrap">
+            <canvas ref={canvasRef} className="sketch" tabIndex={0} />
+            {ed && <DimInput ed={ed} />}
+            {ready !== 'ok' && <div className="overlay">{ready === 'loading' ? t.app.loading : ready}</div>}
+            {ed && <StageOverlay ed={ed} sel={treeSel} />}
+          </div>
+          {ed && !consolePopped && (
+            <HistoryConsole
+              ed={ed}
+              open={consoleOpen}
+              onToggle={() => setConsoleOpen(!consoleOpen)}
+              height={consoleHeight}
+              onResize={setConsoleHeight}
+              popped={false}
+              onPopout={() => setConsolePopped(true)}
+              onDock={() => setConsolePopped(false)}
+            />
+          )}
+          {ed && consolePopped && (
+            <PopoutWindow title={t.console.windowTitle} onClose={() => setConsolePopped(false)}>
+              <HistoryConsole
+                ed={ed}
+                open
+                onToggle={() => undefined}
+                height={0}
+                onResize={() => undefined}
+                popped
+                onPopout={() => undefined}
+                onDock={() => setConsolePopped(false)}
+              />
+            </PopoutWindow>
+          )}
+        </div>
+        {ed ? <RightDrawer ed={ed} open={drawer} onToggle={() => setDrawer(!drawer)} /> : <aside className="drawer" />}
+      </main>
+      {ed ? <StatusBar ed={ed} core={core} /> : <footer className="status" />}
+      {citing && <CiteDialog onClose={() => setCiting(false)} />}
+    </div>
+  );
+}
+
+/** Exportar: SVG e DXF (geometria em mm) ou PNG/JPG (imagem do desenho). */
+function ExportMenu({ ed, name }: { ed: SketchEditor; name: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, [open]);
+  const run = async (kind: 'svg' | 'dxf' | 'png' | 'jpg') => {
+    setOpen(false);
+    try {
+      if (kind === 'svg') download(`${name}.svg`, new Blob([toSVG(ed.sketch)], { type: 'image/svg+xml' }));
+      else if (kind === 'dxf') download(`${name}.dxf`, new Blob([toDXF(ed.sketch)], { type: 'application/dxf' }));
+      else download(`${name}.${kind}`, await ed.exportImage(kind === 'png' ? 'image/png' : 'image/jpeg'));
+    } catch (e) {
+      ed.flash(T().file.saveError(String(e)));
+    }
+  };
+  return (
+    <div className="add-menu export-menu" ref={ref}>
+      <button onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu" title={t.file.exportHint}>
+        {Icons.exportFile}
+        <span>{t.file.export}</span>
+      </button>
+      {open && (
+        <div className="menu" role="menu">
+          <button role="menuitem" onClick={() => run('svg')}>
+            SVG <span className="muted">— {t.file.exportSvg}</span>
+          </button>
+          <button role="menuitem" onClick={() => run('dxf')}>
+            DXF <span className="muted">— {t.file.exportDxf}</span>
+          </button>
+          <hr />
+          <button role="menuitem" onClick={() => run('png')}>
+            PNG <span className="muted">— {t.file.exportImg}</span>
+          </button>
+          <button role="menuitem" onClick={() => run('jpg')}>
+            JPG <span className="muted">— {t.file.exportImg}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Malha e pós ainda não existem: aviso sobre o canvas quando um desses nós está selecionado. */
+function StageOverlay({ ed, sel }: { ed: SketchEditor; sel: TreeSel }) {
+  const t = useT();
+  useDocVersion(ed.doc);
+  if (sel.kind !== 'node') return null;
+  const n = ed.sketch.nodes.find((x) => x.id === sel.id);
+  if (!n || n.kind === 'physics') return null;
+  return <div className="overlay soon">{t.bench.soon(t.phase(n.kind === 'mesh' ? 5 : 6))}</div>;
+}
+
+/** Tema: automático (segue o sistema) → claro → escuro. */
+function ThemeSwitch() {
+  const t = useT();
+  const pref = useThemePref();
+  const next: Record<ThemePref, ThemePref> = { auto: 'light', light: 'dark', dark: 'auto' };
+  const label = `${t.theme.title}: ${t.theme[pref]}`;
+  return (
+    <button className="theme-btn" onClick={() => setThemePref(next[pref])} title={label} aria-label={label}>
+      {pref === 'dark' ? Icons.moon : pref === 'light' ? Icons.sun : Icons.themeAuto}
+    </button>
+  );
+}
+
+function LangSwitch() {
+  const current = useLang();
+  return (
+    <span className="lang" role="group" aria-label="Idioma / Language">
+      {(['pt', 'en'] as Lang[]).map((l) => (
+        <button key={l} className={current === l ? 'on' : ''} aria-pressed={current === l} onClick={() => setLang(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+function StatusBar({ ed, core }: { ed: SketchEditor; core: { v?: string; err?: string } }) {
+  const snap = useEditor(ed);
+  const t = useT();
+  useDocVersion(ed.doc);
+  const [polar, setPolar] = useState(false);
+  const n = Object.keys(ed.sketch.entities).length - 1;
+  const dof = ed.doc.dof;
+  const u = ed.unit;
+  const axi = ed.sketch.settings.problem === 'axisymmetric';
+  const { x, y } = snap.cursor;
+  const coords = polar
+    ? `ρ ${formatLength(Math.hypot(x, y), u)} · θ ${((Math.atan2(y, x) * 180) / Math.PI).toFixed(2).replace('.', ',')}°`
+    : `${axi ? 'r' : 'x'} ${formatLength(x, u)} · ${axi ? 'z' : 'y'} ${formatLength(y, u)}`;
+  return (
+    <footer className="status">
+      <button className="coords" title={t.status.toggleCoords} onClick={() => setPolar(!polar)}>
+        {coords}
+      </button>
+      <span className={dof === 0 && n > 0 ? 'ok' : n > 0 ? 'dof-open' : ''} title={n > 0 && dof > 0 ? t.status.dofHint : undefined}>{n === 0 ? t.status.empty : dof === 0 ? t.status.defined : t.status.dof(dof)}</span>
+      {n > 0 && (
+        <span className="legend" title={t.status.dofHint}>
+          <i className="sw free" /> {t.status.legendFree} <i className="sw def" /> {t.status.legendDefined}
+        </span>
+      )}
+      <span className="hint">{snap.message ? <span className="msg">{snap.message}</span> : snap.hint}</span>
+      <span className="core">{core.err ? t.status.coreError(core.err) : core.v ? t.status.core(core.v) : t.status.coreLoading}</span>
+    </footer>
+  );
+}

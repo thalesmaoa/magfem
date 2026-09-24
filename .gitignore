@@ -1,0 +1,10 @@
+node_modules
+dist
+/build/
+/build-*/
+web/src/wasm/core.js
+web/src/wasm/core.wasm
+.DS_Store
+*.log
+test-results
+playwright-report

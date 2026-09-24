@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Compila o núcleo WASM e sobe o servidor de desenvolvimento (Vite) em http://localhost:3002
+set -e
+cd "$(dirname "$0")"
+./scripts/build-core wasm
+HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose --env-file stack.env up "$@" web

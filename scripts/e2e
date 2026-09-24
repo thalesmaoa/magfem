@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Testes E2E (Playwright + Chromium headless no Docker) contra o servidor de dev em :3002.
+# Uso: ./scripts/e2e [args do playwright]   (ex.: ./scripts/e2e -g retângulo)
+cd "$(dirname "$0")/../web"
+exec docker run --rm --network host --ipc=host -u "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD:/app" -w /app mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test "$@"

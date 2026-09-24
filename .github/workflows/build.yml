@@ -1,0 +1,45 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Testes nativos do núcleo
+        run: ./scripts/build-core native
+
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.10
+
+      - name: Núcleo -> WebAssembly
+        run: |
+          emcmake cmake -S core -B build-wasm -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-wasm -j
+          cp build-wasm/core.js build-wasm/core.wasm web/src/wasm/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build do site
+        working-directory: web
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      # O portal (thalesmaia.com) faz checkout da branch `dist` e copia para docs/tools/magfem-web.
+      - name: Publica na branch dist
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: dist
+          publish_dir: web/dist

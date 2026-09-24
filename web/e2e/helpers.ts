@@ -1,0 +1,65 @@
+import { expect, type Page } from '@playwright/test';
+
+export interface Vec {
+  x: number;
+  y: number;
+}
+
+/** Abre o app vazio e espera o editor. */
+export async function openApp(page: Page) {
+  await page.goto('./');
+  await page.waitForFunction(() => !!(window as any).__magfem);
+  await expect(page.locator('.status')).toContainText('Sketch vazio');
+}
+
+/** Coordenadas de página para um ponto do mundo (mm). */
+export async function toPage(page: Page, p: Vec): Promise<Vec> {
+  return page.evaluate((p) => {
+    const ed = (window as any).__magfem;
+    const r = (document.querySelector('canvas.sketch') as HTMLCanvasElement).getBoundingClientRect();
+    const s = ed.view.toScreen(p);
+    return { x: s.x + r.left, y: s.y + r.top };
+  }, p);
+}
+
+export async function clickWorld(page: Page, p: Vec, opts: { shift?: boolean } = {}) {
+  const s = await toPage(page, p);
+  await page.mouse.move(s.x, s.y, { steps: 2 });
+  if (opts.shift) await page.keyboard.down('Shift');
+  await page.mouse.down();
+  await page.mouse.up();
+  if (opts.shift) await page.keyboard.up('Shift');
+}
+
+export async function dragWorld(page: Page, a: Vec, b: Vec) {
+  const s = await toPage(page, a);
+  const t = await toPage(page, b);
+  await page.mouse.move(s.x, s.y);
+  await page.mouse.down();
+  await page.mouse.move(t.x, t.y, { steps: 8 });
+  await page.mouse.up();
+}
+
+export const sketch = (page: Page) => page.evaluate(() => (window as any).__magfem.sketch);
+export const dof = (page: Page) => page.evaluate(() => (window as any).__magfem.doc.dof as number);
+
+export async function point(page: Page, id: string): Promise<Vec> {
+  const sk = await sketch(page);
+  return { x: sk.entities[id].x, y: sk.entities[id].y };
+}
+
+/** Pontos (x,y) de uma linha. */
+export async function lineEnds(page: Page, id: string): Promise<[Vec, Vec]> {
+  const sk = await sketch(page);
+  const l = sk.entities[id];
+  return [sk.entities[l.p1], sk.entities[l.p2]];
+}
+
+/** Digita o valor na caixa da cota que acabou de abrir. */
+export async function typeDim(page: Page, value: string) {
+  const input = page.locator('.dim-input input');
+  await expect(input).toBeVisible();
+  await input.fill(value);
+  await input.press('Enter');
+  await expect(input).toHaveCount(0);
+}

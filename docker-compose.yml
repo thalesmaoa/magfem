@@ -1,0 +1,49 @@
+services:
+  web:
+    image: node:22-alpine
+    container_name: ${CONTAINER_NAME}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      - HOME=/tmp
+      - npm_config_cache=/tmp/.npm
+    volumes:
+      - "./web/:/app/"
+    working_dir: /app/
+    command:
+      sh -c "
+      [ ! -d 'node_modules' ] && npm install;
+      npm run dev
+      "
+    ports:
+      - "${PORT}:${PORT}"
+    networks:
+      magfem_network:
+        ipv4_address: ${CONTAINER_IP}
+    restart: unless-stopped
+    env_file:
+      - stack.env
+    logging:
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # Compilação do núcleo C++ -> WebAssembly (uso: ./scripts/build-core wasm)
+  core:
+    image: emscripten/emsdk:4.0.10
+    profiles: ["build"]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      - EM_CACHE=/src/build/.emcache
+    volumes:
+      - "./:/src/"
+    working_dir: /src/
+
+networks:
+  magfem_network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1350
+    ipam:
+      config:
+        - subnet: ${CONTAINER_SUBNET}
+          gateway: ${CONTAINER_GATEWAY}
