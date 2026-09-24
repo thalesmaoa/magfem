@@ -29,7 +29,7 @@ test('salvar (download) e abrir o mesmo projeto', async ({ page }) => {
   expect(JSON.parse(text).format).toBe('magfem');
   await expect(page.locator('.dirty')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Novo' }).click();
+  await page.getByRole('button', { name: 'Novo', exact: true }).click();
   expect(Object.keys((await sketch(page)).entities)).toEqual(['O']);
 
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Abrir…' }).click()]);

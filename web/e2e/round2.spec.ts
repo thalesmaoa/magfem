@@ -202,10 +202,12 @@ test('idioma EN/PT, citação e abas de etapa', async ({ page }) => {
   // Árvore: seção Malha já traz uma malha; selecioná-la mostra o aviso sobre o canvas.
   const meshNode = page.locator('li.tnode', { hasText: 'Malha' });
   await meshNode.click();
-  await expect(page.locator('.overlay.soon')).toBeVisible();
+  // Nó de malha: canvas no modo malha (regiões/contornos), sem aviso "em construção".
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('mesh');
+  await expect(page.locator('.overlay.soon')).toHaveCount(0);
   await expect(meshNode).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('treeitem', { name: /Geometria/ }).click();
-  await expect(page.locator('.overlay.soon')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('sketch');
   // Tooltip com atalho aparece ao passar o mouse.
   await page.getByRole('button', { name: 'Linha', exact: true }).hover();
   await expect(page.getByRole('button', { name: 'Linha', exact: true }).locator('.tip')).toHaveCSS('opacity', '1');

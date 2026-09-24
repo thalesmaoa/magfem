@@ -184,6 +184,98 @@ export const newPhysics = (id: Id, name: string): PhysicsNode => ({
   tEnd: '0.05',
 });
 
+/** Material magnético/elétrico da biblioteca do projeto. */
+export interface Material {
+  id: Id;
+  name: string;
+  /** Cor de preenchimento das regiões com este material. */
+  color: string;
+  /** Permeabilidade relativa (linear) — ignorada se houver curva B-H. */
+  mur: number;
+  /** Condutividade elétrica (MS/m), para correntes induzidas. */
+  sigma: number;
+  /** Ímã permanente: remanência (T); direção fica na região. */
+  br?: number;
+  /** Curva B-H não linear: pares [H (A/m), B (T)]. */
+  bh?: [number, number][];
+}
+
+/** Material (e fonte) atribuído a uma região; a região é reencontrada pelas curvas do contorno. */
+export interface RegionAssign {
+  id: Id;
+  curves: Id[];
+  seed: { x: number; y: number };
+  material: Id;
+  /** Corrente total na região (A, expressão) — condutores/bobinas. */
+  current?: string;
+  /** Espiras (bobina). */
+  turns?: number;
+  /** Direção de magnetização (graus, expressão) — ímãs. */
+  magnetAngle?: string;
+}
+
+export type BoundaryType = 'dirichlet' | 'neumann' | 'periodic' | 'antiperiodic';
+
+/** Condição de contorno aplicada a curvas do desenho. */
+export interface Boundary {
+  id: Id;
+  name: string;
+  type: BoundaryType;
+  curves: Id[];
+  /** Valor de A (Wb/m) para Dirichlet (padrão 0). */
+  value?: string;
+}
+
+/** Biblioteca inicial de materiais (cada projeto novo leva uma cópia editável). */
+export const DEFAULT_MATERIALS: Material[] = [
+  { id: 'mat_air', name: 'Ar', color: '#dbe9f6', mur: 1, sigma: 0 },
+  { id: 'mat_cu', name: 'Cobre', color: '#e0914f', mur: 1, sigma: 58 },
+  { id: 'mat_al', name: 'Alumínio', color: '#b8c2cc', mur: 1, sigma: 35 },
+  {
+    id: 'mat_m400',
+    name: 'Aço M400-50A',
+    color: '#7d8a99',
+    mur: 4000,
+    sigma: 0,
+    bh: [
+      [0, 0],
+      [60, 0.5],
+      [100, 0.9],
+      [150, 1.1],
+      [250, 1.25],
+      [500, 1.4],
+      [1000, 1.5],
+      [2500, 1.6],
+      [5000, 1.7],
+      [10000, 1.8],
+      [25000, 1.95],
+      [50000, 2.05],
+      [100000, 2.15],
+    ],
+  },
+  {
+    id: 'mat_1010',
+    name: 'Aço 1010',
+    color: '#6b7684',
+    mur: 1000,
+    sigma: 5,
+    bh: [
+      [0, 0],
+      [240, 0.5],
+      [480, 1.0],
+      [800, 1.25],
+      [1600, 1.45],
+      [4000, 1.6],
+      [8000, 1.7],
+      [16000, 1.8],
+      [40000, 1.95],
+      [100000, 2.1],
+    ],
+  },
+  { id: 'mat_ndfeb', name: 'NdFeB N42', color: '#9d6bd1', mur: 1.05, sigma: 0.667, br: 1.3 },
+  { id: 'mat_ferrite', name: 'Ferrite', color: '#5f9ea0', mur: 1.1, sigma: 0, br: 0.4 },
+];
+
 /** Estado completo do modelo (é o que vai para o arquivo e para o histórico). */
 export interface Sketch {
   entities: Record<Id, Entity>;
@@ -192,6 +284,9 @@ export interface Sketch {
   groups: Group[];
   settings: Settings;
   nodes: TreeNode[];
+  materials: Material[];
+  regionAssigns: RegionAssign[];
+  boundaries: Boundary[];
   nextId: number;
 }
 
@@ -216,6 +311,9 @@ export function emptySketch(): Sketch {
     groups: [],
     settings: { ...DEFAULT_SETTINGS },
     nodes: [{ id: 'n1', kind: 'mesh', name: 'Malha' }, newPhysics('n2', 'Campo magnético')],
+    materials: DEFAULT_MATERIALS.map((m) => ({ ...m })),
+    regionAssigns: [],
+    boundaries: [],
     nextId: 3,
   };
 }

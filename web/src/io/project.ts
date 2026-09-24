@@ -1,6 +1,6 @@
 // Arquivo de projeto .magfem (JSON) — abrir/salvar direto no disco, estilo draw.io/Excalidraw.
 import { T } from '../i18n';
-import { DEFAULT_SETTINGS, emptySketch, newPhysics, ORIGIN_ID, type Sketch } from '../cad/types';
+import { DEFAULT_MATERIALS, DEFAULT_SETTINGS, emptySketch, newPhysics, ORIGIN_ID, type Sketch } from '../cad/types';
 
 export const FILE_EXT = '.magfem';
 const FORMAT = 'magfem';
@@ -36,6 +36,9 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
     groups: raw.groups ?? [],
     settings: { unit: raw.settings?.unit ?? DEFAULT_SETTINGS.unit, problem: raw.settings?.problem ?? DEFAULT_SETTINGS.problem, depth: raw.settings?.depth ?? DEFAULT_SETTINGS.depth },
     nodes: raw.nodes ?? [],
+    materials: raw.materials ?? DEFAULT_MATERIALS.map((m) => ({ ...m })),
+    regionAssigns: raw.regionAssigns ?? [],
+    boundaries: raw.boundaries ?? [],
     nextId: typeof raw.nextId === 'number' ? raw.nextId : 1,
   };
   // Versões anteriores guardavam a análise nas configurações: vira um nó de física.

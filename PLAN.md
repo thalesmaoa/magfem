@@ -82,8 +82,17 @@ Limitações conhecidas / ideias para depois:
 - [x] Padrão linear: cópias presas à vizinha por Δx/Δy (parâmetros do solver `pdx_/pdy_<grupo>`); circular: raio igual e passo angular (`pang_<grupo>`) entre linhas auxiliares centro→ponto. Mexer na origem leva as cópias; arrastar uma cópia muda o espaçamento (a origem fica parada); Propriedades editam quantidade/passo/ângulo (quantidade refaz no mesmo grupo); grupo-filho da origem na árvore com resumo ("3×1 · 30 mm", "6 × 360°"); `g.set_pattern(...)` no console.
 - [x] Testes: 31 unitários + 42 E2E.
 
+### [✅ CONCLUÍDA] Rodada 9 — Malha: regiões, materiais e contornos (Fase 4, parte 1)
+- [x] Arranjo planar (`cad/regions.ts`): cruzamentos linha/arco/círculo → arestas → faces com furos; área exata (analítica nos arcos); borda externa detectada. Identidade da região = curvas do contorno + ponto-semente (sobrevive a mudanças paramétricas).
+- [x] Clicar em **Malha** mostra o desenho no modo malha: regiões preenchidas pela cor do material (hachura = sem material), rótulos, contornos coloridos por tipo; a borda externa é **A = 0 por padrão**.
+- [x] Árvore em Malha: **Materiais** (biblioteca editável: nome, cor, μr, σ, Br, curva B-H), **Regiões** (material, corrente total, espiras, direção do ímã) e **Contornos** (A = 0, Neumann, periódico/antiperiódico em pares).
+- [x] Console: `m.material`, `m.del_material`, `m.region((x, y), material=…)`, `m.boundary([ids], tipo)`, `m.regions()`; a interface grava esses comandos no histórico.
+- [x] Correção: a linha de chamada da cota ponto-linha saía do pé da perpendicular (no prolongamento da linha); agora parte do segmento.
+- [x] Testes: 40 unitários + 46 E2E.
+
 ### Próximo possível
-- Importar DXF/SVG (Fase 4) e regiões/materiais; aparar (trim) para fechar regiões.
+- Gerar a malha (Triangle em WASM, tamanho por região) no (+) de Malha e visualizá-la (Fase 5).
+- Importar DXF/SVG no menu Arquivo; aparar (trim) para fechar regiões.
 
 ### [⏳ PENDENTE] Fases 3–9
 Ver seção "Fases" abaixo.

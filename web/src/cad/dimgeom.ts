@@ -102,7 +102,18 @@ export function dimDrawing(sk: Sketch, c: Constraint, pxToMm: number): DimDrawin
     // Dimensão da linha estendida até o texto, se o texto estiver fora do intervalo.
     const t = dot(sub(text, A2), u);
     const L = len(sub(B2, A2));
-    const segs: [Vec, Vec][] = [ext(A, A2), ext(B, B2), [A2, B2]];
+    // Cota ponto-linha: a linha de chamada parte do ponto do segmento mais próximo da cota,
+    // não do pé da perpendicular (que pode cair no prolongamento, fora da linha).
+    let Bfrom = B;
+    const ln = pl ? sk.entities[pl.lineId] : null;
+    if (ln?.type === 'line') {
+      const s1 = pt(sk, ln.p1);
+      const sd = sub(pt(sk, ln.p2), s1);
+      const L2 = dot(sd, sd);
+      const tt = L2 > 0 ? Math.min(1, Math.max(0, dot(sub(B2, s1), sd) / L2)) : 0;
+      Bfrom = add(s1, mul(sd, tt));
+    }
+    const segs: [Vec, Vec][] = [ext(A, A2), ext(Bfrom, B2), [A2, B2]];
     if (t < 0) segs.push([A2, add(A2, mul(u, t))]);
     if (t > L) segs.push([B2, add(A2, mul(u, t))]);
     return { segments: segs, arrows: [{ at: A2, dir: mul(u, -1) }, { at: B2, dir: u }], text };

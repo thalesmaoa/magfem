@@ -5,7 +5,17 @@ import { newPhysics, type Id, type Sketch, type TreeNode } from './types';
 export type AddKind = 'physics-magnetic' | 'mesh' | 'post';
 
 /** Seleção na árvore (estado da interface, não do documento). */
-export type TreeSel = { kind: 'geometry' } | { kind: 'node'; id: Id } | { kind: 'var'; name: string };
+export type TreeSel =
+  | { kind: 'geometry' }
+  | { kind: 'node'; id: Id }
+  | { kind: 'var'; name: string }
+  // Malha: a seção em si (regiões/contornos no canvas), um material ou um contorno ('outer' = borda externa padrão).
+  | { kind: 'mesh' }
+  | { kind: 'material'; id: Id }
+  | { kind: 'boundary'; id: Id };
+
+export const isMeshSel = (s: TreeSel, sk: { nodes: TreeNode[] }) =>
+  s.kind === 'mesh' || s.kind === 'material' || s.kind === 'boundary' || (s.kind === 'node' && sk.nodes.some((n) => n.id === s.id && n.kind === 'mesh'));
 
 export function addNode(sk: Sketch, kind: AddKind, name: string): { sketch: Sketch; node: TreeNode; code: string } {
   const id = `n${sk.nextId}`;

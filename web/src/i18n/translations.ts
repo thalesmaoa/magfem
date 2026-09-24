@@ -276,6 +276,44 @@ export interface Translations {
     sweep: string;
     arcLength: string;
   };
+  mesh: {
+    periodic: string;
+    antiperiodic: string;
+    dirichlet: string;
+    neumann: string;
+    noMaterial: string;
+    materials: string;
+    regions: string;
+    boundaries: string;
+    outerDefault: string;
+    region: (n: number) => string;
+    material: string;
+    area: string;
+    current: string;
+    turns: string;
+    magnetAngle: string;
+    boundaryType: string;
+    none: string;
+    curves: (n: number) => string;
+    hint: string;
+    periodicNeedsTwo: string;
+    addMaterial: string;
+    newMaterial: string;
+    name: string;
+    color: string;
+    mur: string;
+    sigma: string;
+    br: string;
+    bh: string;
+    bhPoints: (n: number) => string;
+    removeMaterial: string;
+    materialInUse: string;
+    removeBoundary: string;
+    noRegions: string;
+    nodeHint: string;
+    noRegionAt: (x: number, y: number) => string;
+    nameTaken: (n: string) => string;
+  };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
   expr: {
     badNumber: (s: string) => string;
@@ -634,6 +672,44 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     perimeter: 'Perímetro',
     sweep: 'Abertura',
     arcLength: 'Comprimento do arco',
+  },
+  mesh: {
+    periodic: 'Periódico',
+    antiperiodic: 'Antiperiódico',
+    dirichlet: 'A = 0 (Dirichlet)',
+    neumann: 'Neumann (fluxo tangente)',
+    noMaterial: 'sem material',
+    materials: 'Materiais',
+    regions: 'Regiões',
+    boundaries: 'Contornos',
+    outerDefault: 'Borda externa (A = 0)',
+    region: (n) => `Região ${n}`,
+    material: 'Material',
+    area: 'Área',
+    current: 'Corrente total (A)',
+    turns: 'Espiras',
+    magnetAngle: 'Direção da magnetização (°)',
+    boundaryType: 'Condição de contorno',
+    none: '— nenhuma —',
+    curves: (n) => `${n} curva${n === 1 ? '' : 's'} selecionada${n === 1 ? '' : 's'}`,
+    hint: 'Clique numa região para escolher o material; clique nas bordas (Shift para várias) para definir o contorno. A borda externa é A = 0 por padrão.',
+    periodicNeedsTwo: 'Periódico/antiperiódico liga pares de curvas: selecione duas.',
+    addMaterial: 'Novo material',
+    newMaterial: 'Material',
+    name: 'Nome',
+    color: 'Cor',
+    mur: 'μr (permeabilidade relativa)',
+    sigma: 'σ (MS/m)',
+    br: 'Br do ímã (T)',
+    bh: 'Curva B-H',
+    bhPoints: (n) => `não linear, ${n} pontos`,
+    removeMaterial: 'Remover material',
+    materialInUse: 'Material em uso por uma região.',
+    removeBoundary: 'Remover contorno',
+    noRegions: 'Nenhuma região fechada no desenho.',
+    nodeHint: 'Geração da malha (Triangle) chega na próxima etapa. Defina antes materiais e contornos.',
+    noRegionAt: (x, y) => `Nenhuma região fechada contém o ponto (${x}, ${y}).`,
+    nameTaken: (n) => `Já existe um material "${n}".`,
   },
   hist: {
     title: 'Histórico',
@@ -999,6 +1075,44 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     perimeter: 'Perimeter',
     sweep: 'Sweep',
     arcLength: 'Arc length',
+  },
+  mesh: {
+    periodic: 'Periodic',
+    antiperiodic: 'Antiperiodic',
+    dirichlet: 'A = 0 (Dirichlet)',
+    neumann: 'Neumann (tangent flux)',
+    noMaterial: 'no material',
+    materials: 'Materials',
+    regions: 'Regions',
+    boundaries: 'Boundaries',
+    outerDefault: 'Outer border (A = 0)',
+    region: (n) => `Region ${n}`,
+    material: 'Material',
+    area: 'Area',
+    current: 'Total current (A)',
+    turns: 'Turns',
+    magnetAngle: 'Magnetization direction (°)',
+    boundaryType: 'Boundary condition',
+    none: '— none —',
+    curves: (n) => `${n} curve${n === 1 ? '' : 's'} selected`,
+    hint: 'Click a region to pick its material; click edges (Shift for several) to set a boundary. The outer border is A = 0 by default.',
+    periodicNeedsTwo: 'Periodic/antiperiodic link pairs of curves: select two.',
+    addMaterial: 'New material',
+    newMaterial: 'Material',
+    name: 'Name',
+    color: 'Color',
+    mur: 'μr (relative permeability)',
+    sigma: 'σ (MS/m)',
+    br: 'Magnet Br (T)',
+    bh: 'B-H curve',
+    bhPoints: (n) => `nonlinear, ${n} points`,
+    removeMaterial: 'Remove material',
+    materialInUse: 'Material is used by a region.',
+    removeBoundary: 'Remove boundary',
+    noRegions: 'No closed region in the drawing.',
+    nodeHint: 'Mesh generation (Triangle) comes in the next step. Set materials and boundaries first.',
+    noRegionAt: (x, y) => `No closed region contains the point (${x}, ${y}).`,
+    nameTaken: (n) => `A material "${n}" already exists.`,
   },
   hist: {
     title: 'History',

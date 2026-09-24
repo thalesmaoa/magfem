@@ -30,8 +30,10 @@ import {
 } from './ops';
 import { render, type HitRegion, type Preview, type RenderState } from './render';
 import { groupParams, type DragTarget } from './solver';
-import { isCurve, isDimension, ORIGIN_ID, type Constraint, type ConstraintType, type Group, type Id, type LineEnt, type Sketch } from './types';
+import { isCurve, isDimension, ORIGIN_ID, type BoundaryType, type Constraint, type ConstraintType, type Group, type Id, type LineEnt, type RegionAssign, type Sketch } from './types';
 import { View } from './view';
+import { computeArrangement, findRegion, regionAt, type Arrangement } from './regions';
+import { assignOf, type RegionKey } from './mesh';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern, type MirrorAxis } from './patterns';
@@ -111,6 +113,8 @@ export interface EditorSnapshot {
   editing: { id: Id; x: number; y: number; text: string; angle: boolean } | null;
   enteredGroup: Id | null;
   ruler: { a: Vec; b: Vec | null } | null;
+  mode: 'sketch' | 'mesh';
+  meshSel: SketchEditor['meshSel'];
   version: number;
 }
 
@@ -123,6 +127,48 @@ export class SketchEditor {
   message: string | null = null;
   editing: EditorSnapshot['editing'] = null;
   enteredGroup: Id | null = null;
+  /** Modo do canvas: desenho (sketch) ou malha (regiões/contornos, sem editar geometria). */
+  mode: 'sketch' | 'mesh' = 'sketch';
+  /** Seleção no modo malha: uma região (pela identidade) ou curvas (para contornos). */
+  meshSel: { kind: 'region'; curves: Id[]; seed: Vec } | { kind: 'curves'; ids: Id[] } | null = null;
+  meshHover: { kind: 'region'; index: number } | { kind: 'curve'; id: Id } | null = null;
+  private arrCache: { version: number; arr: Arrangement } | null = null;
+
+  /** Regiões do desenho atual (recalculadas só quando o documento muda). */
+  arrangement(): Arrangement {
+    if (!this.arrCache || this.arrCache.version !== this.doc.version) this.arrCache = { version: this.doc.version, arr: computeArrangement(this.sketch) };
+    return this.arrCache.arr;
+  }
+
+  setMode(m: 'sketch' | 'mesh') {
+    if (this.mode === m) return;
+    this.mode = m;
+    this.resetToolState();
+    this.meshSel = null;
+    this.meshHover = null;
+    if (m === 'mesh') {
+      this.tool = 'select';
+      this.selection = [];
+    }
+    this.canvas.style.cursor = 'default';
+    this.changed();
+  }
+
+  /** Atribuição (material/fonte) da região, se houver. */
+  assignOf(key: RegionKey): RegionAssign | undefined {
+    return assignOf(this.sketch, this.arrangement(), key);
+  }
+
+  /** Aplica uma operação de malha (pura) e registra o código; erros viram mensagem. */
+  meshOp(fn: (sk: Sketch) => Sketch, code: string): boolean {
+    try {
+      return this.commit(fn(this.sketch), [code]);
+    } catch (e) {
+      this.flash((e as Error).message);
+      return false;
+    }
+  }
+
   /** Régua (ferramenta de medir): não altera o desenho. */
   ruler: { a: Vec; b: Vec | null } | null = null;
 
@@ -207,6 +253,8 @@ export class SketchEditor {
         editing: this.editing,
         enteredGroup: this.enteredGroup,
         ruler: this.ruler,
+        mode: this.mode,
+        meshSel: this.meshSel,
         version: this.snapVersion,
       };
     }
@@ -735,6 +783,7 @@ export class SketchEditor {
       hideDim: this.editing?.id ?? null,
       measure: this.measureOverlay(),
       dark: isDark(),
+      mesh: this.mode === 'mesh' ? this.meshView() : undefined,
     };
     this.hits = render(this.ctx, this.view, sk, st);
   }
@@ -763,6 +812,82 @@ export class SketchEditor {
       const inParent = refs.some((r) => g.offset!.parents.includes(r) || this.parentPointsOf(g).has(r));
       return inChild && inParent;
     });
+  }
+
+  /** Dados de desenho do modo malha: regiões preenchidas pelo material, contornos coloridos. */
+  private meshView(): RenderState['mesh'] {
+    const sk = this.sketch;
+    const arr = this.arrangement();
+    const mats = new Map(sk.materials.map((m) => [m.id, m]));
+    const byRegion = new Map<number, RegionAssign>();
+    for (const a of sk.regionAssigns) {
+      const r = findRegion(arr, a);
+      if (r) byRegion.set(r.index, a);
+    }
+    const selKey = this.meshSel?.kind === 'region' ? findRegion(arr, this.meshSel) : null;
+    const boundaryOf = new Map<Id, BoundaryType>();
+    for (const b of sk.boundaries) for (const c of b.curves) boundaryOf.set(c, b.type);
+    // Borda externa sem contorno explícito: A = 0 (padrão).
+    for (const c of this.defaultOuter()) boundaryOf.set(c, 'dirichlet');
+    return {
+      regions: arr.regions.map((r) => {
+        const a = byRegion.get(r.index);
+        const m = a ? mats.get(a.material) : undefined;
+        return {
+          outer: r.outer.poly,
+          holes: r.holes.map((h) => h.poly),
+          color: m?.color ?? null,
+          label: m?.name ?? T().mesh.noMaterial,
+          at: r.label,
+          selected: selKey === r,
+          hovered: this.meshHover?.kind === 'region' && this.meshHover.index === r.index,
+        };
+      }),
+      boundaryOf,
+      selectedCurves: new Set(this.meshSel?.kind === 'curves' ? this.meshSel.ids : []),
+      hoverCurve: this.meshHover?.kind === 'curve' ? this.meshHover.id : null,
+    };
+  }
+
+  /** No modo malha: curva sob o cursor (contornos) ou, senão, a região. */
+  private meshHit(s: Vec): SketchEditor['meshHover'] {
+    const h = this.hitTest(s, { entitiesOnly: true });
+    if (h?.kind === 'curve' && !(this.sketch.entities[h.id] as { construction?: boolean }).construction) return { kind: 'curve', id: h.id };
+    const r = regionAt(this.arrangement(), this.view.toWorld(s));
+    return r ? { kind: 'region', index: r.index } : null;
+  }
+
+  private meshClick(s: Vec, add: boolean) {
+    const h = this.meshHit(s);
+    if (!h) this.meshSel = null;
+    else if (h.kind === 'curve') {
+      const prev = this.meshSel?.kind === 'curves' && add ? this.meshSel.ids : [];
+      this.meshSel = { kind: 'curves', ids: prev.includes(h.id) ? prev.filter((x) => x !== h.id) : [...prev, h.id] };
+    } else {
+      const r = this.arrangement().regions[h.index];
+      this.meshSel = { kind: 'region', curves: r.curves, seed: r.label };
+    }
+    this.changed();
+  }
+
+  /** Curvas da borda externa que não têm contorno explícito (recebem A = 0 por padrão). */
+  defaultOuter(): Id[] {
+    const taken = new Set(this.sketch.boundaries.flatMap((b) => b.curves));
+    return this.arrangement().outer.filter((c) => !taken.has(c));
+  }
+
+  /** Seleciona curvas (contornos) pela árvore. */
+  selectCurves(ids: Id[]) {
+    this.meshSel = ids.length ? { kind: 'curves', ids } : null;
+    this.changed();
+  }
+
+  /** Seleciona uma região pela árvore. */
+  selectRegion(index: number) {
+    const r = this.arrangement().regions[index];
+    if (!r) return;
+    this.meshSel = { kind: 'region', curves: r.curves, seed: r.label };
+    this.changed();
   }
 
   /** O ponto pertence a uma curva do grupo? */
@@ -935,6 +1060,10 @@ export class SketchEditor {
       return;
     }
     if (e.button !== 0) return;
+    if (this.mode === 'mesh') {
+      this.meshClick(s, e.shiftKey || e.ctrlKey);
+      return;
+    }
     if (this.picking) {
       const h = this.hitTest(s, { entitiesOnly: true });
       if (h?.kind === 'curve' && this.sketch.entities[h.id]?.type === 'line') {
@@ -976,6 +1105,12 @@ export class SketchEditor {
       } else if (d.moved && d.kind === 'label') {
         this.dragLabel(d, w);
       }
+      this.changed();
+      return;
+    }
+    if (this.mode === 'mesh') {
+      this.meshHover = this.meshHit(s);
+      this.canvas.style.cursor = this.meshHover ? 'pointer' : 'default';
       this.changed();
       return;
     }
@@ -1091,6 +1226,12 @@ export class SketchEditor {
       e.preventDefault();
       return;
     }
+    if (e.key === 'Escape' && this.mode === 'mesh') {
+      this.meshSel = null;
+      this.changed();
+      return;
+    }
+    if (this.mode === 'mesh') return; // atalhos de desenho não valem no modo malha
     if (e.key === 'Escape') {
       if (this.picking) {
         this.pickLine(null);

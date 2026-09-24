@@ -126,6 +126,25 @@ export const Icons = {
       <path d="M6.5 9.5h7M10 16l-3.5-6.5M10 16l3.5-6.5" />
     </S>
   ),
+  material: (
+    <S>
+      <rect x="3" y="3" width="6" height="6" rx="1" />
+      <rect x="11" y="3" width="6" height="6" rx="1" />
+      <rect x="3" y="11" width="6" height="6" rx="1" />
+      <rect x="11" y="11" width="6" height="6" rx="1" />
+    </S>
+  ),
+  region: (
+    <S>
+      <path d="M3 5l7-2 7 4-2 9-9 1z" fill="currentColor" fillOpacity="0.25" />
+    </S>
+  ),
+  boundary: (
+    <S>
+      <path d="M3 17V3h14" strokeWidth="2.6" />
+      <path d="M7 17h10V7" strokeDasharray="2 2" />
+    </S>
+  ),
   treePost: (
     <S>
       <path d="M3 17V3M3 17h14" />

@@ -6,7 +6,7 @@ import { SketchDoc } from './cad/doc';
 import { SketchEditor } from './cad/editor';
 import { formatLength } from './cad/expr';
 import { initSolver } from './cad/solver';
-import type { TreeSel } from './cad/tree';
+import { isMeshSel, type TreeSel } from './cad/tree';
 import { emptySketch } from './cad/types';
 import { setLang, T, useLang, useT, type Lang } from './i18n';
 import { hasFsAccess, loadDraft, openProject, parse, saveDraft, saveProject, serialize } from './io/project';
@@ -58,6 +58,12 @@ export default function App() {
   };
   const [citing, setCiting] = useState(false);
   const [renaming, setRenaming] = useState(false);
+
+  // Malha (seção, material, contorno ou nó de malha) troca o canvas para o modo malha.
+  const meshMode = ed ? isMeshSel(treeSel, ed.sketch) : false;
+  useEffect(() => {
+    ed?.setMode(meshMode ? 'mesh' : 'sketch');
+  }, [ed, meshMode]);
 
   // Solver de restrições + rascunho salvo.
   useEffect(() => {
@@ -213,7 +219,7 @@ export default function App() {
           <ThemeSwitch />
         </nav>
       </header>
-      {ed && treeSel.kind !== 'node' ? <Toolbar ed={ed} /> : <div className="toolbar" />}
+      {ed && (treeSel.kind === 'geometry' || treeSel.kind === 'var') ? <Toolbar ed={ed} /> : <div className="toolbar" />}
       <main className={`work${drawer ? ' drawer-open' : ''}`}>
         {ed ? <ModelTree ed={ed} sel={treeSel} onSelect={setTreeSel} /> : <aside className="side left" />}
         <div className="center">
@@ -312,8 +318,8 @@ function StageOverlay({ ed, sel }: { ed: SketchEditor; sel: TreeSel }) {
   useDocVersion(ed.doc);
   if (sel.kind !== 'node') return null;
   const n = ed.sketch.nodes.find((x) => x.id === sel.id);
-  if (!n || n.kind === 'physics') return null;
-  return <div className="overlay soon">{t.bench.soon(t.phase(n.kind === 'mesh' ? 5 : 6))}</div>;
+  if (!n || n.kind !== 'post') return null;
+  return <div className="overlay soon">{t.bench.soon(t.phase(6))}</div>;
 }
 
 /** Tema: automático (segue o sistema) → claro → escuro. */

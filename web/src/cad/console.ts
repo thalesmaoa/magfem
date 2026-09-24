@@ -27,7 +27,9 @@ import {
 import { addNode, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type Id, type ProblemType, type Sketch } from './types';
+import { isCurve, isDimension, ORIGIN_ID, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { computeArrangement } from './regions';
+import { addMaterial, assignOf, assignRegion, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
 
 export type Value = number | string | boolean | null | Value[] | { tuple: Value[] } | { print: string };
@@ -752,6 +754,60 @@ export class CommandConsole {
         this.commit(updateNode(sk, id, patch));
         return null;
       }
+      // ----- malha: materiais, regiões e contornos -----
+      case 'material': {
+        need(1);
+        const patch: Partial<Material> = {};
+        for (const k of ['mur', 'sigma', 'br'] as const) if (kw[k] !== undefined) patch[k] = Number(kw[k]);
+        if (kw.color !== undefined) patch.color = String(kw.color);
+        if (kw.name !== undefined) patch.name = String(kw.name);
+        const cur = findMaterial(sk, String(a[0]));
+        if (cur) {
+          this.commit(updateMaterial(sk, cur.id, patch));
+          return cur.id;
+        }
+        const r = addMaterial(sk, String(a[0]), patch);
+        this.commit(r.sketch);
+        return r.material.id;
+      }
+      case 'del_material': {
+        need(1);
+        const m = findMaterial(sk, String(a[0]));
+        if (!m) throw new ConsoleError(t.notFound(String(a[0])));
+        this.commit(removeMaterial(sk, m.id));
+        return null;
+      }
+      case 'region': {
+        need(1);
+        const arr = computeArrangement(sk);
+        const r = regionAtOrThrow(arr, this.xy(a[0]));
+        const patch: Partial<RegionAssign> = {};
+        if (kw.material !== undefined) {
+          const m = findMaterial(sk, String(kw.material));
+          if (!m) throw new ConsoleError(t.notFound(String(kw.material)));
+          patch.material = m.id;
+        }
+        if (kw.current !== undefined) patch.current = kw.current === null ? undefined : String(kw.current);
+        if (kw.turns !== undefined) patch.turns = kw.turns === null ? undefined : Number(kw.turns);
+        if (kw.angle !== undefined) patch.magnetAngle = kw.angle === null ? undefined : String(kw.angle);
+        this.commit(assignRegion(sk, arr, regionKey(r), patch));
+        return r.area;
+      }
+      case 'boundary': {
+        need(1);
+        const type = kw.type !== undefined ? kw.type : a.length > 1 ? a[1] : 'dirichlet';
+        if (type !== null && type !== undefined && !['dirichlet', 'neumann', 'periodic', 'antiperiodic'].includes(String(type))) throw new ConsoleError(t.notFound(String(type)));
+        this.commit(setBoundary(sk, this.ids([a[0]]), (type ?? null) as BoundaryType | null));
+        return null;
+      }
+      case 'regions': {
+        const arr = computeArrangement(sk);
+        return arr.regions.map((r) => {
+          const as = assignOf(sk, arr, regionKey(r));
+          const m = as ? sk.materials.find((x) => x.id === as.material) : undefined;
+          return { tuple: [{ tuple: [Number(r.label.x.toFixed(4)), Number(r.label.y.toFixed(4))] }, Number(r.area.toFixed(6)), m?.name ?? null] };
+        });
+      }
       case 'remove':
         need(1);
         this.commit(removeNode(sk, String(a[0])));
@@ -781,7 +837,16 @@ function resolveMethod(obj: string | null, fn: string): string {
 }
 
 const NODE_METHODS = {
-  m: { add: 'add(name="Malha")', rename: 'rename("n1", "fina")', remove: 'remove("n1")' },
+  m: {
+    add: 'add(name="Malha")',
+    rename: 'rename("n1", "fina")',
+    remove: 'remove("n1")',
+    material: 'material("Cobre", mur=1, sigma=58, br=0, color="#e0914f")',
+    del_material: 'del_material("Cobre")',
+    region: 'region((x, y), material="Cobre", current="10", turns=100, angle="90")',
+    boundary: 'boundary(["l1", "l2"], "dirichlet" | "neumann" | "periodic" | "antiperiodic" | None)',
+    regions: 'regions()  # [((x, y), área, material)]',
+  },
   s: {
     add_physics: 'add_physics(name="Campo magnético")',
       rename: 'rename("n2", "...")',

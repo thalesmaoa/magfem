@@ -89,6 +89,64 @@ export interface RenderState {
   plain?: boolean;
   /** Tema escuro. */
   dark?: boolean;
+  /** Modo malha: regiões preenchidas pelo material e contornos coloridos (sem cotas/símbolos). */
+  mesh?: {
+    regions: { outer: Vec[]; holes: Vec[][]; color: string | null; label: string; at: Vec; selected: boolean; hovered: boolean }[];
+    boundaryOf: Map<Id, 'dirichlet' | 'neumann' | 'periodic' | 'antiperiodic'>;
+    selectedCurves: Set<Id>;
+    hoverCurve: Id | null;
+  };
+}
+
+const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
+
+function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<RenderState['mesh']>) {
+  let hatch: CanvasPattern | null = null;
+  const pc = document.createElement('canvas');
+  pc.width = pc.height = 8;
+  const pctx = pc.getContext('2d');
+  if (pctx) {
+    pctx.strokeStyle = COLORS.muted;
+    pctx.globalAlpha = 0.35;
+    pctx.beginPath();
+    pctx.moveTo(0, 8);
+    pctx.lineTo(8, 0);
+    pctx.stroke();
+    hatch = ctx.createPattern(pc, 'repeat');
+  }
+  for (const r of m.regions) {
+    ctx.beginPath();
+    for (const loop of [r.outer, ...r.holes]) {
+      loop.forEach((p, i) => {
+        const q = v.toScreen(p);
+        if (i === 0) ctx.moveTo(q.x, q.y);
+        else ctx.lineTo(q.x, q.y);
+      });
+      ctx.closePath();
+    }
+    ctx.globalAlpha = r.selected ? 0.85 : r.hovered ? 0.7 : 0.5;
+    ctx.fillStyle = r.color ?? hatch ?? COLORS.gridMajor;
+    ctx.fill('evenodd');
+    ctx.globalAlpha = 1;
+    if (r.selected || r.hovered) {
+      ctx.strokeStyle = r.selected ? COLORS.selected : COLORS.hover;
+      ctx.lineWidth = r.selected ? 3 : 2;
+      ctx.stroke();
+    }
+  }
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const r of m.regions) {
+    const q = v.toScreen(r.at);
+    const w = ctx.measureText(r.label).width + 8;
+    ctx.fillStyle = COLORS.badgeBg;
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(q.x - w / 2, q.y - 8, w, 16);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = r.color ? COLORS.dim : COLORS.muted;
+    ctx.fillText(r.label, q.x, q.y + 0.5);
+  }
 }
 
 export interface HitRegion {
@@ -180,8 +238,9 @@ function entityColor(e: Entity, st: RenderState) {
 function drawCurve(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, e: Entity, st: RenderState) {
   if (e.type === 'point') return;
   const hot = st.selection.has(e.id) || st.hover === e.id || st.related.has(e.id);
-  ctx.strokeStyle = entityColor(e, st);
-  ctx.lineWidth = hot ? 2.5 : 1.6;
+  const ov = st as RenderState & { colorOverride?: string; widthOverride?: number };
+  ctx.strokeStyle = ov.colorOverride ?? entityColor(e, st);
+  ctx.lineWidth = ov.widthOverride ?? (hot ? 2.5 : 1.6);
   ctx.setLineDash(e.construction ? [7, 5] : []);
   ctx.beginPath();
   if (e.type === 'line') {
@@ -386,6 +445,20 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
   if (!st.plain) drawGrid(ctx, v, st.axisymmetric);
 
   const ents = Object.values(sk.entities).filter((e) => !st.hidden.has(e.id) && !(e.type !== 'circle' && e.type !== 'arc' && e.aux));
+  if (st.mesh) {
+    // Modo malha: regiões, contornos coloridos e nada de cotas/símbolos.
+    drawMeshRegions(ctx, v, st.mesh);
+    const m = st.mesh;
+    for (const e of ents) {
+      if (e.type === 'point') continue;
+      const b = m.boundaryOf.get(e.id);
+      const sel = m.selectedCurves.has(e.id);
+      const hot = m.hoverCurve === e.id;
+      const color = sel ? COLORS.selected : hot ? COLORS.hover : b ? BOUNDARY_COLORS[b] : e.construction ? COLORS.construction : COLORS.defined;
+      drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: null, related: new Set(), defined: new Set(), colorOverride: color, widthOverride: sel || hot || b ? 3 : 1.4 } as RenderState);
+    }
+    return hits;
+  }
   for (const e of ents) drawCurve(ctx, v, sk, e, st);
 
   for (const c of sk.constraints) {

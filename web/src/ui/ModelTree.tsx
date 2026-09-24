@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { evaluate, evaluateVariables, formatLength, formatQ } from '../cad/expr';
-import { addNode, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
+import { addNode, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
+import { MeshProps, MeshTree } from './MeshPanel';
 import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type TreeNode } from '../cad/types';
 import { deleteVariable, nextVarName, renameVariable, setVariable } from '../cad/vars';
 import { groupOf } from '../cad/ops';
@@ -559,7 +560,9 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
   // Nó ou variável que sumiu (removido/desfeito): volta para a Geometria.
   useEffect(() => {
     if ((sel.kind === 'node' && !current) || (sel.kind === 'var' && !ed.sketch.variables.some((v) => v.name === sel.name))) onSelect({ kind: 'geometry' });
-  }, [sel, current, onSelect, ed.sketch.variables]);
+    if (sel.kind === 'material' && !ed.sketch.materials.some((m) => m.id === sel.id)) onSelect({ kind: 'mesh' });
+    if (sel.kind === 'boundary' && sel.id !== 'outer' && !ed.sketch.boundaries.some((b) => b.id === sel.id)) onSelect({ kind: 'mesh' });
+  }, [sel, current, onSelect, ed.sketch.variables, ed.sketch.materials, ed.sketch.boundaries]);
 
   return (
     <aside className="side left">
@@ -605,9 +608,19 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
               <Row
                 icon={sec.icon}
                 label={sec.label}
-                selected={false}
+                selected={sec.key === 'mesh' && sel.kind === 'mesh' && !ed.meshSel}
                 toggle={{ open: !closed.has(sec.key), onToggle: () => toggleSection(sec.key) }}
-                onClick={() => toggleSection(sec.key)}
+                onClick={() => {
+                  if (sec.key !== 'mesh') return toggleSection(sec.key);
+                  // Malha: mostra o desenho com regiões e contornos.
+                  ed.selectCurves([]);
+                  onSelect({ kind: 'mesh' });
+                  setClosed((c) => {
+                    const n = new Set(c);
+                    n.delete('mesh');
+                    return n;
+                  });
+                }}
                 extra={
                   <AddMenu
                     ed={ed}
@@ -624,6 +637,7 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
                   />
                 }
               />
+              {!closed.has(sec.key) && sec.key === 'mesh' && <MeshTree ed={ed} sel={sel} onSelect={onSelect} />}
               {!closed.has(sec.key) && (
                 <ul role="group">
                   {nodes.filter(sec.match).map((n) => (
@@ -640,11 +654,12 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
         {sel.kind === 'geometry' && <GeometryProps ed={ed} />}
         {sel.kind === 'var' && <VariableProps ed={ed} name={sel.name} onRenamed={(n) => onSelect(n ? { kind: 'var', name: n } : { kind: 'geometry' })} />}
         {current?.kind === 'physics' && <PhysicsProps ed={ed} node={current} />}
-        {current && current.kind !== 'physics' && (
+        {isMeshSel(sel, ed.sketch) && <MeshProps ed={ed} sel={sel} onSelect={onSelect} />}
+        {current && current.kind === 'post' && (
           <div className="props-body">
             <section>
-              <h3>{current.kind === 'mesh' ? t.tree.meshProps : t.tree.postProps}</h3>
-              <p className="muted">{t.bench.soon(t.phase(current.kind === 'mesh' ? 5 : 6))}</p>
+              <h3>{t.tree.postProps}</h3>
+              <p className="muted">{t.bench.soon(t.phase(6))}</p>
             </section>
           </div>
         )}
