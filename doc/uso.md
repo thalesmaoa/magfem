@@ -47,6 +47,18 @@ movidas entre vistas (arrastar na árvore) e ocultadas. Clique na legenda para o
 para mover e use a alça do canto para redimensionar. **Exportar** gera PNG/JPG da vista, ou
 SVG/PNG/CSV das abas de gráfico e tabela.
 
+## Transitório e circuito externo
+
+- Em **Método de resolução**, mude a análise para **Transitória** e informe frequência, passo e tempo final. As fontes
+  são senoidais; o aço com curva B-H é resolvido como não linear (Newton-Raphson) a cada passo; condutores sem fonte
+  (σ > 0) têm correntes parasitas.
+- Nos resultados, a barra superior da vista tem a barra de tempo, ▶ para animar e **Exportar animação (WebM)**.
+- **Circuito externo:** o **+** ao lado de **Modelo** cria um circuito (aba com esquemático). Ele já traz um bloco por
+  circuito da Malha (bobinas); a barra superior tem fonte de tensão/corrente senoidal, R, L, C e Terra. Clique num terminal
+  e depois em outro para ligar. No transitório, as bobinas do esquemático recebem a corrente do circuito (acoplamento
+  forte campo–circuito): por exemplo, fonte de tensão no primário e carga no secundário de um transformador. Clique num
+  componente para ver i(t) e v(t).
+
 ## Automação
 
 O botão `</>` ao lado de **Modelo** mostra o script que recria o projeto exatamente. Ele roda no

@@ -113,7 +113,7 @@ Limitações conhecidas / ideias para depois:
 - [x] Transitório (Euler implícito, correntes parasitas σ∂A/∂t, fonte senoidal), quadros no tempo, animação e exportação WebM.
 - [x] Exportar código (script da API que recria o modelo idêntico); projeto aberto (MIT, README, doc/).
 
-### [⏳ EM ANDAMENTO] Rodada 17 — Circuito externo acoplado (campo + circuito)
+### [✅ CONCLUÍDA] Rodada 17 — Circuito externo acoplado (campo + circuito)
 - **Editor:** + em Modelo → Circuito (aba com esquemático): fonte de tensão/corrente senoidal, R, L, C, terra e um bloco por
   circuito do FEM (bobinas). Fios ligam terminais; nós por união de terminais.
 - **Formulação (transitório, acoplamento forte):** incógnitas x = [A livres, tensões de nó, correntes de ramo (fontes de
@@ -123,8 +123,12 @@ Limitações conhecidas / ideias para depois:
   - L: v − L/Δt i = −L/Δt i_prev; C: condutância C/Δt com fonte C/Δt v_prev; R, fontes V/I (senoidais).
   - Newton sobre o sistema monolítico (não simétrico → SparseLU).
 - **Resultados:** tensões e correntes de cada elemento no tempo (gráfico), campo animado como no transitório.
-- **Validação:** RL com bobina no ar (L conhecida): i(t) de uma fonte senoidal vs solução analítica; transformador ideal
-  (acoplamento alto): V2/V1 ≈ N2/N1 em vazio.
+- **Validação:** RL com bobina no ar: i(t) igual ao RL discreto com L = λ/I (erro 3e-15); transformador com acoplamento
+  perfeito: V2 = (N2/N1)·V1 (erro 8e-16); E2E pela interface: lei das malhas e Ohm exatos.
+- [x] Feito: editor (+ em Modelo → Circuito), paleta na barra superior, sinais i(t)/v(t) por componente, console `c.*`,
+  script exportado com o esquemático. Exemplo real: núcleo EI 200:200 espiras, 150 V/60 Hz, carga 50 Ω → V2/V1 = 0,996,
+  B máx. 1,42 T (não linear), 134 passos em ~16 s.
+- Pendências: indicador de progresso no transitório longo; paralelo nos circuitos do FEM; harmônico (fasores).
 
 ### Próximo possível
 - Força/torque (tensor de Maxwell, Arkkio), harmônico (fasores), movimento (EDO mecânica: contatora).
