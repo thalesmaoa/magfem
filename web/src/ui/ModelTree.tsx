@@ -14,6 +14,7 @@ import { LazyInput } from './common';
 import { Icons } from './icons';
 import { GeometryProps } from './GeometryProps';
 import { useDocVersion, useEditor } from './useStore';
+import { ScriptExportButton } from './ScriptExport';
 
 const ICON: Record<string, JSX.Element> = { pre: Icons.treePre, geometry: Icons.treeGeom, physics: Icons.treePhysics, mesh: Icons.treeMesh, post: Icons.treePost };
 /** Ícone de cada tipo de restrição na árvore (reaproveita os da barra). */
@@ -528,7 +529,7 @@ function VariableProps({ ed, name, onRenamed }: { ed: SketchEditor; name: string
 }
 
 /** Árvore do modelo (esquerda) + propriedades do item selecionado. */
-export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel; onSelect: (s: TreeSel) => void }) {
+export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEditor; sel: TreeSel; onSelect: (s: TreeSel) => void; name?: string }) {
   const t = useT();
   useDocVersion(ed.doc);
   const [geoOpen, setGeoOpen] = useState(true);
@@ -570,8 +571,9 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
   return (
     <aside className="side left">
       <section className="tree">
-        <h3>
+        <h3 className="tree-title">
           {t.tree.title}
+          <ScriptExportButton ed={ed} name={name} />
         </h3>
         <ul role="tree">
           <li>

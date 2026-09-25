@@ -99,8 +99,10 @@ export interface RenderState {
     /** Malha gerada (triângulos); `stale` = o desenho mudou depois. */
     tri?: { xy: Float64Array; triangles: Int32Array; stale: boolean };
   };
+  /** Escala dos elementos de interface desenhados (legenda) — maior na imagem exportada. */
+  uiScale?: number;
   /** Modo resultados: mapa de |B|, linhas de fluxo, sonda. */
-  post?: { sol: Solution | null; layers: PostNode[]; layerSols?: Map<Id, Solution>; stale: boolean; probe: Vec | null };
+  post?: { sol: Solution | null; layers: PostNode[]; layerSols?: Map<Id, Solution>; stale: boolean; probe: Vec | null; legend?: { x: number; y: number; s: number } };
 }
 
 /** Mapa de cores "turbo" (aproximação polinomial), t ∈ [0, 1] → rgb. */
@@ -222,7 +224,7 @@ function vectorSamples(sol: Solution, h: number, q: 'b' | 'h'): { v: Float64Arra
   return res;
 }
 
-function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNullable<RenderState['post']>, slot = 0, hits: HitRegion[] = []): number {
+function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNullable<RenderState['post']>, slot = 0, hits: HitRegion[] = [], ui = 1): number {
   const base = p.sol;
   if (!base) return 0;
   const legends: { lo: number; hi: number; label: string; map?: Colormap; layer: Id }[] = [];
@@ -373,7 +375,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
   }
   // Superfícies: só a de cima (é a que aparece); contornos/glifos coloridos: uma cada.
   const shown = p.layers.every((l) => l.plot === 'surface') ? legends.slice(-1) : legends;
-  shown.forEach((lg, i) => hits.push(drawLegend(ctx, v, lg, slot + i)));
+  shown.forEach((lg, i) => hits.push(drawLegend(ctx, v, lg, slot + i, ui, p.legend)));
   if (p.probe) {
     const q = v.toScreen(p.probe);
     ctx.strokeStyle = '#ffffff';
@@ -394,8 +396,27 @@ const tick = (val: number) => {
 };
 
 /** Barra de cores (canto superior direito; várias legendas lado a lado). */
-function drawLegend(ctx: CanvasRenderingContext2D, v: View, lg: { lo: number; hi: number; label: string; map?: Colormap; layer: Id }, index: number): HitRegion {
-  const x = v.w - 72 - index * 84, y = 16, w = 14, h = 180;
+function drawLegend(
+  ctx: CanvasRenderingContext2D,
+  v: View,
+  lg: { lo: number; hi: number; label: string; map?: Colormap; layer: Id },
+  index: number,
+  ui0 = 1,
+  pos?: { x: number; y: number; s: number },
+): HitRegion {
+  // Posição/escala escolhidas pelo usuário (fração do canvas), ou o canto superior direito.
+  const ui = ui0 * (pos?.s ?? 1);
+  const x = pos ? pos.x * v.w - index * 84 * ui : v.w - (72 + index * 84) * ui;
+  const y = pos ? pos.y * v.h : 16 * ui;
+  const w = 14 * ui, h = 180 * ui;
+  // Fundo próprio: legível sobre qualquer cor do mapa (ou do desenho).
+  ctx.fillStyle = COLORS.bg;
+  ctx.globalAlpha = 0.88;
+  ctx.fillRect(x - 6 * ui, y - 8 * ui, 74 * ui, h + 30 * ui);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = COLORS.gridMajor;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - 6 * ui + 0.5, y - 8 * ui + 0.5, 74 * ui, h + 30 * ui);
   for (let i = 0; i < h; i++) {
     const [r, g, b] = colormap(lg.map, 1 - i / h);
     ctx.fillStyle = `rgb(${r},${g},${b})`;
@@ -404,15 +425,15 @@ function drawLegend(ctx: CanvasRenderingContext2D, v: View, lg: { lo: number; hi
   ctx.strokeStyle = COLORS.dim;
   ctx.lineWidth = 1;
   ctx.strokeRect(x + 0.5, y + 0.5, w, h);
-  ctx.font = '11px system-ui, sans-serif';
+  ctx.font = `${11 * ui}px system-ui, sans-serif`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = COLORS.dim;
-  for (let k = 0; k <= 4; k++) ctx.fillText(tick(lg.hi - ((lg.hi - lg.lo) * k) / 4), x + w + 4, y + (h * k) / 4);
+  for (let k = 0; k <= 4; k++) ctx.fillText(tick(lg.hi - ((lg.hi - lg.lo) * k) / 4), x + w + 4 * ui, y + (h * k) / 4);
   ctx.textAlign = 'center';
-  ctx.fillText(lg.label, x + w / 2 + 10, y + h + 14);
+  ctx.fillText(lg.label, x + w / 2 + 10 * ui, y + h + 14 * ui);
   // Área clicável (barra + números): abre o ajuste de limites.
-  return { id: lg.layer, kind: 'legend', x0: x - 4, y0: y - 8, x1: x + 70, y1: y + h + 22, data: [lg.lo, lg.hi] };
+  return { id: lg.layer, kind: 'legend', x0: x - 4, y0: y - 8, x1: x + 70 * ui, y1: y + h + 22 * ui, data: [lg.lo, lg.hi] };
 }
 
 const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
@@ -820,13 +841,13 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
     // Superfícies primeiro; o contorno das peças fica entre elas e as linhas/vetores/curvas.
     const maps = st.post.layers.filter((l) => l.plot === 'surface');
     const rest = st.post.layers.filter((l) => !maps.includes(l));
-    const nLegends = drawPost(ctx, v, sk, { ...st.post, layers: maps, probe: null }, 0, hits);
+    const nLegends = drawPost(ctx, v, sk, { ...st.post, layers: maps, probe: null }, 0, hits, st.uiScale ?? 1);
     for (const e of ents) {
       if (e.type === 'point') continue;
       const color = e.construction ? COLORS.construction : hasMap ? 'rgba(10,14,20,0.9)' : COLORS.defined;
       drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: st.hover, related: new Set(), defined: new Set(), colorOverride: st.hover === e.id ? COLORS.hover : color, widthOverride: st.hover === e.id ? 3 : 1.4 } as RenderState);
     }
-    drawPost(ctx, v, sk, { ...st.post, layers: rest }, nLegends, hits);
+    drawPost(ctx, v, sk, { ...st.post, layers: rest }, nLegends, hits, st.uiScale ?? 1);
     return hits;
   }
   if (st.mesh) {

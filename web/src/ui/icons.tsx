@@ -147,6 +147,11 @@ export const Icons = {
       <circle cx="10" cy="15.5" r="2" />
     </S>
   ),
+  code: (
+    <S>
+      <path d="M7 6l-4 4 4 4M13 6l4 4-4 4M11 4l-2 12" />
+    </S>
+  ),
   region: (
     <S>
       <path d="M3 5l7-2 7 4-2 9-9 1z" fill="currentColor" fillOpacity="0.25" />

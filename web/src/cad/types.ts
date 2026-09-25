@@ -223,6 +223,8 @@ export interface ViewNode {
   physics: Id;
   /** Vista interpolada (suavizar): subdivisões por aresta (1–6); ausente = solução da malha. */
   level?: number;
+  /** Legenda: canto superior esquerdo (fração da largura/altura do canvas) e escala; ausente = padrão. */
+  legend?: { x: number; y: number; s: number };
 }
 
 /** Nós que o usuário inclui na árvore (o Pré-processador/Geometria é fixo). */

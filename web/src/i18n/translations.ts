@@ -465,6 +465,7 @@ export interface Translations {
     note: string;
     empty: string;
   };
+  script: { button: string; title: string; help: string; copy: string; copied: string; download: string; close: string; lines: (n: number) => string };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
   expr: {
     badNumber: (s: string) => string;
@@ -1012,6 +1013,16 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     cols: { name: 'Circuito', I: 'I (A)', turns: 'Espiras', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'R CC (Ω)', V: 'V CC (V)', P: 'Perdas I²R (W)' },
     note: 'Indutância aparente λ/I (com vários circuitos, inclui o acoplamento). R CC com fator de enchimento 1; no plano, sem as cabeceiras.',
     empty: 'Nenhum circuito. Crie em Malha › Circuitos.',
+  },
+  script: {
+    button: 'Exportar código (script que recria o modelo)',
+    title: 'Código do modelo',
+    help: 'Script da API que recria este modelo exatamente (mesmos ids). Rode no console ou envie pelo WebSocket (bridge local) para automatizar e otimizar.',
+    copy: 'Copiar',
+    copied: 'Copiado!',
+    download: 'Baixar .py',
+    close: 'Fechar',
+    lines: (n) => `${n} comandos`,
   },
   hist: {
     title: 'Histórico',
@@ -1566,6 +1577,16 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     cols: { name: 'Circuit', I: 'I (A)', turns: 'Turns', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'DC R (Ω)', V: 'DC V (V)', P: 'I²R losses (W)' },
     note: 'Apparent inductance λ/I (with several circuits it includes coupling). DC R with fill factor 1; planar excludes end turns.',
     empty: 'No circuits. Create one under Mesh › Circuits.',
+  },
+  script: {
+    button: 'Export code (script that rebuilds the model)',
+    title: 'Model code',
+    help: 'API script that rebuilds this model exactly (same ids). Run it in the console or send it over the WebSocket (local bridge) to automate and optimize.',
+    copy: 'Copy',
+    copied: 'Copied!',
+    download: 'Download .py',
+    close: 'Close',
+    lines: (n) => `${n} commands`,
   },
   hist: {
     title: 'History',

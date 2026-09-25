@@ -93,7 +93,7 @@ export default function App() {
   useEffect(() => {
     if (!ed || !viewNode || viewNode.kind !== 'view') return;
     const layers = ed.sketch.nodes.filter((n): n is PostNode => n.kind === 'post' && n.view === viewNode.id && !n.hidden);
-    ed.showSolution(viewNode.physics, layers, viewNode.level ?? 0);
+    ed.showSolution(viewNode.physics, layers, viewNode.level ?? 0, viewNode.id, viewNode.legend);
   }, [ed, viewNode, layersKey]);
   // Nó de malha selecionado: mostra os triângulos dele.
   const shownMesh = ed && treeSel.kind === 'node' && ed.sketch.nodes.some((n) => n.id === treeSel.id && n.kind === 'mesh') ? treeSel.id : null;
@@ -257,13 +257,18 @@ export default function App() {
       </header>
       {ed && tabs.active === 'draw' && (treeSel.kind === 'geometry' || treeSel.kind === 'var') ? <Toolbar ed={ed} /> : <div className="toolbar" />}
       <main className={`work${drawer ? ' drawer-open' : ''}`}>
-        {ed ? <ModelTree ed={ed} sel={treeSel} onSelect={setTreeSel} /> : <aside className="side left" />}
+        {ed ? <ModelTree ed={ed} sel={treeSel} onSelect={setTreeSel} name={name} /> : <aside className="side left" />}
         <div className="center">
           {ed && <CanvasTabBar ed={ed} onSelect={setTreeSel} />}
           <div className="canvas-wrap">
             <canvas ref={canvasRef} className="sketch" tabIndex={0} />
             {ed && (tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:') || tabs.active.startsWith('circuits:')) && <ChartPane ed={ed} tab={tabs.active} />}
             {ed && <LegendModal ed={ed} />}
+            {ed && tabs.active.startsWith('view:') && (
+              <button className="canvas-fit icon-btn" title={t.tools.fit} aria-label={t.tools.fit} onClick={() => ed.fit()}>
+                {Icons.fit}
+              </button>
+            )}
             {ed && <DimInput ed={ed} />}
             {ready !== 'ok' && <div className="overlay">{ready === 'loading' ? t.app.loading : ready}</div>}
             {ed && <StageOverlay ed={ed} sel={treeSel} />}

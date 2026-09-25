@@ -251,8 +251,9 @@ export function renameId(sk: Sketch, from: string, to: string): Sketch {
     return v;
   };
   const next = walk(sk) as Sketch;
-  const n = Number(/\d+$/.exec(to)?.[0] ?? NaN);
-  if (Number.isFinite(n)) next.nextId = Math.max(next.nextId, n + 1);
+  // Só ids do contador (p12, l3, ra53, mat7…); ids fixos como mat_1010 não mexem no contador.
+  const m = /^[a-z]+(\d+)$/.exec(to);
+  if (m) next.nextId = Math.max(next.nextId, Number(m[1]) + 1);
   return next;
 }
 
@@ -829,10 +830,19 @@ export class CommandConsole {
         this.commit({ ...sk, groups: [...sk.groups.filter((x) => x.id !== id), g], nextId: Number.isFinite(n) ? Math.max(sk.nextId, n + 1) : sk.nextId });
         return id;
       }
-      case 'next_id':
+      case 'next_id': {
         need(1);
-        this.commit({ ...sk, nextId: Math.max(sk.nextId, Number(a[0])) });
+        // Valor exato do script, mas nunca abaixo de um id já usado (p12, k40, ra7, n5…).
+        let used = 0;
+        const bump = (id: string) => {
+          const m = /^[a-z]+(\d+)$/.exec(id);
+          if (m) used = Math.max(used, Number(m[1]) + 1);
+        };
+        Object.keys(sk.entities).forEach(bump);
+        [...sk.constraints, ...sk.groups, ...sk.nodes, ...sk.regionAssigns, ...sk.boundaries, ...sk.circuits, ...sk.materials].forEach((x) => bump(x.id));
+        this.commit({ ...sk, nextId: Math.max(used, Number(a[0])) });
         return null;
+      }
       // ----- problema e árvore -----
       case 'units':
         need(1);
@@ -929,7 +939,13 @@ export class CommandConsole {
         }
         if (kw.label !== undefined) patch.labelOffset = kw.label === null ? undefined : this.xy(kw.label);
         if (kw.name !== undefined) patch.name = kw.name === null || !String(kw.name).trim() ? undefined : String(kw.name).trim();
-        this.commit(assignRegion(sk, arr, regionKey(r), patch));
+        let next = assignRegion(sk, arr, regionKey(r), patch);
+        if (kw.id !== undefined) {
+          // Id explícito (script exportado): a atribuição recém-criada recebe o id pedido.
+          const created = next.regionAssigns.find((x) => !sk.regionAssigns.some((y) => y.id === x.id));
+          if (created && created.id !== String(kw.id)) next = renameId(next, created.id, String(kw.id));
+        }
+        this.commit(next);
         return r.area;
       }
       case 'boundary': {
@@ -1031,6 +1047,10 @@ export class CommandConsole {
         if (kw.color !== undefined) patch.color = kw.color === null ? undefined : String(kw.color);
         if (kw.color_by_value !== undefined) patch.colorByValue = !!kw.color_by_value;
         if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
+        if (kw.legend !== undefined) {
+          const L = seq(kw.legend);
+          patch.legend = kw.legend === null || !L ? undefined : { x: Number(L[0]), y: Number(L[1]), s: Number(L[2] ?? 1) };
+        }
         if (kw.level !== undefined) patch.level = Math.max(1, Math.min(6, Math.round(Number(kw.level))));
         this.commit(updateNode(sk, String(a[0]), patch));
         return null;

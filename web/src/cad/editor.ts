@@ -275,10 +275,18 @@ export class SketchEditor {
     this.changed();
   }
 
-  showSolution(id: Id | null, layers: PostNode[] = [], level = 0) {
+  /** Vista mostrada e posição da legenda (salva na vista; `legendLive` durante o arraste). */
+  postView_: Id | null = null;
+  postLegend: { x: number; y: number; s: number } | undefined;
+  private legendLive: { x: number; y: number; s: number } | null = null;
+  private legendDrag: { mode: 'move' | 'resize'; start: Vec; orig: { x: number; y: number; s: number }; moved: boolean; layer: Id; lo: number; hi: number } | null = null;
+
+  showSolution(id: Id | null, layers: PostNode[] = [], level = 0, view: Id | null = null, legend?: { x: number; y: number; s: number }) {
     this.shownSolution = id;
     this.postLayers = layers;
     this.postLevel = level;
+    this.postView_ = view;
+    this.postLegend = legend;
     this.changed();
   }
 
@@ -387,7 +395,7 @@ export class SketchEditor {
       const fine = smoothSolution(sol, this.postLevel);
       for (const l of this.postLayers) layerSols.set(l.id, fine);
     }
-    return { sol: sol ?? null, layers: this.postLayers, layerSols, stale: sol ? this.solutionStale(this.shownSolution!) : false, probe: this.probeAt };
+    return { sol: sol ?? null, layers: this.postLayers, layerSols, stale: sol ? this.solutionStale(this.shownSolution!) : false, probe: this.probeAt, legend: this.legendLive ?? this.postLegend };
   }
 
   /** Régua (ferramenta de medir): não altera o desenho. */
@@ -858,7 +866,9 @@ export class SketchEditor {
     const v = new View();
     v.w = w;
     v.h = h;
-    v.fit(b, Math.round(w * 0.04));
+    // Resultados com legenda (e sem posição escolhida): reserva uma faixa à direita para ela.
+    const hasLegend = this.mode === 'post' && !this.postLegend && this.postLayers.some((l) => l.plot === 'surface' || l.colorByValue);
+    v.fit(hasLegend ? { ...b, x1: b.x1 + (b.x1 - b.x0) * 0.22 } : b, Math.round(w * 0.04));
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
@@ -881,7 +891,8 @@ export class SketchEditor {
       measure: null,
       plain: true,
       // Vista de resultados/malha: a imagem leva o campo (ou as regiões), não só a geometria.
-      post: this.mode === 'post' ? this.postView() : undefined,
+      post: this.mode === 'post' ? { ...this.postView()!, probe: null } : undefined,
+      uiScale: w / 900,
       mesh: this.mode === 'mesh' ? this.meshView() : undefined,
     });
     return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('canvas'))), type, 0.95));
@@ -1342,8 +1353,10 @@ export class SketchEditor {
       }
       const lg = this.hits.find((h) => h.kind === 'legend' && s.x >= h.x0 && s.x <= h.x1 && s.y >= h.y0 && s.y <= h.y1);
       if (lg) {
-        this.legendEdit = { layer: lg.id, lo: lg.data![0], hi: lg.data![1] };
-        this.changed();
+        // Arrastar move (ou redimensiona pela borda de baixo); clique sem mover abre os limites.
+        const ui = this.postLegend?.s ?? 1;
+        const orig = this.postLegend ?? { x: (lg.x0 + 4) / this.view.w, y: (lg.y0 + 8) / this.view.h, s: ui };
+        this.legendDrag = { mode: s.y > lg.y1 - 14 ? 'resize' : 'move', start: s, orig, moved: false, layer: lg.id, lo: lg.data![0], hi: lg.data![1] };
         return;
       }
       this.probeAt = w;
@@ -1407,11 +1420,25 @@ export class SketchEditor {
       this.changed();
       return;
     }
+    if (this.mode === 'post' && this.legendDrag) {
+      const d = this.legendDrag;
+      const dx = s.x - d.start.x, dy = s.y - d.start.y;
+      if (Math.hypot(dx, dy) > 3) d.moved = true;
+      if (d.moved) {
+        this.legendLive =
+          d.mode === 'move'
+            ? { ...d.orig, x: Math.min(0.98, Math.max(0, d.orig.x + dx / this.view.w)), y: Math.min(0.95, Math.max(0, d.orig.y + dy / this.view.h)) }
+            : { ...d.orig, s: Math.min(4, Math.max(0.4, d.orig.s * (1 + dy / (180 * d.orig.s)))) };
+        this.canvas.style.cursor = d.mode === 'move' ? 'grabbing' : 'ns-resize';
+        this.changed();
+      }
+      return;
+    }
     if (this.mode === 'post') {
       const h = this.picking ? this.hitTest(s, { entitiesOnly: true }) : null;
       this.hover = h?.kind === 'curve' ? h : null;
-      const onLegend = this.hits.some((x) => x.kind === 'legend' && s.x >= x.x0 && s.x <= x.x1 && s.y >= x.y0 && s.y <= x.y1);
-      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : onLegend ? 'pointer' : 'crosshair';
+      const lgHit = this.hits.find((x) => x.kind === 'legend' && s.x >= x.x0 && s.x <= x.x1 && s.y >= x.y0 && s.y <= x.y1);
+      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : lgHit ? (s.y > lgHit.y1 - 14 ? 'ns-resize' : 'grab') : 'crosshair';
       this.changed();
       return;
     }
@@ -1452,6 +1479,23 @@ export class SketchEditor {
   }
 
   private onUp(e: PointerEvent) {
+    const lgd = this.legendDrag;
+    if (lgd) {
+      this.legendDrag = null;
+      if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+      if (!lgd.moved) this.legendEdit = { layer: lgd.layer, lo: lgd.lo, hi: lgd.hi };
+      else if (this.legendLive && this.postView_) {
+        const L = { x: +this.legendLive.x.toFixed(4), y: +this.legendLive.y.toFixed(4), s: +this.legendLive.s.toFixed(3) };
+        this.commit(
+          { ...this.sketch, nodes: this.sketch.nodes.map((n) => (n.id === this.postView_ ? { ...n, legend: L } : n)) },
+          [`r.show(${q(this.postView_)}, legend=(${L.x}, ${L.y}, ${L.s}))`],
+        );
+        this.postLegend = L;
+      }
+      this.legendLive = null;
+      this.changed();
+      return;
+    }
     const ld = this.regionLabelDrag;
     if (ld) {
       this.regionLabelDrag = null;

@@ -45,6 +45,40 @@ test('vista interpolada (pai), legenda com limites e duplicar gráfico', async (
   await dlg.getByRole('button', { name: 'OK' }).click();
   expect((await sketch(page)).nodes.find((n: any) => n.id === hit.layer).range).toEqual([0, 0.01]);
 
+  // Legenda: arrastar move (posição salva na vista); arrastar a borda de baixo redimensiona.
+  const lg = await page.evaluate(() => {
+    const ed = (window as any).__magfem;
+    const h = ed.hits.find((x: any) => x.kind === 'legend');
+    const r = (document.querySelector('canvas.sketch') as HTMLCanvasElement).getBoundingClientRect();
+    return { x: h.x0 + 10 + r.left, y: h.y0 + 40 + r.top, yb: h.y1 - 5 + r.top };
+  });
+  await page.mouse.move(lg.x, lg.y);
+  await page.mouse.down();
+  await page.mouse.move(lg.x - 200, lg.y + 60, { steps: 6 });
+  await page.mouse.up();
+  let v1 = (await sketch(page)).nodes.find((n: any) => n.kind === 'view' && !n.level);
+  expect(v1.legend).toBeTruthy();
+  const s0 = v1.legend.s;
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const lg2 = await page.evaluate(() => {
+    const ed = (window as any).__magfem;
+    const h = ed.hits.find((x: any) => x.kind === 'legend');
+    const r = (document.querySelector('canvas.sketch') as HTMLCanvasElement).getBoundingClientRect();
+    return { x: h.x0 + 10 + r.left, y: h.y1 - 5 + r.top };
+  });
+  await page.mouse.move(lg2.x, lg2.y);
+  await page.mouse.down();
+  await page.mouse.move(lg2.x, lg2.y + 90, { steps: 6 });
+  await page.mouse.up();
+  v1 = (await sketch(page)).nodes.find((n: any) => n.kind === 'view' && !n.level);
+  expect(v1.legend.s).toBeGreaterThan(s0);
+
+  // Exportar código: o botão ao lado de Modelo mostra o script.
+  await page.getByRole('button', { name: /Exportar código/ }).click();
+  const code = page.getByRole('dialog', { name: 'Código do modelo' });
+  await expect(code.getByRole('textbox')).toHaveValue(/clear\(\)[\s\S]*g\.problem\([\s\S]*g\.point\(/);
+  await code.getByRole('button', { name: 'Fechar' }).click();
+
   // Duplicar um gráfico e trocar a grandeza na cópia.
   await page.getByRole('button', { name: 'Duplicar Superfície: B' }).first().click();
   await expect(page.getByRole('treeitem', { name: 'Superfície: B (cópia)' })).toBeVisible();
