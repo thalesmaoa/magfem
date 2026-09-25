@@ -38,7 +38,7 @@ export function HistoryConsole(props: {
   const t = useT();
   useDocVersion(ed.doc);
   const hist = ed.doc.history;
-  const cmd = useMemo(() => new CommandConsole({ doc: ed.doc, fit: () => ed.fit(), undo: () => ed.undo(), redo: () => ed.redo() }), [ed]);
+  const cmd = useMemo(() => new CommandConsole({ doc: ed.doc, fit: () => ed.fit(), undo: () => ed.undo(), redo: () => ed.redo(), mesh: (id) => void ed.generateMesh(id) }), [ed]);
   const [outs, setOuts] = useState<Out[]>([]);
   const [text, setText] = useState('');
   const [past, setPast] = useState<string[]>(loadCmdHistory);

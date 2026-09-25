@@ -54,4 +54,4 @@ Arrastar um ponto sobre outro une os dois. A cota de ângulo mede o setor onde o
 
 ## Licença
 
-Propriedade de Thales Maia. Todos os direitos reservados. Dependências: Eigen (MPL2), PlaneGCS/FreeCAD via `@salusoft89/planegcs` (LGPL).
+Propriedade de Thales Maia. Todos os direitos reservados. Dependências: Eigen (MPL2), PlaneGCS/FreeCAD via `@salusoft89/planegcs` (LGPL), Triangle 1.6 de J. R. Shewchuk (gerador de malha; uso e distribuição livres desde que sem cobrança e com o aviso de copyright — uso comercial exige acordo com o autor; o código-fonte vem do netlib no build).

@@ -560,9 +560,8 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
   // Nó ou variável que sumiu (removido/desfeito): volta para a Geometria.
   useEffect(() => {
     if ((sel.kind === 'node' && !current) || (sel.kind === 'var' && !ed.sketch.variables.some((v) => v.name === sel.name))) onSelect({ kind: 'geometry' });
-    if (sel.kind === 'material' && !ed.sketch.materials.some((m) => m.id === sel.id)) onSelect({ kind: 'mesh' });
     if (sel.kind === 'boundary' && sel.id !== 'outer' && !ed.sketch.boundaries.some((b) => b.id === sel.id)) onSelect({ kind: 'mesh' });
-  }, [sel, current, onSelect, ed.sketch.variables, ed.sketch.materials, ed.sketch.boundaries]);
+  }, [sel, current, onSelect, ed.sketch.variables, ed.sketch.boundaries]);
 
   return (
     <aside className="side left">
@@ -638,7 +637,7 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
                 }
               />
               {!closed.has(sec.key) && sec.key === 'mesh' && <MeshTree ed={ed} sel={sel} onSelect={onSelect} />}
-              {!closed.has(sec.key) && (
+              {!closed.has(sec.key) && sec.key !== 'mesh' && (
                 <ul role="group">
                   {nodes.filter(sec.match).map((n) => (
                     <NodeRow key={n.id} ed={ed} node={n} active={isOn(n.id)} onSelect={() => onSelect({ kind: 'node', id: n.id })} />

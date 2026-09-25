@@ -19,6 +19,7 @@ import { HistoryConsole } from './ui/HistoryConsole';
 import { PopoutWindow } from './ui/PopoutWindow';
 import { ModelTree } from './ui/ModelTree';
 import { RightDrawer } from './ui/RightDrawer';
+import { setDrawer, useDrawer } from './ui/drawerStore';
 import { Toolbar } from './ui/Toolbar';
 import { LazyInput } from './ui/common';
 import { useDocVersion, useEditor } from './ui/useStore';
@@ -38,7 +39,7 @@ export default function App() {
   const version = useDocVersion(doc);
   const [core, setCore] = useState<{ v?: string; err?: string }>({});
   const [treeSel, setTreeSel] = useState<TreeSel>({ kind: 'geometry' });
-  const [drawer, setDrawer] = useState(false);
+  const drawer = useDrawer().open;
   const [consoleOpen, setConsoleOpen] = useState(true);
   const [consolePopped, setConsolePopped] = useState(false);
   const [consoleHeight, setConsoleHeightState] = useState<number>(() => {
@@ -64,6 +65,11 @@ export default function App() {
   useEffect(() => {
     ed?.setMode(meshMode ? 'mesh' : 'sketch');
   }, [ed, meshMode]);
+  // Nó de malha selecionado: mostra os triângulos dele.
+  const shownMesh = ed && treeSel.kind === 'node' && ed.sketch.nodes.some((n) => n.id === treeSel.id && n.kind === 'mesh') ? treeSel.id : null;
+  useEffect(() => {
+    ed?.showMesh(shownMesh);
+  }, [ed, shownMesh]);
 
   // Solver de restrições + rascunho salvo.
   useEffect(() => {
@@ -256,7 +262,7 @@ export default function App() {
             </PopoutWindow>
           )}
         </div>
-        {ed ? <RightDrawer ed={ed} open={drawer} onToggle={() => setDrawer(!drawer)} /> : <aside className="drawer" />}
+        {ed ? <RightDrawer ed={ed} open={drawer} onToggle={() => setDrawer({ open: !drawer })} /> : <aside className="drawer" />}
       </main>
       {ed ? <StatusBar ed={ed} core={core} /> : <footer className="status" />}
       {citing && <CiteDialog onClose={() => setCiting(false)} />}

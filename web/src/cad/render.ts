@@ -95,6 +95,8 @@ export interface RenderState {
     boundaryOf: Map<Id, 'dirichlet' | 'neumann' | 'periodic' | 'antiperiodic'>;
     selectedCurves: Set<Id>;
     hoverCurve: Id | null;
+    /** Malha gerada (triângulos); `stale` = o desenho mudou depois. */
+    tri?: { xy: Float64Array; triangles: Int32Array; stale: boolean };
   };
 }
 
@@ -124,7 +126,7 @@ function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<
       });
       ctx.closePath();
     }
-    ctx.globalAlpha = r.selected ? 0.85 : r.hovered ? 0.7 : 0.5;
+    ctx.globalAlpha = (r.selected ? 0.85 : r.hovered ? 0.7 : 0.5) * (m.tri ? 0.75 : 1);
     ctx.fillStyle = r.color ?? hatch ?? COLORS.gridMajor;
     ctx.fill('evenodd');
     ctx.globalAlpha = 1;
@@ -133,6 +135,34 @@ function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<
       ctx.lineWidth = r.selected ? 3 : 2;
       ctx.stroke();
     }
+  }
+  if (m.tri) {
+    // Arestas dos triângulos num único caminho.
+    const { xy, triangles } = m.tri;
+    const sx = new Float64Array(xy.length / 2);
+    const sy = new Float64Array(xy.length / 2);
+    for (let i = 0; i < sx.length; i++) {
+      const q = v.toScreen({ x: xy[2 * i], y: xy[2 * i + 1] });
+      sx[i] = q.x;
+      sy[i] = q.y;
+    }
+    ctx.beginPath();
+    for (let t = 0; t < triangles.length; t += 3) {
+      const a = triangles[t], b = triangles[t + 1], c = triangles[t + 2];
+      ctx.moveTo(sx[a], sy[a]);
+      ctx.lineTo(sx[b], sy[b]);
+      ctx.lineTo(sx[c], sy[c]);
+      ctx.closePath();
+    }
+    // Traço escuro: os preenchimentos dos materiais são claros nos dois temas.
+    ctx.strokeStyle = '#0d1319';
+    ctx.globalAlpha = m.tri.stale ? 0.3 : 0.7;
+    ctx.lineWidth = 0.7;
+    ctx.setLineDash(m.tri.stale ? [3, 3] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    return; // com a malha à mostra, os rótulos atrapalham
   }
   ctx.font = '11px system-ui, sans-serif';
   ctx.textAlign = 'center';

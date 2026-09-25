@@ -173,7 +173,7 @@ test('unidade nas cotas e troca de unidade', async ({ page }) => {
   await typeDim(page, '50');
   await page.getByRole('treeitem', { name: /^Restrições/ }).click();
   await expect(page.getByRole('tree')).toContainText('50 mm');
-  await page.getByRole('button', { name: 'Problema', exact: true }).click();
+  await page.getByRole('button', { name: 'Problema e bibliotecas', exact: true }).click();
   await page.locator('.drawer label', { hasText: 'Unidade' }).locator('select').selectOption('cm');
   await expect(page.getByRole('tree')).toContainText('5 cm');
   // Digitar "2" em cm = 20 mm.
@@ -199,8 +199,8 @@ test('idioma EN/PT, citação e abas de etapa', async ({ page }) => {
   await page.getByRole('button', { name: 'Citar', exact: true }).click();
   await expect(dlg.locator('.cite-full')).toContainText('MAIA, Thales');
   await dlg.getByRole('button', { name: 'Fechar', exact: true }).click();
-  // Árvore: seção Malha já traz uma malha; selecioná-la mostra o aviso sobre o canvas.
-  const meshNode = page.locator('li.tnode', { hasText: 'Malha' });
+  // Árvore: seção Malha já traz "Malha 1" em Malhas; selecioná-la põe o canvas no modo malha.
+  const meshNode = page.getByRole('treeitem', { name: 'Malha 1', exact: true });
   await meshNode.click();
   // Nó de malha: canvas no modo malha (regiões/contornos), sem aviso "em construção".
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('mesh');

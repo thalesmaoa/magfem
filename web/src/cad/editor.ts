@@ -34,6 +34,9 @@ import { isCurve, isDimension, ORIGIN_ID, type BoundaryType, type Constraint, ty
 import { View } from './view';
 import { computeArrangement, findRegion, regionAt, type Arrangement } from './regions';
 import { assignOf, type RegionKey } from './mesh';
+import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
+import { solver } from '../worker/client';
+import type { TriangulateOut } from '../wasm/core';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern, type MirrorAxis } from './patterns';
@@ -166,6 +169,73 @@ export class SketchEditor {
     } catch (e) {
       this.flash((e as Error).message);
       return false;
+    }
+  }
+
+  /** Malhas geradas (não são salvas no projeto; regeráveis) por nó de malha. */
+  meshes = new Map<Id, MeshResult>();
+  /** Nó de malha sendo gerado (UI mostra "gerando…"). */
+  meshBusy: Id | null = null;
+  /** Nó de malha exibido no canvas (modo malha). */
+  shownMesh: Id | null = null;
+
+  private keyCache: { version: number; id: Id; key: string } | null = null;
+
+  /** A malha do nó está desatualizada (desenho, tamanhos ou contornos periódicos mudaram)? */
+  meshStale(id: Id): boolean {
+    const m = this.meshes.get(id);
+    if (!m) return false;
+    if (!this.keyCache || this.keyCache.version !== this.doc.version || this.keyCache.id !== id) {
+      const node = this.sketch.nodes.find((n) => n.id === id);
+      const key = node?.kind === 'mesh' ? inputKey(buildMeshInput(this.sketch, this.arrangement(), node).input) : '';
+      this.keyCache = { version: this.doc.version, id, key };
+    }
+    return this.keyCache.key !== m.key;
+  }
+
+  showMesh(id: Id | null) {
+    if (this.shownMesh === id) return;
+    this.shownMesh = id;
+    this.changed();
+  }
+
+  /** Gera a malha do nó (Triangle no Worker). Devolve o resultado ou null (erro vira mensagem). */
+  async generateMesh(id: Id): Promise<MeshResult | null> {
+    const node = this.sketch.nodes.find((n) => n.id === id);
+    if (!node || node.kind !== 'mesh') return null;
+    const arr = this.arrangement();
+    if (!arr.regions.length) {
+      this.flash(T().mesh.noRegions);
+      return null;
+    }
+    const { input } = buildMeshInput(this.sketch, arr, node);
+    this.meshBusy = id;
+    this.changed();
+    const t0 = performance.now();
+    try {
+      const out = await solver.call<TriangulateOut>({ cmd: 'triangulate', input });
+      // Atributo do Triangle = índice da região + 1.
+      const triRegion = new Int32Array(out.triRegion.length);
+      for (let i = 0; i < triRegion.length; i++) triRegion[i] = out.triRegion[i] - 1;
+      const res: MeshResult = {
+        xy: out.xy,
+        triangles: out.triangles,
+        triRegion,
+        nodes: out.xy.length / 2,
+        elements: out.triangles.length / 3,
+        minAngle: minTriangleAngle(out.xy, out.triangles),
+        key: inputKey(input),
+        ms: performance.now() - t0,
+      };
+      this.meshes.set(id, res);
+      this.shownMesh = id;
+      return res;
+    } catch (e) {
+      this.flash(T().mesh.failed((e as Error).message));
+      return null;
+    } finally {
+      this.meshBusy = null;
+      this.changed();
     }
   }
 
@@ -832,7 +902,7 @@ export class SketchEditor {
     return {
       regions: arr.regions.map((r) => {
         const a = byRegion.get(r.index);
-        const m = a ? mats.get(a.material) : undefined;
+        const m = a?.material ? mats.get(a.material) : undefined;
         return {
           outer: r.outer.poly,
           holes: r.holes.map((h) => h.poly),
@@ -846,6 +916,10 @@ export class SketchEditor {
       boundaryOf,
       selectedCurves: new Set(this.meshSel?.kind === 'curves' ? this.meshSel.ids : []),
       hoverCurve: this.meshHover?.kind === 'curve' ? this.meshHover.id : null,
+      tri: (() => {
+        const m = this.shownMesh ? this.meshes.get(this.shownMesh) : undefined;
+        return m ? { xy: m.xy, triangles: m.triangles, stale: this.meshStale(this.shownMesh!) } : undefined;
+      })(),
     };
   }
 

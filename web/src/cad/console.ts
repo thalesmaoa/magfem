@@ -29,7 +29,7 @@ import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
 import { isCurve, isDimension, ORIGIN_ID, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
-import { addMaterial, assignOf, assignRegion, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateMaterial } from './mesh';
+import { addBoundaryDef, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
 
 export type Value = number | string | boolean | null | Value[] | { tuple: Value[] } | { print: string };
@@ -223,6 +223,8 @@ export interface ConsoleHost {
   fit?: () => void;
   undo?: () => void;
   redo?: () => void;
+  /** Gera a malha do nó (assíncrono, no Worker). */
+  mesh?: (id: string) => void;
 }
 
 export interface RunResult {
@@ -795,9 +797,47 @@ export class CommandConsole {
       }
       case 'boundary': {
         need(1);
-        const type = kw.type !== undefined ? kw.type : a.length > 1 ? a[1] : 'dirichlet';
-        if (type !== null && type !== undefined && !['dirichlet', 'neumann', 'periodic', 'antiperiodic'].includes(String(type))) throw new ConsoleError(t.notFound(String(type)));
-        this.commit(setBoundary(sk, this.ids([a[0]]), (type ?? null) as BoundaryType | null));
+        const ref = kw.type !== undefined ? kw.type : a.length > 1 ? a[1] : 'dirichlet';
+        this.commit(setBoundary(sk, this.ids([a[0]]), ref === null ? null : String(ref)));
+        return null;
+      }
+      case 'boundary_def': {
+        need(1);
+        const name = String(a[0]);
+        const cur = findBoundary(sk, name);
+        const patch: { type?: BoundaryType; value?: string; name?: string } = {};
+        if (kw.type !== undefined) patch.type = String(kw.type) as BoundaryType;
+        if (kw.value !== undefined) patch.value = String(kw.value);
+        if (kw.name !== undefined) patch.name = String(kw.name);
+        if (cur) {
+          this.commit(updateBoundaryDef(sk, cur.id, patch));
+          return cur.id;
+        }
+        const r = addBoundaryDef(sk, patch.type ?? 'dirichlet', name);
+        this.commit(patch.value !== undefined ? updateBoundaryDef(r.sketch, r.boundary.id, { value: patch.value }) : r.sketch);
+        return r.boundary.id;
+      }
+      case 'mesh_size': {
+        need(1);
+        const arr = computeArrangement(sk);
+        const r = regionAtOrThrow(arr, this.xy(a[0]));
+        const v = a.length > 1 ? a[1] : kw.size;
+        this.commit(assignRegion(sk, arr, regionKey(r), { meshSize: v === null || v === undefined || v === 'auto' ? undefined : String(v) }));
+        return null;
+      }
+      case 'settings': {
+        need(1);
+        const id = String(a[0]);
+        const patch: Record<string, unknown> = {};
+        if (kw.size !== undefined) patch.size = kw.size === null || kw.size === 'auto' ? '' : String(kw.size);
+        if (kw.min_angle !== undefined) patch.minAngle = Number(kw.min_angle);
+        this.commit(updateNode(sk, id, patch));
+        return null;
+      }
+      case 'generate': {
+        const id = a.length ? String(a[0]) : sk.nodes.find((n) => n.kind === 'mesh')?.id;
+        if (!id || !this.host.mesh) throw new ConsoleError(t.notFound(String(a[0] ?? 'mesh')));
+        this.host.mesh(id);
         return null;
       }
       case 'regions': {
@@ -844,7 +884,11 @@ const NODE_METHODS = {
     material: 'material("Cobre", mur=1, sigma=58, br=0, color="#e0914f")',
     del_material: 'del_material("Cobre")',
     region: 'region((x, y), material="Cobre", current="10", turns=100, angle="90")',
-    boundary: 'boundary(["l1", "l2"], "dirichlet" | "neumann" | "periodic" | "antiperiodic" | None)',
+    boundary: 'boundary(["l1", "l2"], "nome do contorno" | "dirichlet" | "neumann" | "periodic" | "antiperiodic" | None)',
+    boundary_def: 'boundary_def("Blindagem", type="dirichlet", value="0")',
+    mesh_size: 'mesh_size((x, y), "0.5 mm" | "auto")',
+    settings: 'settings("n1", size="2 mm" | "auto", min_angle=30)',
+    generate: 'generate("n1")',
     regions: 'regions()  # [((x, y), área, material)]',
   },
   s: {

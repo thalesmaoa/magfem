@@ -375,3 +375,40 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
   border: none;
   background: none;
 }
+
+/* Seletor de material (lista agrupada) */
+.mat-picker { position: relative; margin-left: auto; }
+.mat-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 130px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: inherit; font: inherit; font-size: 11px; cursor: pointer; }
+.mat-chip span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mat-chip.none { color: #c0392b; border-style: dashed; }
+.mat-chip:hover { border-color: var(--accent); }
+.mat-chip .caret { opacity: 0.6; font-size: 9px; }
+.mat-menu { right: 0; left: auto; min-width: 220px; max-height: 360px; overflow-y: auto; z-index: 30; }
+.mat-menu button { display: flex; align-items: center; gap: 6px; width: 100%; }
+.mat-menu button .crefs { margin-left: auto; }
+.mat-menu button.on { background: var(--accent-soft); }
+.menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+.field .mat-picker { margin-left: 0; }
+
+/* Cor do tipo de contorno */
+.bswatch { display: inline-block; width: 12px; height: 4px; border-radius: 2px; vertical-align: middle; }
+.b-dirichlet { background: #d93025; }
+.b-neumann { background: #2e8b57; }
+.b-periodic { background: #8e44ad; }
+.b-antiperiodic { background: #d4880f; }
+
+/* Gaveta: abas e bibliotecas */
+.drawer-tabs { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--border); }
+.drawer-tabs button { border: none; background: none; color: var(--muted); font: inherit; font-size: 12px; padding: 6px 8px; cursor: pointer; border-bottom: 2px solid transparent; }
+.drawer-tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+.lib-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lib-list, .lib-list ul { list-style: none; margin: 0; padding: 0; }
+.lib-list .menu-label { margin-top: 8px; }
+.lib-item { display: flex; align-items: center; gap: 6px; width: 100%; border: none; background: none; color: inherit; font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 4px; cursor: pointer; text-align: left; }
+.lib-item:hover { background: var(--accent-soft); }
+.lib-item.on { background: var(--accent-soft); color: var(--accent); }
+.lib-item .crefs { margin-left: auto; }
+.lib-editor { margin: 4px 0 10px 18px; padding-left: 8px; border-left: 2px solid var(--accent-soft); }
+.help-line.strong { color: var(--accent); }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:disabled { opacity: 0.6; }

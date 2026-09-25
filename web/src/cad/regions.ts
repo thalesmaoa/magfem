@@ -43,6 +43,12 @@ export interface Arrangement {
   regions: Region[];
   /** Curvas na borda externa (um lado fora de qualquer região) — contorno A = 0 por padrão. */
   outer: Id[];
+  /** Tamanho do desenho (maior coordenada/raio). */
+  span: number;
+  /** Ponto da aresta no parâmetro normalizado u ∈ [0, 1]. */
+  sample: (e: Edge, u: number) => Vec;
+  /** Comprimento da aresta e se é curva (arco/círculo). */
+  edgeLen: (e: Edge) => { len: number; curved: boolean; angle: number };
 }
 
 type Param = { at: (t: number) => Vec; t0: number; t1: number; closed: boolean };
@@ -345,7 +351,12 @@ export function computeArrangement(sk: Sketch): Arrangement {
   for (const f of faces) for (const l of [f.outer, ...f.holes]) for (const st of l.steps) sides.set(st.edge, (sides.get(st.edge) ?? 0) + 1);
   const outer = new Set<Id>();
   for (const [e, n] of sides) if (n === 1) outer.add(edges[e].curve);
-  return { nodes, edges, regions, outer: [...outer].sort() };
+  const edgeLen = (e: Edge) => {
+    const c = curves[curveById.get(e.curve)!];
+    if (c.type === 'line') return { len: dist(sample(e, 0), sample(e, 1)), curved: false, angle: 0 };
+    return { len: c.r * (e.t1 - e.t0), curved: true, angle: e.t1 - e.t0 };
+  };
+  return { nodes, edges, regions, outer: [...outer].sort(), span, sample, edgeLen };
 }
 
 /** Região que contém o ponto (a mais interna). */

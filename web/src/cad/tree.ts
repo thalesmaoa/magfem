@@ -10,12 +10,14 @@ export type TreeSel =
   | { kind: 'node'; id: Id }
   | { kind: 'var'; name: string }
   // Malha: a seção em si (regiões/contornos no canvas), um material ou um contorno ('outer' = borda externa padrão).
-  | { kind: 'mesh' }
-  | { kind: 'material'; id: Id }
+  | { kind: 'mesh'; sub?: MeshSub }
   | { kind: 'boundary'; id: Id };
 
+/** Subseções da Malha, na ordem de trabalho. */
+export type MeshSub = 'materials' | 'boundaries' | 'regions';
+
 export const isMeshSel = (s: TreeSel, sk: { nodes: TreeNode[] }) =>
-  s.kind === 'mesh' || s.kind === 'material' || s.kind === 'boundary' || (s.kind === 'node' && sk.nodes.some((n) => n.id === s.id && n.kind === 'mesh'));
+  s.kind === 'mesh' || s.kind === 'boundary' || (s.kind === 'node' && sk.nodes.some((n) => n.id === s.id && n.kind === 'mesh'));
 
 export function addNode(sk: Sketch, kind: AddKind, name: string): { sketch: Sketch; node: TreeNode; code: string } {
   const id = `n${sk.nextId}`;

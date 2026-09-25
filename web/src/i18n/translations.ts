@@ -312,6 +312,37 @@ export interface Translations {
     noRegions: string;
     nodeHint: string;
     noRegionAt: (x: number, y: number) => string;
+    failed: (e: string) => string;
+    groups: Record<'air' | 'conductor' | 'steel' | 'magnet' | 'custom', string>;
+    group: string;
+    pickMaterial: string;
+    editLibrary: string;
+    editMaterial: string;
+    libMaterials: string;
+    libBoundaries: string;
+    newBoundary: string;
+    boundaryValue: string;
+    boundary: string;
+    newBoundaryFor: string;
+    meshSize: string;
+    auto: (v: string) => string;
+    meshes: string;
+    generate: string;
+    generating: string;
+    stats: (nodes: number, elements: number, angle: number, ms: number) => string;
+    notGenerated: string;
+    stale: string;
+    globalSize: string;
+    minAngle: string;
+    mesher: string;
+    sizeHint: string;
+    stepMaterials: string;
+    stepBoundaries: string;
+    stepRegions: string;
+    stepMeshes: string;
+    curvesOf: (n: number) => string;
+    unassigned: string;
+    elements: (n: number) => string;
     nameTaken: (n: string) => string;
   };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
@@ -402,7 +433,7 @@ const PT: Translations = {
     groupFromSelection: 'Grupo (da seleção)',
     groupNeedsSelection: 'Selecione entidades no desenho primeiro',
   },
-  drawer: { open: 'Problema', close: 'Fechar painel' },
+  drawer: { open: 'Problema e bibliotecas', close: 'Fechar painel' },
   theme: { title: 'Tema', auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' },
   phase: (n) => `Fase ${n}`,
   console: { title: 'Console', show: 'Mostrar console', hide: 'Ocultar console', popout: 'Abrir em outra janela', dock: 'Voltar para baixo do desenho', resize: 'Arraste para mudar a altura', windowTitle: 'MagFEM — console' },
@@ -710,6 +741,37 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     nodeHint: 'Geração da malha (Triangle) chega na próxima etapa. Defina antes materiais e contornos.',
     noRegionAt: (x, y) => `Nenhuma região fechada contém o ponto (${x}, ${y}).`,
     nameTaken: (n) => `Já existe um material "${n}".`,
+    failed: (e) => `Falha ao gerar a malha: ${e}`,
+    groups: { air: 'Ar e gases', conductor: 'Condutores', steel: 'Aços elétricos', magnet: 'Ímãs', custom: 'Personalizados' },
+    group: 'Grupo',
+    pickMaterial: 'Escolher material',
+    editLibrary: 'Editar biblioteca…',
+    editMaterial: 'Editar este material',
+    libMaterials: 'Materiais',
+    libBoundaries: 'Contornos',
+    newBoundary: 'Novo contorno',
+    boundaryValue: 'A prescrito (Wb/m)',
+    boundary: 'Contorno',
+    newBoundaryFor: 'Novo contorno…',
+    meshSize: 'Tamanho do elemento',
+    auto: (v) => `automático (${v})`,
+    meshes: 'Malhas',
+    generate: 'Gerar malha',
+    generating: 'Gerando…',
+    stats: (n, e, a, ms) => `${n} nós · ${e} triângulos · ângulo mín. ${a.toFixed(1)}° · ${Math.round(ms)} ms`,
+    notGenerated: 'Ainda não gerada.',
+    stale: 'O desenho ou as configurações mudaram: gere a malha de novo.',
+    globalSize: 'Tamanho padrão do elemento',
+    minAngle: 'Ângulo mínimo (qualidade, °)',
+    mesher: 'Gerador: Triangle (J. R. Shewchuk), Delaunay com qualidade.',
+    sizeHint: 'Vazio = automático. Aceita expressões com variáveis ("g/4").',
+    stepMaterials: '1. Clique numa região (aqui ou no desenho) e escolha o material.',
+    stepBoundaries: '2. Clique nas bordas no desenho (Shift para várias) e escolha o contorno. A borda externa é A = 0 por padrão.',
+    stepRegions: '3. Ajuste o tamanho dos elementos por região (vazio = automático).',
+    stepMeshes: '4. Gere a malha.',
+    curvesOf: (n) => `${n} curva${n === 1 ? '' : 's'}`,
+    unassigned: 'sem contorno (Neumann natural)',
+    elements: (n) => `${n} el.`,
   },
   hist: {
     title: 'Histórico',
@@ -805,7 +867,7 @@ const EN: Translations = {
     groupFromSelection: 'Group (from selection)',
     groupNeedsSelection: 'Select entities in the drawing first',
   },
-  drawer: { open: 'Problem', close: 'Close panel' },
+  drawer: { open: 'Problem and libraries', close: 'Close panel' },
   theme: { title: 'Theme', auto: 'automatic (follows the system)', light: 'light', dark: 'dark' },
   phase: (n) => `phase ${n}`,
   console: { title: 'Console', show: 'Show console', hide: 'Hide console', popout: 'Open in a separate window', dock: 'Dock below the drawing', resize: 'Drag to change the height', windowTitle: 'MagFEM — console' },
@@ -1113,6 +1175,37 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     nodeHint: 'Mesh generation (Triangle) comes in the next step. Set materials and boundaries first.',
     noRegionAt: (x, y) => `No closed region contains the point (${x}, ${y}).`,
     nameTaken: (n) => `A material "${n}" already exists.`,
+    failed: (e) => `Mesh generation failed: ${e}`,
+    groups: { air: 'Air and gases', conductor: 'Conductors', steel: 'Electrical steels', magnet: 'Magnets', custom: 'Custom' },
+    group: 'Group',
+    pickMaterial: 'Pick material',
+    editLibrary: 'Edit library…',
+    editMaterial: 'Edit this material',
+    libMaterials: 'Materials',
+    libBoundaries: 'Boundaries',
+    newBoundary: 'New boundary',
+    boundaryValue: 'Prescribed A (Wb/m)',
+    boundary: 'Boundary',
+    newBoundaryFor: 'New boundary…',
+    meshSize: 'Element size',
+    auto: (v) => `automatic (${v})`,
+    meshes: 'Meshes',
+    generate: 'Generate mesh',
+    generating: 'Generating…',
+    stats: (n, e, a, ms) => `${n} nodes · ${e} triangles · min angle ${a.toFixed(1)}° · ${Math.round(ms)} ms`,
+    notGenerated: 'Not generated yet.',
+    stale: 'The drawing or settings changed: generate the mesh again.',
+    globalSize: 'Default element size',
+    minAngle: 'Minimum angle (quality, °)',
+    mesher: 'Mesher: Triangle (J. R. Shewchuk), quality Delaunay.',
+    sizeHint: 'Empty = automatic. Accepts expressions with variables ("g/4").',
+    stepMaterials: '1. Click a region (here or in the drawing) and pick its material.',
+    stepBoundaries: '2. Click edges in the drawing (Shift for several) and pick the boundary. The outer border is A = 0 by default.',
+    stepRegions: '3. Adjust the element size per region (empty = automatic).',
+    stepMeshes: '4. Generate the mesh.',
+    curvesOf: (n) => `${n} curve${n === 1 ? '' : 's'}`,
+    unassigned: 'no boundary (natural Neumann)',
+    elements: (n) => `${n} el.`,
   },
   hist: {
     title: 'History',

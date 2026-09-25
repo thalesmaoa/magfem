@@ -1,29 +1,21 @@
-// Malha: árvore (materiais, regiões, contornos) e propriedades do item selecionado.
+// Malha: árvore na ordem de trabalho (Materiais → Contornos → Regiões → Malhas) e propriedades.
 import { useEffect, useState } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
-import { addMaterial, assignRegion, pointCode, regionKey, removeMaterial, setBoundary, updateMaterial } from '../cad/mesh';
-import { findRegion } from '../cad/regions';
-import type { TreeSel } from '../cad/tree';
-import type { BoundaryType, Id, Material } from '../cad/types';
+import { formatLength } from '../cad/expr';
+import { assignBoundary, assignRegion, pointCode, regionKey } from '../cad/mesh';
+import { autoSize, regionSizes, sizeOf } from '../cad/meshgen';
+import { findRegion, type Region } from '../cad/regions';
+import { addNode, removeNode, updateNode, type MeshSub, type TreeSel } from '../cad/tree';
+import type { Id, MeshNode } from '../cad/types';
 import { useT } from '../i18n';
 import { LazyInput } from './common';
+import { openDrawer } from './drawerStore';
 import { Icons } from './icons';
+import { BoundaryEditor, MaterialPicker, newBoundary, Swatch } from './Libraries';
 import { useEditor } from './useStore';
 
-const TYPES: BoundaryType[] = ['dirichlet', 'neumann', 'periodic', 'antiperiodic'];
 const UNIT_MM: Record<string, number> = { 'µm': 1e-3, mm: 1, cm: 10, m: 1000, in: 25.4 };
-
-function useTypeName() {
-  const t = useT();
-  return (k: BoundaryType) => t.mesh[k];
-}
-
-const boundaryCode = (ids: Id[], type: BoundaryType | null) => `m.boundary([${ids.map(q).join(', ')}], ${type ? q(type) : 'None'})`;
-
-const Swatch = ({ color }: { color: string | null }) => (
-  <span className="swatch" style={color ? { background: color } : undefined} aria-hidden="true" />
-);
 
 type RowProps = {
   icon: JSX.Element;
@@ -32,11 +24,12 @@ type RowProps = {
   onClick: () => void;
   extra?: React.ReactNode;
   toggle?: { open: boolean; onToggle: () => void };
+  title?: string;
 };
 
 function Row(p: RowProps) {
   return (
-    <div className={`tnode${p.selected ? ' on' : ''}`} role="treeitem" aria-selected={!!p.selected} aria-label={p.label} onClick={p.onClick}>
+    <div className={`tnode${p.selected ? ' on' : ''}`} role="treeitem" aria-selected={!!p.selected} aria-label={p.label} onClick={p.onClick} title={p.title}>
       {p.toggle ? (
         <button
           className="twisty"
@@ -58,13 +51,15 @@ function Row(p: RowProps) {
   );
 }
 
-/** Filhos de "Malha" na árvore: Materiais, Regiões e Contornos. */
+/** Código da atribuição (o ponto interno identifica a região). */
+const regionCode = (r: Region, args: string) => `m.region(${pointCode(r.label)}, ${args})`;
+
+/** Filhos de "Malha" na árvore. */
 export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel; onSelect: (s: TreeSel) => void }) {
   const t = useT();
-  const typeName = useTypeName();
   const snap = useEditor(ed);
   const sk = ed.sketch;
-  const [open, setOpen] = useState<Set<string>>(() => new Set(['regions', 'boundaries']));
+  const [open, setOpen] = useState<Set<string>>(() => new Set(['materials', 'boundaries', 'regions', 'meshes']));
   const toggle = (k: string) =>
     setOpen((o) => {
       const n = new Set(o);
@@ -76,81 +71,82 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
   const mats = new Map(sk.materials.map((m) => [m.id, m]));
   const selRegion = snap.meshSel?.kind === 'region' ? findRegion(arr, snap.meshSel) : null;
   const outer = ed.defaultOuter();
+  const sub = sel.kind === 'mesh' ? sel.sub : undefined;
+  const meshNodes = sk.nodes.filter((n): n is MeshNode => n.kind === 'mesh');
+  const unit = sk.settings.unit;
 
-  // Clique no canvas enquanto um material está aberto: as propriedades passam a ser da seleção.
+  // Clique no desenho com um contorno aberto: as propriedades passam a ser da nova seleção.
   useEffect(() => {
-    if (snap.meshSel && sel.kind === 'material') onSelect({ kind: 'mesh' });
-    if (sel.kind === 'boundary' && snap.meshSel?.kind !== 'curves') onSelect({ kind: 'mesh' });
+    if (sel.kind === 'boundary' && snap.meshSel?.kind !== 'curves') onSelect({ kind: 'mesh', sub: 'boundaries' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snap.meshSel]);
 
-  const addMat = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const r = addMaterial(sk);
-    if (ed.commit(r.sketch, [`m.material(${q(r.material.name)}, mur=1, sigma=0)`])) {
-      setOpen((o) => new Set(o).add('materials'));
-      ed.selectCurves([]);
-      onSelect({ kind: 'material', id: r.material.id });
-    }
+  const section = (key: MeshSub | 'meshes', icon: JSX.Element, label: string, extra?: React.ReactNode) => (
+    <Row
+      icon={icon}
+      label={label}
+      selected={key !== 'meshes' && sub === key && !snap.meshSel}
+      toggle={{ open: open.has(key), onToggle: () => toggle(key) }}
+      onClick={() => {
+        if (key === 'meshes') return toggle(key);
+        ed.selectCurves([]);
+        onSelect({ kind: 'mesh', sub: key });
+        setOpen((o) => new Set(o).add(key));
+      }}
+      extra={extra}
+    />
+  );
+  const pickRegion = (r: Region, s: MeshSub) => {
+    onSelect({ kind: 'mesh', sub: s });
+    ed.selectRegion(r.index);
   };
+  const sizes = meshNodes[0] ? regionSizes(sk, arr, meshNodes[0]) : [];
 
   return (
     <ul role="group">
+      {/* 1. Materiais: uma linha por região; o material vem de uma lista agrupada. */}
       <li>
-        <Row
-          icon={Icons.material}
-          label={`${t.mesh.materials} (${sk.materials.length})`}
-          toggle={{ open: open.has('materials'), onToggle: () => toggle('materials') }}
-          onClick={() => toggle('materials')}
-          extra={
-            <button className="icon-btn tadd" title={t.mesh.addMaterial} aria-label={t.mesh.addMaterial} onClick={addMat}>
-              +
-            </button>
-          }
-        />
-        {open.has('materials') && (
-          <ul role="group">
-            {sk.materials.map((m) => (
-              <li key={m.id}>
-                <Row
-                  icon={<Swatch color={m.color} />}
-                  label={m.name}
-                  selected={sel.kind === 'material' && sel.id === m.id}
-                  onClick={() => {
-                    ed.selectCurves([]);
-                    onSelect({ kind: 'material', id: m.id });
-                  }}
-                  extra={<span className="crefs">{m.bh ? 'B-H' : m.br ? `Br ${m.br} T` : `μr ${m.mur}`}</span>}
-                />
-              </li>
-            ))}
-          </ul>
+        {section(
+          'materials',
+          Icons.material,
+          t.mesh.materials,
+          <button
+            className="icon-btn"
+            title={t.mesh.editLibrary}
+            aria-label={t.mesh.editLibrary}
+            onClick={(e) => {
+              e.stopPropagation();
+              openDrawer('materials');
+            }}
+          >
+            ⋯
+          </button>,
         )}
-      </li>
-      <li>
-        <Row
-          icon={Icons.region}
-          label={`${t.mesh.regions} (${arr.regions.length})`}
-          toggle={{ open: open.has('regions'), onToggle: () => toggle('regions') }}
-          onClick={() => toggle('regions')}
-        />
-        {open.has('regions') && (
+        {open.has('materials') && (
           <ul role="group">
             {!arr.regions.length && <li className="muted tnote">{t.mesh.noRegions}</li>}
             {arr.regions.map((r) => {
               const a = ed.assignOf(regionKey(r));
-              const m = a ? mats.get(a.material) : undefined;
+              const m = a?.material ? mats.get(a.material) : undefined;
               return (
                 <li key={r.index}>
                   <Row
-                    icon={<Swatch color={m?.color ?? null} />}
+                    icon={<Swatch color={m?.color} />}
                     label={t.mesh.region(r.index + 1)}
-                    selected={selRegion === r}
-                    onClick={() => {
-                      onSelect({ kind: 'mesh' });
-                      ed.selectRegion(r.index);
-                    }}
-                    extra={<span className={`crefs${m ? '' : ' bad'}`}>{m?.name ?? t.mesh.noMaterial}</span>}
+                    selected={selRegion === r && sub !== 'regions'}
+                    onClick={() => pickRegion(r, 'materials')}
+                    extra={
+                      <MaterialPicker
+                        ed={ed}
+                        value={a?.material}
+                        label={`${t.mesh.pickMaterial}: ${t.mesh.region(r.index + 1)}`}
+                        onPick={(id) => {
+                          const mm = ed.sketch.materials.find((x) => x.id === id);
+                          if (mm) ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), { material: id }), regionCode(r, `material=${q(mm.name)}`));
+                          pickRegion(r, 'materials');
+                        }}
+                      />
+                    }
                   />
                 </li>
               );
@@ -158,58 +154,149 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
           </ul>
         )}
       </li>
+      {/* 2. Contornos: propriedades (como no FEMM) e as curvas de cada uma. */}
       <li>
-        <Row
-          icon={Icons.boundary}
-          label={`${t.mesh.boundaries} (${sk.boundaries.length + (outer.length ? 1 : 0)})`}
-          toggle={{ open: open.has('boundaries'), onToggle: () => toggle('boundaries') }}
-          onClick={() => toggle('boundaries')}
-        />
+        {section(
+          'boundaries',
+          Icons.boundary,
+          t.mesh.boundaries,
+          <button
+            className="icon-btn tadd"
+            title={t.mesh.newBoundary}
+            aria-label={t.mesh.newBoundary}
+            onClick={(e) => {
+              e.stopPropagation();
+              const id = newBoundary(ed);
+              if (id) {
+                ed.selectCurves([]);
+                onSelect({ kind: 'boundary', id });
+                setOpen((o) => new Set(o).add('boundaries'));
+              }
+            }}
+          >
+            +
+          </button>,
+        )}
         {open.has('boundaries') && (
           <ul role="group">
             {outer.length > 0 && (
               <li>
                 <Row
-                  icon={Icons.boundary}
+                  icon={<span className="bswatch b-dirichlet" />}
                   label={t.mesh.outerDefault}
                   selected={sel.kind === 'boundary' && sel.id === 'outer'}
                   onClick={() => {
                     ed.selectCurves(outer);
                     onSelect({ kind: 'boundary', id: 'outer' });
                   }}
-                  extra={<span className="crefs">{outer.length}</span>}
+                  extra={<span className="crefs">{t.mesh.curvesOf(outer.length)}</span>}
                 />
               </li>
             )}
             {sk.boundaries.map((b) => (
               <li key={b.id}>
                 <Row
-                  icon={Icons.boundary}
+                  icon={<span className={`bswatch b-${b.type}`} />}
                   label={b.name}
                   selected={sel.kind === 'boundary' && sel.id === b.id}
                   onClick={() => {
                     ed.selectCurves(b.curves);
                     onSelect({ kind: 'boundary', id: b.id });
                   }}
-                  extra={
-                    <>
-                      <span className="crefs">{typeName(b.type)}</span>
-                      <button
-                        className="x"
-                        title={t.mesh.removeBoundary}
-                        aria-label={`${t.mesh.removeBoundary} ${b.name}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          ed.meshOp((s) => setBoundary(s, b.curves, null), boundaryCode(b.curves, null));
-                        }}
-                      >
-                        ×
-                      </button>
-                    </>
-                  }
+                  extra={<span className="crefs">{t.mesh.curvesOf(b.curves.length)}</span>}
                 />
               </li>
             ))}
+          </ul>
+        )}
+      </li>
+      {/* 3. Regiões: tamanho do elemento por região (automático por padrão). */}
+      <li>
+        {section('regions', Icons.region, t.mesh.regions)}
+        {open.has('regions') && (
+          <ul role="group">
+            {arr.regions.map((r) => {
+              const a = ed.assignOf(regionKey(r));
+              const own = sizeOf(sk, a?.meshSize);
+              return (
+                <li key={r.index}>
+                  <Row
+                    icon={Icons.region}
+                    label={t.mesh.region(r.index + 1)}
+                    selected={selRegion === r && sub === 'regions'}
+                    onClick={() => pickRegion(r, 'regions')}
+                    extra={<span className="crefs">{own ? formatLength(own, unit) : sizes[r.index] ? `auto · ${formatLength(sizes[r.index], unit)}` : 'auto'}</span>}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </li>
+      {/* 4. Malhas: configurações globais e o botão de gerar. */}
+      <li>
+        {section(
+          'meshes',
+          Icons.treeMesh,
+          t.mesh.meshes,
+          <button
+            className="icon-btn tadd"
+            title={t.tree.addToMesh}
+            aria-label={t.tree.addToMesh}
+            onClick={(e) => {
+              e.stopPropagation();
+              const r = addNode(sk, 'mesh', `${t.tree.addMesh} ${meshNodes.length + 1}`);
+              if (ed.commit(r.sketch, [r.code])) onSelect({ kind: 'node', id: r.node.id });
+            }}
+          >
+            +
+          </button>,
+        )}
+        {open.has('meshes') && (
+          <ul role="group">
+            {meshNodes.map((n) => {
+              const m = ed.meshes.get(n.id);
+              const stale = ed.meshStale(n.id);
+              return (
+                <li key={n.id}>
+                  <Row
+                    icon={Icons.treeMesh}
+                    label={n.name}
+                    selected={sel.kind === 'node' && sel.id === n.id}
+                    onClick={() => onSelect({ kind: 'node', id: n.id })}
+                    extra={
+                      <>
+                        <span className={`crefs${stale ? ' bad' : ''}`}>{ed.meshBusy === n.id ? t.mesh.generating : m ? t.mesh.elements(m.elements) : '—'}</span>
+                        <button
+                          className="icon-btn"
+                          title={t.mesh.generate}
+                          aria-label={`${t.mesh.generate}: ${n.name}`}
+                          disabled={ed.meshBusy !== null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelect({ kind: 'node', id: n.id });
+                            void ed.generateMesh(n.id);
+                          }}
+                        >
+                          ▶
+                        </button>
+                        <button
+                          className="x"
+                          title={t.tree.remove}
+                          aria-label={`${t.tree.remove} ${n.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            ed.commit(removeNode(ed.sketch, n.id), [`m.remove(${q(n.id)})`]);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </>
+                    }
+                  />
+                </li>
+              );
+            })}
           </ul>
         )}
       </li>
@@ -217,48 +304,46 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
   );
 }
 
-/** Propriedades no modo malha: material, região selecionada ou curvas selecionadas. */
+/** Propriedades no modo malha. */
 export function MeshProps({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel; onSelect: (s: TreeSel) => void }) {
   const t = useT();
   const snap = useEditor(ed);
-  const node = sel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === sel.id) : null;
+  const node = sel.kind === 'node' ? ed.sketch.nodes.find((n): n is MeshNode => n.id === sel.id && n.kind === 'mesh') : undefined;
+  const sub = sel.kind === 'mesh' ? sel.sub : undefined;
   let body: JSX.Element;
-  if (sel.kind === 'material') body = <MaterialProps ed={ed} id={sel.id} onRemoved={() => onSelect({ kind: 'mesh' })} />;
-  else if (snap.meshSel?.kind === 'region') body = <RegionProps ed={ed} />;
-  else if (snap.meshSel?.kind === 'curves') body = <CurvesProps ed={ed} ids={snap.meshSel.ids} />;
+  if (node) body = <MeshNodeProps ed={ed} node={node} />;
+  else if (sel.kind === 'boundary' && sel.id !== 'outer') body = <BoundaryProps ed={ed} id={sel.id} onRemoved={() => onSelect({ kind: 'mesh', sub: 'boundaries' })} />;
+  else if (snap.meshSel?.kind === 'region') body = sub === 'regions' ? <RegionSizeProps ed={ed} /> : <RegionMaterialProps ed={ed} />;
+  else if (snap.meshSel?.kind === 'curves') body = <CurvesProps ed={ed} ids={snap.meshSel.ids} onNew={(id) => onSelect({ kind: 'boundary', id })} />;
   else
     body = (
       <section>
-        <p className="help-line">{t.mesh.hint}</p>
+        <h3>{t.tree.addMesh}</h3>
+        {(['materials', 'boundaries', 'regions'] as const).map((k, i) => (
+          <p key={k} className={`help-line${sub === k ? ' strong' : ''}`}>
+            {[t.mesh.stepMaterials, t.mesh.stepBoundaries, t.mesh.stepRegions][i]}
+          </p>
+        ))}
+        <p className="help-line">{t.mesh.stepMeshes}</p>
       </section>
     );
-  return (
-    <div className="props-body">
-      {node && (
-        <section>
-          <h3>
-            {t.tree.meshProps}: {node.name}
-          </h3>
-          <p className="muted">{t.mesh.nodeHint}</p>
-        </section>
-      )}
-      {body}
-    </div>
-  );
+  return <div className="props-body">{body}</div>;
 }
 
-function RegionProps({ ed }: { ed: SketchEditor }) {
+function selectedRegion(ed: SketchEditor): Region | null {
+  const key = ed.meshSel?.kind === 'region' ? ed.meshSel : null;
+  return key ? findRegion(ed.arrangement(), key) : null;
+}
+
+function RegionMaterialProps({ ed }: { ed: SketchEditor }) {
   const t = useT();
   const sk = ed.sketch;
-  const arr = ed.arrangement();
-  const key = ed.meshSel?.kind === 'region' ? ed.meshSel : null;
-  const r = key ? findRegion(arr, key) : null;
+  const r = selectedRegion(ed);
   if (!r) return null;
   const a = ed.assignOf(regionKey(r));
-  const m = a ? sk.materials.find((x) => x.id === a.material) : undefined;
+  const m = a?.material ? sk.materials.find((x) => x.id === a.material) : undefined;
   const f = UNIT_MM[sk.settings.unit] ?? 1;
-  const at = pointCode(r.label);
-  const set = (patch: Parameters<typeof assignRegion>[3], code: string) => ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), patch), `m.region(${at}, ${code})`);
+  const set = (patch: Parameters<typeof assignRegion>[3], code: string) => ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), patch), regionCode(r, code));
   return (
     <section>
       <h3>{t.mesh.region(r.index + 1)}</h3>
@@ -268,24 +353,17 @@ function RegionProps({ ed }: { ed: SketchEditor }) {
           {Number((r.area / (f * f)).toPrecision(6))} {sk.settings.unit}²
         </span>
       </label>
-      <label className="field">
+      <div className="field">
         <span>{t.mesh.material}</span>
-        <select
-          aria-label={t.mesh.material}
-          value={m?.id ?? ''}
-          onChange={(e) => {
-            const mm = sk.materials.find((x) => x.id === e.target.value);
-            if (mm) set({ material: mm.id }, `material=${q(mm.name)}`);
+        <MaterialPicker
+          ed={ed}
+          value={a?.material}
+          onPick={(id) => {
+            const mm = ed.sketch.materials.find((x) => x.id === id);
+            if (mm) set({ material: id }, `material=${q(mm.name)}`);
           }}
-        >
-          {!m && <option value="">{t.mesh.none}</option>}
-          {sk.materials.map((x) => (
-            <option key={x.id} value={x.id}>
-              {x.name}
-            </option>
-          ))}
-        </select>
-      </label>
+        />
+      </div>
       {m && (
         <>
           <label className="field">
@@ -312,104 +390,143 @@ function RegionProps({ ed }: { ed: SketchEditor }) {
               <LazyInput value={a?.magnetAngle ?? ''} placeholder="0" ariaLabel={t.mesh.magnetAngle} onCommit={(v) => set({ magnetAngle: v.trim() || undefined }, `angle=${v.trim() ? q(v.trim()) : 'None'}`)} />
             </label>
           )}
+          <button className="btn" onClick={() => openDrawer('materials', m.id)}>
+            {t.mesh.editMaterial}
+          </button>
         </>
       )}
     </section>
   );
 }
 
-function CurvesProps({ ed, ids }: { ed: SketchEditor; ids: Id[] }) {
+function RegionSizeProps({ ed }: { ed: SketchEditor }) {
   const t = useT();
-  const typeName = useTypeName();
+  const sk = ed.sketch;
+  const r = selectedRegion(ed);
+  const node = sk.nodes.find((n): n is MeshNode => n.kind === 'mesh');
+  if (!r) return null;
+  const a = ed.assignOf(regionKey(r));
+  // Tamanho automático desta região (ignora o valor próprio dela).
+  const withoutOwn = { ...sk, regionAssigns: sk.regionAssigns.filter((x) => x.id !== a?.id) };
+  const auto = node ? regionSizes(withoutOwn, ed.arrangement(), node)[r.index] : autoSize(ed.arrangement());
+  const own = a?.meshSize ?? '';
+  const bad = own.trim() !== '' && sizeOf(sk, own) === null;
+  return (
+    <section>
+      <h3>{t.mesh.region(r.index + 1)}</h3>
+      <label className="field">
+        <span>{t.mesh.meshSize}</span>
+        <LazyInput
+          value={own}
+          className={bad ? 'bad' : ''}
+          placeholder={t.mesh.auto(formatLength(auto, sk.settings.unit))}
+          ariaLabel={t.mesh.meshSize}
+          onCommit={(v) =>
+            ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), { meshSize: v.trim() || undefined }), `m.mesh_size(${pointCode(r.label)}, ${v.trim() ? q(v.trim()) : '"auto"'})`)
+          }
+        />
+      </label>
+      <p className="help-line">{t.mesh.sizeHint}</p>
+    </section>
+  );
+}
+
+function BoundaryProps({ ed, id, onRemoved }: { ed: SketchEditor; id: Id; onRemoved: () => void }) {
+  const t = useT();
+  return (
+    <section>
+      <h3>{t.mesh.boundary}</h3>
+      <BoundaryEditor ed={ed} id={id} onRemoved={onRemoved} />
+    </section>
+  );
+}
+
+/** Curvas selecionadas no desenho: escolher a propriedade de contorno. */
+function CurvesProps({ ed, ids, onNew }: { ed: SketchEditor; ids: Id[]; onNew: (id: Id) => void }) {
+  const t = useT();
   const sk = ed.sketch;
   const outer = new Set(ed.defaultOuter());
-  const typeOf = (id: Id): BoundaryType | '' => sk.boundaries.find((b) => b.curves.includes(id))?.type ?? (outer.has(id) ? 'dirichlet' : '');
-  const types = new Set(ids.map(typeOf));
-  const current = types.size === 1 ? [...types][0] : 'mixed';
-  const isDefault = ids.every((id) => outer.has(id));
+  const of = (c: Id) => sk.boundaries.find((b) => b.curves.includes(c))?.id ?? (outer.has(c) ? 'outer' : '');
+  const kinds = new Set(ids.map(of));
+  const current = kinds.size === 1 ? [...kinds][0] : 'mixed';
+  const code = (ref: string | null) => `m.boundary([${ids.map(q).join(', ')}], ${ref ? q(ref) : 'None'})`;
   return (
     <section>
       <h3>{t.mesh.boundaries}</h3>
-      <p className="muted">{t.mesh.curves(ids.length)}{isDefault ? ` · ${t.mesh.outerDefault}` : ''}</p>
+      <p className="muted">{t.mesh.curves(ids.length)}</p>
       <label className="field">
-        <span>{t.mesh.boundaryType}</span>
+        <span>{t.mesh.boundary}</span>
         <select
-          aria-label={t.mesh.boundaryType}
+          aria-label={t.mesh.boundary}
           value={current}
           onChange={(e) => {
-            const v = e.target.value as BoundaryType | '';
-            ed.meshOp((s) => setBoundary(s, ids, v || null), boundaryCode(ids, v || null));
+            const v = e.target.value;
+            if (v === '__new') {
+              const nid = newBoundary(ed);
+              const name = ed.sketch.boundaries.find((b) => b.id === nid)?.name ?? null;
+              if (nid && ed.meshOp((s) => assignBoundary(s, ids, nid), code(name))) onNew(nid);
+              return;
+            }
+            const b = sk.boundaries.find((x) => x.id === v);
+            ed.meshOp((s) => assignBoundary(s, ids, b ? b.id : null), code(b ? b.name : null));
           }}
         >
           {current === 'mixed' && <option value="mixed">—</option>}
-          <option value="">{t.mesh.none}</option>
-          {TYPES.map((k) => (
-            <option key={k} value={k} disabled={(k === 'periodic' || k === 'antiperiodic') && ids.length !== 2}>
-              {typeName(k)}
+          {current === 'outer' && <option value="outer">{t.mesh.outerDefault}</option>}
+          {current !== 'outer' && <option value="">{t.mesh.unassigned}</option>}
+          {sk.boundaries.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name} · {t.mesh[b.type]}
             </option>
           ))}
+          <option value="__new">{t.mesh.newBoundaryFor}</option>
         </select>
       </label>
-      {ids.length !== 2 && <p className="help-line">{t.mesh.periodicNeedsTwo}</p>}
     </section>
   );
 }
 
-function MaterialProps({ ed, id, onRemoved }: { ed: SketchEditor; id: Id; onRemoved: () => void }) {
+function MeshNodeProps({ ed, node }: { ed: SketchEditor; node: MeshNode }) {
   const t = useT();
   const sk = ed.sketch;
-  const m = sk.materials.find((x) => x.id === id);
-  if (!m) return null;
-  const set = (patch: Partial<Material>, code: string) => ed.meshOp((s) => updateMaterial(s, id, patch), `m.material(${q(m.name)}, ${code})`);
-  const num = (label: string, key: 'mur' | 'sigma' | 'br', allowEmpty = false) => (
-    <label className="field">
-      <span>{label}</span>
-      <LazyInput
-        value={m[key] !== undefined ? String(m[key]) : ''}
-        ariaLabel={label}
-        placeholder={allowEmpty ? '—' : undefined}
-        onCommit={(v) => {
-          if (allowEmpty && !v.trim()) return set({ [key]: undefined }, `${key}=0`);
-          const n = Number(v.replace(',', '.'));
-          if (!Number.isFinite(n) || n < 0 || (key === 'mur' && n <= 0)) return ed.flash(t.msg.positive);
-          set({ [key]: n }, `${key}=${n}`);
-        }}
-      />
-    </label>
-  );
+  const m = ed.meshes.get(node.id);
+  const stale = ed.meshStale(node.id);
+  const auto = autoSize(ed.arrangement());
+  const set = (patch: Partial<MeshNode>, code: string) => ed.commit(updateNode(sk, node.id, patch), [code]);
+  const badSize = !!node.size?.trim() && sizeOf(sk, node.size) === null;
   return (
     <section>
-      <h3>{t.mesh.material}</h3>
+      <h3>
+        {t.tree.meshProps}: {node.name}
+      </h3>
       <label className="field">
-        <span>{t.mesh.name}</span>
+        <span>{t.mesh.globalSize}</span>
         <LazyInput
-          value={m.name}
-          ariaLabel={t.mesh.name}
-          onCommit={(v) => v.trim() && v.trim() !== m.name && set({ name: v.trim() }, `name=${q(v.trim())}`)}
+          value={node.size ?? ''}
+          className={badSize ? 'bad' : ''}
+          placeholder={t.mesh.auto(formatLength(auto, sk.settings.unit))}
+          ariaLabel={t.mesh.globalSize}
+          onCommit={(v) => set({ size: v.trim() }, `m.settings(${q(node.id)}, size=${v.trim() ? q(v.trim()) : '"auto"'})`)}
         />
       </label>
       <label className="field">
-        <span>{t.mesh.color}</span>
-        <input type="color" aria-label={t.mesh.color} value={m.color} onChange={(e) => set({ color: e.target.value }, `color=${q(e.target.value)}`)} />
+        <span>{t.mesh.minAngle}</span>
+        <LazyInput
+          value={String(node.minAngle ?? 30)}
+          ariaLabel={t.mesh.minAngle}
+          onCommit={(v) => {
+            const n = Number(v.replace(',', '.'));
+            if (!(n >= 0 && n <= 34)) return ed.flash('0 – 34°');
+            set({ minAngle: n }, `m.settings(${q(node.id)}, min_angle=${n})`);
+          }}
+        />
       </label>
-      {num(t.mesh.mur, 'mur')}
-      {num(t.mesh.sigma, 'sigma')}
-      {num(t.mesh.br, 'br', true)}
-      {m.bh && (
-        <label className="field">
-          <span>{t.mesh.bh}</span>
-          <span className="cval">{t.mesh.bhPoints(m.bh.length)}</span>
-        </label>
-      )}
-      <button
-        className="btn danger"
-        onClick={() => {
-          if (ed.meshOp((s) => removeMaterial(s, id), `m.del_material(${q(m.name)})`)) onRemoved();
-        }}
-      >
-        {t.mesh.removeMaterial}
+      <button className="btn primary" disabled={ed.meshBusy !== null} onClick={() => void ed.generateMesh(node.id)}>
+        {ed.meshBusy === node.id ? t.mesh.generating : `▶ ${t.mesh.generate}`}
       </button>
+      <p className={stale ? 'err-text' : 'muted'}>{m ? (stale ? t.mesh.stale : t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)) : t.mesh.notGenerated}</p>
+      {m && stale && <p className="muted">{t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)}</p>}
+      <p className="help-line">{t.mesh.mesher}</p>
     </section>
   );
 }
-

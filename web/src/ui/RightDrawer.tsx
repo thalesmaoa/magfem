@@ -5,6 +5,8 @@ import { asLength, DISPLAY_UNITS, evaluate, evaluateVariables, type LengthUnit }
 import type { ProblemType, Settings } from '../cad/types';
 import { useT } from '../i18n';
 import { useDocVersion, useEditor } from './useStore';
+import { setDrawer, useDrawer, type DrawerTab } from './drawerStore';
+import { BoundaryLibrary, MaterialLibrary } from './Libraries';
 
 function ProblemPanel({ ed }: { ed: SketchEditor }) {
   const t = useT();
@@ -53,20 +55,35 @@ function ProblemPanel({ ed }: { ed: SketchEditor }) {
   );
 }
 
-/** Gaveta da direita (oculta por padrão): configurações do Problema. */
+/** Gaveta da direita (oculta por padrão): Problema e bibliotecas de materiais e contornos. */
 export function RightDrawer({ ed, open, onToggle }: { ed: SketchEditor; open: boolean; onToggle: () => void }) {
   const t = useT();
   useDocVersion(ed.doc);
   useEditor(ed);
+  const d = useDrawer();
+  const tabs: [DrawerTab, string][] = [
+    ['problem', t.problem.title],
+    ['materials', t.mesh.libMaterials],
+    ['boundaries', t.mesh.libBoundaries],
+  ];
   return (
     <aside className={`drawer${open ? ' open' : ''}`}>
       <button className="drawer-tab" onClick={onToggle} aria-expanded={open} aria-label={open ? t.drawer.close : t.drawer.open} title={open ? t.drawer.close : t.drawer.open}>
         <span>{open ? '›' : '‹'}</span>
-        <span className="drawer-tab-label">{t.problem.title}</span>
+        <span className="drawer-tab-label">{t.drawer.open}</span>
       </button>
       {open && (
         <div className="drawer-body side">
-          <ProblemPanel ed={ed} />
+          <div className="drawer-tabs" role="tablist">
+            {tabs.map(([k, label]) => (
+              <button key={k} role="tab" aria-selected={d.tab === k} className={d.tab === k ? 'on' : ''} onClick={() => setDrawer({ tab: k, focus: null })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {d.tab === 'problem' && <ProblemPanel ed={ed} />}
+          {d.tab === 'materials' && <MaterialLibrary ed={ed} focus={d.focus} onFocus={(id) => setDrawer({ focus: id })} />}
+          {d.tab === 'boundaries' && <BoundaryLibrary ed={ed} focus={d.focus} onFocus={(id) => setDrawer({ focus: id })} />}
         </div>
       )}
     </aside>

@@ -36,7 +36,10 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
     groups: raw.groups ?? [],
     settings: { unit: raw.settings?.unit ?? DEFAULT_SETTINGS.unit, problem: raw.settings?.problem ?? DEFAULT_SETTINGS.problem, depth: raw.settings?.depth ?? DEFAULT_SETTINGS.depth },
     nodes: raw.nodes ?? [],
-    materials: raw.materials ?? DEFAULT_MATERIALS.map((m) => ({ ...m })),
+    materials: (raw.materials ?? DEFAULT_MATERIALS.map((m) => ({ ...m }))).map((m) => ({
+      ...m,
+      group: m.group ?? DEFAULT_MATERIALS.find((d) => d.id === m.id)?.group ?? 'custom',
+    })),
     regionAssigns: raw.regionAssigns ?? [],
     boundaries: raw.boundaries ?? [],
     nextId: typeof raw.nextId === 'number' ? raw.nextId : 1,

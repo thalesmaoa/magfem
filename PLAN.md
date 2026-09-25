@@ -90,8 +90,17 @@ Limitações conhecidas / ideias para depois:
 - [x] Correção: a linha de chamada da cota ponto-linha saía do pé da perpendicular (no prolongamento da linha); agora parte do segmento.
 - [x] Testes: 40 unitários + 46 E2E.
 
+### [✅ CONCLUÍDA] Rodada 10 — Malha reorganizada e geração da malha (Fase 5, parte 1)
+- [x] Árvore da Malha na ordem de trabalho: **Materiais** (uma linha por região, material escolhido numa lista agrupada: Ar e gases, Condutores, Aços elétricos, Ímãs, Personalizados; "Novo material" e "Editar biblioteca"), **Contornos** (propriedades nomeadas como no FEMM, borda externa A = 0 por padrão), **Regiões** (tamanho do elemento por região, vazio = automático) e **Malhas** (tamanho padrão, ângulo mínimo, ▶ gerar, estatísticas, aviso de malha desatualizada).
+- [x] Gaveta da direita com abas: Problema, Materiais (biblioteca agrupada e editável) e Contornos (tipo, A prescrito).
+- [x] Núcleo C++: Triangle 1.6 (FetchContent do netlib) com `triangulate_pslg` (regiões com atributo e área máxima, qualidade por ângulo mínimo, borda sem pontos novos para casar contornos periódicos); binding WASM `triangulate` no Worker (185 KB); teste nativo `test_mesh2d`.
+- [x] PSLG em TS (`cad/meshgen.ts`): curvas discretizadas pelo tamanho das regiões vizinhas, arcos com passo ≤ 7,5°, pares periódicos com o mesmo número de divisões; assinatura da entrada detecta malha desatualizada.
+- [x] Console: `m.boundary_def`, `m.mesh_size`, `m.settings`, `m.generate`; `m.boundary(ids, "nome" | tipo | None)`.
+- [x] Testes: 40 unitários + 2 nativos + 47 E2E.
+
 ### Próximo possível
-- Gerar a malha (Triangle em WASM, tamanho por região) no (+) de Malha e visualizá-la (Fase 5).
+- Solver magnetostático linear sobre a malha (Fase 6): montagem P1 em C++/Eigen, fontes de corrente, ímãs, Dirichlet/Neumann/(anti)periódico; mapa de |B| e linhas de fluxo.
+- Refinos da malha: tamanho por curva, gradação, visualização da qualidade.
 - Importar DXF/SVG no menu Arquivo; aparar (trim) para fechar regiões.
 
 ### [⏳ PENDENTE] Fases 3–9
