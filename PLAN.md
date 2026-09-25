@@ -66,7 +66,7 @@ Limitações conhecidas / ideias para depois:
 - [x] Offset (O), Espelhar (eixo X/Y/linha), Padrão linear (x, y) e Padrão circular — copiam as restrições internas; resultado vira grupo; também no console.
 - [x] Árvore com as 4 seções fixas: Geometria, Malha, Solucionador, Resultados (cada uma com seu +).
 - [x] Graus de liberdade em negrito até chegar a zero; renomear projeto com duplo clique no topo; correção: caixa de renomear fecha com Esc/clique fora.
-- [x] Ícone MagFEM (ímã em ferradura malhado + linhas de fluxo; ver `docs/logo/`), ícones no menu de arquivo, **Exportar** SVG/DXF (mm) e PNG/JPG.
+- [x] Ícone MagFEM (ímã em ferradura malhado + linhas de fluxo; ver `doc/logo/`), ícones no menu de arquivo, **Exportar** SVG/DXF (mm) e PNG/JPG.
 - [x] Tema escuro (automático/claro/escuro), inclusive o canvas; exportação de imagem sempre clara.
 - [x] Testes: 30 unitários + 36 E2E.
 
@@ -106,8 +106,28 @@ Limitações conhecidas / ideias para depois:
 - [x] Console: `s.solve("n2")`, `r.show("n3", map=, lines=, n_lines=)`.
 - [x] Testes: 41 unitários + 3 nativos + 51 E2E (inclui faixa com corrente conferida com a analítica pela sonda).
 
+### [✅ CONCLUÍDA] Rodadas 12–16 — Resultados tipo ParaView, circuitos, não linear, transitório
+- [x] Resultados em abas: + da física → Mapa de campo, Mapa interpolado, Gráfico sobre linha, Resultados (valores), Circuitos; camadas duplicáveis/movíveis; legenda móvel/redimensionável com limites; exportação PNG/SVG/CSV; barra superior por aba.
+- [x] Circuitos (FEMM): corrente × espiras; λ, L = λ/I, R, perdas. Tabelas com integrais sobre linha e de superfície; variáveis de resultado (S1_intA, S1_area…) e fórmulas.
+- [x] Não linear (curva B-H cúbica monótona, Newton com busca linear); curva B-H em aba (log, arrastar pontos, modal).
+- [x] Transitório (Euler implícito, correntes parasitas σ∂A/∂t, fonte senoidal), quadros no tempo, animação e exportação WebM.
+- [x] Exportar código (script da API que recria o modelo idêntico); projeto aberto (MIT, README, doc/).
+
+### [⏳ EM ANDAMENTO] Rodada 17 — Circuito externo acoplado (campo + circuito)
+- **Editor:** + em Modelo → Circuito (aba com esquemático): fonte de tensão/corrente senoidal, R, L, C, terra e um bloco por
+  circuito do FEM (bobinas). Fios ligam terminais; nós por união de terminais.
+- **Formulação (transitório, acoplamento forte):** incógnitas x = [A livres, tensões de nó, correntes de ramo (fontes de
+  tensão, indutores, bobinas)]. Euler implícito:
+  - campo: (K(A) + M/Δt) A − Σ_k (N_r/A_r) i_k ∫N dΩ = M/Δt A_prev (+ ímãs);
+  - bobina k: v_a − v_b − R_k i_k − (λ_k − λ_k,prev)/Δt = 0, λ_k = Σ_r (N_r/A_r)·profundidade·∫A dΩ;
+  - L: v − L/Δt i = −L/Δt i_prev; C: condutância C/Δt com fonte C/Δt v_prev; R, fontes V/I (senoidais).
+  - Newton sobre o sistema monolítico (não simétrico → SparseLU).
+- **Resultados:** tensões e correntes de cada elemento no tempo (gráfico), campo animado como no transitório.
+- **Validação:** RL com bobina no ar (L conhecida): i(t) de uma fonte senoidal vs solução analítica; transformador ideal
+  (acoplamento alto): V2/V1 ≈ N2/N1 em vazio.
+
 ### Próximo possível
-- Não linear (curvas B-H, Newton-Raphson), força/torque (tensor de Maxwell, Arkkio), fluxo concatenado e indutância por bobina/circuito.
+- Força/torque (tensor de Maxwell, Arkkio), harmônico (fasores), movimento (EDO mecânica: contatora).
 - Solver magnetostático linear sobre a malha (Fase 6): montagem P1 em C++/Eigen, fontes de corrente, ímãs, Dirichlet/Neumann/(anti)periódico; mapa de |B| e linhas de fluxo.
 - Refinos da malha: tamanho por curva, gradação, visualização da qualidade.
 - Importar DXF/SVG no menu Arquivo; aparar (trim) para fechar regiões.
