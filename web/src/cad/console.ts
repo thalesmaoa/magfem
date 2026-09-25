@@ -1063,9 +1063,20 @@ export class CommandConsole {
           const arr = computeArrangement(sk);
           patch.regions = (seq(kw.regions) ?? []).map((p) => regionKey(regionAtOrThrow(arr, this.xy(p))));
         }
-        if (kw.legend !== undefined) {
-          const L = seq(kw.legend);
-          patch.legend = kw.legend === null || !L ? undefined : { x: Number(L[0]), y: Number(L[1]), s: Number(L[2] ?? 1) };
+        if (kw.legend !== undefined || kw.legend_bg !== undefined) {
+          const cur = (sk.nodes.find((n) => n.id === String(a[0])) as { legend?: Record<string, unknown> } | undefined)?.legend ?? {};
+          const L = kw.legend !== undefined && kw.legend !== null ? seq(kw.legend) : null;
+          const next: Record<string, unknown> = { ...cur };
+          if (kw.legend === null) {
+            delete next.x;
+            delete next.y;
+            delete next.s;
+          } else if (L) Object.assign(next, { x: Number(L[0]), y: Number(L[1]), s: Number(L[2] ?? 1) });
+          if (kw.legend_bg !== undefined) {
+            if (kw.legend_bg === null) delete next.bg;
+            else next.bg = String(kw.legend_bg);
+          }
+          patch.legend = Object.keys(next).length ? next : undefined;
         }
         if (kw.level !== undefined) patch.level = Math.max(1, Math.min(6, Math.round(Number(kw.level))));
         this.commit(updateNode(sk, String(a[0]), patch));

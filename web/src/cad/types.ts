@@ -219,6 +219,14 @@ export interface PostNode {
   colormap?: Colormap;
 }
 
+/** Legenda de uma vista: posição (fração do canvas), escala e fundo (cor, ou 'none' sem caixa). */
+export interface LegendLayout {
+  x?: number;
+  y?: number;
+  s?: number;
+  bg?: string;
+}
+
 /** Vista de resultados: uma aba do canvas com camadas (como uma "view" do ParaView). */
 export interface ViewNode {
   id: Id;
@@ -228,7 +236,7 @@ export interface ViewNode {
   /** Vista interpolada (suavizar): subdivisões por aresta (1–6); ausente = solução da malha. */
   level?: number;
   /** Legenda: canto superior esquerdo (fração da largura/altura do canvas) e escala; ausente = padrão. */
-  legend?: { x: number; y: number; s: number };
+  legend?: LegendLayout;
 }
 
 /** Itens de uma tabela de resultados. */

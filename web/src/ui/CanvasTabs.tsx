@@ -6,7 +6,7 @@ import { updateMaterial } from '../cad/mesh';
 import { circuitResults, lineIntegrals, lineProfile, quantityLabel, surfaceIntegrals } from '../cad/solve';
 import { findRegion } from '../cad/regions';
 import type { TreeSel } from '../cad/tree';
-import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode } from '../cad/types';
+import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { useDocVersion, useEditor } from './useStore';
@@ -306,6 +306,13 @@ export function LegendModal({ ed }: { ed: SketchEditor }) {
   }
   if (!le) return null;
   const node = ed.sketch.nodes.find((n) => n.id === le.layer);
+  const view = node?.kind === 'post' ? ed.sketch.nodes.find((n): n is ViewNode => n.id === node.view && n.kind === 'view') : undefined;
+  const setBg = (bg: string | undefined) => {
+    if (!view) return;
+    const legend = { ...view.legend, bg };
+    if (bg === undefined) delete legend.bg;
+    ed.commit({ ...ed.sketch, nodes: ed.sketch.nodes.map((n) => (n.id === view.id ? { ...n, legend } : n)) }, [`r.show(${q(view.id)}, legend_bg=${bg === undefined ? 'None' : q(bg)})`]);
+  };
   const close = () => {
     setKey('');
     ed.closeLegend();
@@ -340,6 +347,24 @@ export function LegendModal({ ed }: { ed: SketchEditor }) {
           <input aria-label={t.post.rangeMin} value={lo} onChange={(e) => setLo(e.target.value)} />
         </label>
         {!valid && <p className="err-text">{t.post.rangeInvalid}</p>}
+        {view && (
+          <>
+            <label className="field check">
+              <input
+                type="checkbox"
+                checked={view.legend?.bg !== 'none'}
+                onChange={(e) => setBg(e.target.checked ? undefined : 'none')}
+              />
+              <span>{t.post.legendBox}</span>
+            </label>
+            {view.legend?.bg !== 'none' && (
+              <label className="field">
+                <span>{t.post.legendBg}</span>
+                <input type="color" aria-label={t.post.legendBg} value={view.legend?.bg ?? '#ffffff'} onChange={(e) => setBg(e.target.value)} />
+              </label>
+            )}
+          </>
+        )}
         <div className="modal-actions">
           <button type="button" className="btn secondary" onClick={() => apply(undefined)}>
             {t.post.rangeAutoBtn}

@@ -396,6 +396,8 @@ export interface Translations {
     component: string;
     comps: Record<'mag' | 'x' | 'y', string>;
     view: string;
+    legendBox: string;
+    legendBg: string;
     parentView: string;
     copy: string;
     duplicate: string;
@@ -966,6 +968,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     component: 'Componente',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'Vista',
+    legendBox: 'Caixa de fundo na legenda',
+    legendBg: 'Cor do fundo',
     parentView: 'Vista (pai)',
     copy: 'cópia',
     duplicate: 'Duplicar',
@@ -1551,6 +1555,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     component: 'Component',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'View',
+    legendBox: 'Legend background box',
+    legendBg: 'Background color',
     parentView: 'View (parent)',
     copy: 'copy',
     duplicate: 'Duplicate',

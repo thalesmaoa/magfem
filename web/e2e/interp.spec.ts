@@ -64,14 +64,27 @@ test('vista interpolada (pai), legenda com limites e duplicar gráfico', async (
     const ed = (window as any).__magfem;
     const h = ed.hits.find((x: any) => x.kind === 'legend');
     const r = (document.querySelector('canvas.sketch') as HTMLCanvasElement).getBoundingClientRect();
-    return { x: h.x0 + 10 + r.left, y: h.y1 - 5 + r.top };
+    return { x: h.x1 - 5 + r.left, y: h.y1 - 5 + r.top };
   });
   await page.mouse.move(lg2.x, lg2.y);
   await page.mouse.down();
-  await page.mouse.move(lg2.x, lg2.y + 90, { steps: 6 });
+  await page.mouse.move(lg2.x + 40, lg2.y + 90, { steps: 6 });
   await page.mouse.up();
   v1 = (await sketch(page)).nodes.find((n: any) => n.kind === 'view' && !n.level);
   expect(v1.legend.s).toBeGreaterThan(s0);
+  // Clique na legenda: sem caixa de fundo.
+  const lg3 = await page.evaluate(() => {
+    const ed = (window as any).__magfem;
+    const h = ed.hits.find((x: any) => x.kind === 'legend');
+    const r = (document.querySelector('canvas.sketch') as HTMLCanvasElement).getBoundingClientRect();
+    return { x: h.x0 + 12 + r.left, y: h.y0 + 30 + r.top };
+  });
+  await page.mouse.click(lg3.x, lg3.y);
+  await page.getByRole('dialog').getByLabel('Caixa de fundo na legenda').uncheck();
+  v1 = (await sketch(page)).nodes.find((n: any) => n.kind === 'view' && !n.level);
+  expect(v1.legend.bg).toBe('none');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(10, 10);
 
   // Exportar código: o botão ao lado de Modelo mostra o script.
   await page.getByRole('button', { name: /Exportar código/ }).click();

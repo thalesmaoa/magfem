@@ -124,7 +124,12 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
     if (p.kind === 'view') {
       if (p.level) add(`r.interpolate(${q(p.physics)}, level=${p.level}, name=${q(p.name)}, id=${q(p.id)})`);
       else add(`r.view(${q(p.physics)}, name=${q(p.name)}, id=${q(p.id)})`);
-      if (p.legend) add(`r.show(${q(p.id)}, legend=(${n(p.legend.x)}, ${n(p.legend.y)}, ${n(p.legend.s)}))`);
+      if (p.legend) {
+        const kw: string[] = [];
+        if (p.legend.x !== undefined && p.legend.y !== undefined) kw.push(`legend=(${n(p.legend.x)}, ${n(p.legend.y)}, ${n(p.legend.s ?? 1)})`);
+        if (p.legend.bg !== undefined) kw.push(`legend_bg=${q(p.legend.bg)}`);
+        if (kw.length) add(`r.show(${q(p.id)}, ${kw.join(', ')})`);
+      }
       continue;
     }
     if (p.kind === 'table') {

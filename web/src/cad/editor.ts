@@ -38,7 +38,7 @@ import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './m
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
 import { buildMagInput, depthOf, smoothSolution, typicalSize, type Solution } from './solve';
-import type { PostNode } from './types';
+import type { LegendLayout, PostNode } from './types';
 import { addNode } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
@@ -277,11 +277,11 @@ export class SketchEditor {
 
   /** Vista mostrada e posição da legenda (salva na vista; `legendLive` durante o arraste). */
   postView_: Id | null = null;
-  postLegend: { x: number; y: number; s: number } | undefined;
-  private legendLive: { x: number; y: number; s: number } | null = null;
+  postLegend: LegendLayout | undefined;
+  private legendLive: LegendLayout | null = null;
   private legendDrag: { mode: 'move' | 'resize'; start: Vec; orig: { x: number; y: number; s: number }; moved: boolean; layer: Id; lo: number; hi: number } | null = null;
 
-  showSolution(id: Id | null, layers: PostNode[] = [], level = 0, view: Id | null = null, legend?: { x: number; y: number; s: number }) {
+  showSolution(id: Id | null, layers: PostNode[] = [], level = 0, view: Id | null = null, legend?: LegendLayout) {
     this.shownSolution = id;
     this.postLayers = layers;
     this.postLevel = level;
@@ -1355,8 +1355,11 @@ export class SketchEditor {
       if (lg) {
         // Arrastar move (ou redimensiona pela borda de baixo); clique sem mover abre os limites.
         const ui = this.postLegend?.s ?? 1;
-        const orig = this.postLegend ?? { x: (lg.x0 + 4) / this.view.w, y: (lg.y0 + 8) / this.view.h, s: ui };
-        this.legendDrag = { mode: s.y > lg.y1 - 14 ? 'resize' : 'move', start: s, orig, moved: false, layer: lg.id, lo: lg.data![0], hi: lg.data![1] };
+        const L = this.postLegend;
+        const orig = { x: L?.x ?? (lg.x0 + 6 * ui) / this.view.w, y: L?.y ?? (lg.y0 + 8 * ui) / this.view.h, s: ui };
+        // Alça no canto inferior direito (18 px) redimensiona; o resto move.
+        const corner = s.x > lg.x1 - 18 && s.y > lg.y1 - 18;
+        this.legendDrag = { mode: corner ? 'resize' : 'move', start: s, orig, moved: false, layer: lg.id, lo: lg.data![0], hi: lg.data![1] };
         return;
       }
       this.probeAt = w;
@@ -1427,9 +1430,9 @@ export class SketchEditor {
       if (d.moved) {
         this.legendLive =
           d.mode === 'move'
-            ? { ...d.orig, x: Math.min(0.98, Math.max(0, d.orig.x + dx / this.view.w)), y: Math.min(0.95, Math.max(0, d.orig.y + dy / this.view.h)) }
-            : { ...d.orig, s: Math.min(4, Math.max(0.4, d.orig.s * (1 + dy / (180 * d.orig.s)))) };
-        this.canvas.style.cursor = d.mode === 'move' ? 'grabbing' : 'ns-resize';
+            ? { ...this.postLegend, ...d.orig, x: Math.min(0.98, Math.max(0, d.orig.x + dx / this.view.w)), y: Math.min(0.95, Math.max(0, d.orig.y + dy / this.view.h)) }
+            : { ...this.postLegend, ...d.orig, s: Math.min(4, Math.max(0.4, d.orig.s * (1 + Math.max(dx / 74, dy / 210) / d.orig.s))) };
+        this.canvas.style.cursor = d.mode === 'move' ? 'grabbing' : 'nwse-resize';
         this.changed();
       }
       return;
@@ -1438,7 +1441,7 @@ export class SketchEditor {
       const h = this.picking ? this.hitTest(s, { entitiesOnly: true }) : null;
       this.hover = h?.kind === 'curve' ? h : null;
       const lgHit = this.hits.find((x) => x.kind === 'legend' && s.x >= x.x0 && s.x <= x.x1 && s.y >= x.y0 && s.y <= x.y1);
-      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : lgHit ? (s.y > lgHit.y1 - 14 ? 'ns-resize' : 'grab') : 'crosshair';
+      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : lgHit ? (s.x > lgHit.x1 - 18 && s.y > lgHit.y1 - 18 ? 'nwse-resize' : 'grab') : 'crosshair';
       this.changed();
       return;
     }
@@ -1485,7 +1488,8 @@ export class SketchEditor {
       if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
       if (!lgd.moved) this.legendEdit = { layer: lgd.layer, lo: lgd.lo, hi: lgd.hi };
       else if (this.legendLive && this.postView_) {
-        const L = { x: +this.legendLive.x.toFixed(4), y: +this.legendLive.y.toFixed(4), s: +this.legendLive.s.toFixed(3) };
+        const lv = this.legendLive;
+        const L: LegendLayout = { ...this.postLegend, x: +(lv.x ?? 0).toFixed(4), y: +(lv.y ?? 0).toFixed(4), s: +(lv.s ?? 1).toFixed(3) };
         this.commit(
           { ...this.sketch, nodes: this.sketch.nodes.map((n) => (n.id === this.postView_ ? { ...n, legend: L } : n)) },
           [`r.show(${q(this.postView_)}, legend=(${L.x}, ${L.y}, ${L.s}))`],

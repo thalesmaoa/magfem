@@ -2,7 +2,7 @@
 import { dimDrawing } from './dimgeom';
 import { add, arcAngles, mid, mul, norm, perp, pt, sub, type Vec } from './geometry';
 import { formatValue } from './measure';
-import { isDimension, ORIGIN_ID, type Constraint, type Entity, type Id, PLOT_QUANTITIES, type Colormap, type PostNode, type Sketch } from './types';
+import { isDimension, ORIGIN_ID, type Constraint, type Entity, type Id, PLOT_QUANTITIES, type Colormap, type LegendLayout, type PostNode, type Sketch } from './types';
 import type { View } from './view';
 import { nodeValues, quantityLabel, sampleCurve, triValues, type Solution } from './solve';
 import type { LengthUnit } from './expr';
@@ -102,7 +102,7 @@ export interface RenderState {
   /** Escala dos elementos de interface desenhados (legenda) — maior na imagem exportada. */
   uiScale?: number;
   /** Modo resultados: mapa de |B|, linhas de fluxo, sonda. */
-  post?: { sol: Solution | null; layers: PostNode[]; layerSols?: Map<Id, Solution>; stale: boolean; probe: Vec | null; legend?: { x: number; y: number; s: number } };
+  post?: { sol: Solution | null; layers: PostNode[]; layerSols?: Map<Id, Solution>; stale: boolean; probe: Vec | null; legend?: LegendLayout };
 }
 
 /** Mapa de cores "turbo" (aproximação polinomial), t ∈ [0, 1] → rgb. */
@@ -402,21 +402,34 @@ function drawLegend(
   lg: { lo: number; hi: number; label: string; map?: Colormap; layer: Id },
   index: number,
   ui0 = 1,
-  pos?: { x: number; y: number; s: number },
+  pos?: LegendLayout,
 ): HitRegion {
   // Posição/escala escolhidas pelo usuário (fração do canvas), ou o canto superior direito.
   const ui = ui0 * (pos?.s ?? 1);
-  const x = pos ? pos.x * v.w - index * 84 * ui : v.w - (72 + index * 84) * ui;
-  const y = pos ? pos.y * v.h : 16 * ui;
+  const placed = pos?.x !== undefined && pos?.y !== undefined;
+  const x = placed ? pos!.x! * v.w - index * 84 * ui : v.w - (72 + index * 84) * ui;
+  const y = placed ? pos!.y! * v.h : 16 * ui;
   const w = 14 * ui, h = 180 * ui;
-  // Fundo próprio: legível sobre qualquer cor do mapa (ou do desenho).
-  ctx.fillStyle = COLORS.bg;
-  ctx.globalAlpha = 0.88;
-  ctx.fillRect(x - 6 * ui, y - 8 * ui, 74 * ui, h + 30 * ui);
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = COLORS.gridMajor;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x - 6 * ui + 0.5, y - 8 * ui + 0.5, 74 * ui, h + 30 * ui);
+  // Fundo próprio (cor escolhida, ou nenhum): legível sobre qualquer cor do mapa.
+  const bx0 = x - 6 * ui, by0 = y - 8 * ui, bw = 74 * ui, bh = h + 30 * ui;
+  if (pos?.bg !== 'none') {
+    ctx.fillStyle = pos?.bg ?? COLORS.bg;
+    ctx.globalAlpha = 0.88;
+    ctx.fillRect(bx0, by0, bw, bh);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = COLORS.gridMajor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx0 + 0.5, by0 + 0.5, bw, bh);
+  }
+  // Alça de redimensionar (canto inferior direito).
+  ctx.strokeStyle = COLORS.dim;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (const k of [4, 8, 12]) {
+    ctx.moveTo(bx0 + bw - 2, by0 + bh - 2 - k * Math.min(ui, 1.5));
+    ctx.lineTo(bx0 + bw - 2 - k * Math.min(ui, 1.5), by0 + bh - 2);
+  }
+  ctx.stroke();
   for (let i = 0; i < h; i++) {
     const [r, g, b] = colormap(lg.map, 1 - i / h);
     ctx.fillStyle = `rgb(${r},${g},${b})`;
@@ -433,7 +446,7 @@ function drawLegend(
   ctx.textAlign = 'center';
   ctx.fillText(lg.label, x + w / 2 + 10 * ui, y + h + 14 * ui);
   // Área clicável (barra + números): abre o ajuste de limites.
-  return { id: lg.layer, kind: 'legend', x0: x - 4, y0: y - 8, x1: x + 70 * ui, y1: y + h + 22 * ui, data: [lg.lo, lg.hi] };
+  return { id: lg.layer, kind: 'legend', x0: bx0, y0: by0, x1: bx0 + bw, y1: by0 + bh, data: [lg.lo, lg.hi] };
 }
 
 const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
