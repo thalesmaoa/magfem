@@ -1,9 +1,10 @@
 // Abas do canvas: Desenho (fixa), vistas de resultados, gráficos e curvas B-H. Estado da interface.
 import { useSyncExternalStore } from 'react';
 
-export type CanvasTab = { kind: 'draw' } | { kind: 'view'; id: string } | { kind: 'chart'; plot: string } | { kind: 'bh'; material: string };
+export type CanvasTab = { kind: 'draw' } | { kind: 'view'; id: string } | { kind: 'chart'; plot: string } | { kind: 'bh'; material: string } | { kind: 'circuits'; physics: string };
 
-export const tabKey = (t: CanvasTab) => (t.kind === 'draw' ? 'draw' : t.kind === 'view' ? `view:${t.id}` : t.kind === 'chart' ? `chart:${t.plot}` : `bh:${t.material}`);
+export const tabKey = (t: CanvasTab) =>
+  t.kind === 'draw' ? 'draw' : t.kind === 'view' ? `view:${t.id}` : t.kind === 'chart' ? `chart:${t.plot}` : t.kind === 'bh' ? `bh:${t.material}` : `circuits:${t.physics}`;
 
 interface TabsState {
   tabs: CanvasTab[];

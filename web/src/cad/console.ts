@@ -29,7 +29,7 @@ import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
 import { isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
-import { addBoundaryDef, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
+import { addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
 
 export type Value = number | string | boolean | null | Value[] | { tuple: Value[] } | { print: string };
@@ -785,6 +785,28 @@ export class CommandConsole {
         this.commit(r.sketch);
         return r.material.id;
       }
+      case 'circuit': {
+        need(1);
+        const patch: { current?: string; name?: string; kind?: 'series' | 'parallel' } = {};
+        if (kw.current !== undefined) patch.current = String(kw.current);
+        if (kw.name !== undefined) patch.name = String(kw.name);
+        if (kw.kind !== undefined) patch.kind = String(kw.kind) === 'parallel' ? 'parallel' : 'series';
+        const cur = findCircuit(sk, String(a[0]));
+        if (cur) {
+          this.commit(updateCircuit(sk, cur.id, patch));
+          return cur.id;
+        }
+        const r = addCircuit(sk, String(a[0]), patch.current ?? '1');
+        this.commit(patch.kind ? updateCircuit(r.sketch, r.circuit.id, { kind: patch.kind }) : r.sketch);
+        return r.circuit.id;
+      }
+      case 'del_circuit': {
+        need(1);
+        const c = findCircuit(sk, String(a[0]));
+        if (!c) throw new ConsoleError(t.notFound(String(a[0])));
+        this.commit(removeCircuit(sk, c.id));
+        return null;
+      }
       case 'del_material': {
         need(1);
         const m = findMaterial(sk, String(a[0]));
@@ -805,6 +827,14 @@ export class CommandConsole {
         if (kw.current !== undefined) patch.current = kw.current === null ? undefined : String(kw.current);
         if (kw.turns !== undefined) patch.turns = kw.turns === null ? undefined : Number(kw.turns);
         if (kw.angle !== undefined) patch.magnetAngle = kw.angle === null ? undefined : String(kw.angle);
+        if (kw.circuit !== undefined) {
+          if (kw.circuit === null) patch.circuit = undefined;
+          else {
+            const c = findCircuit(sk, String(kw.circuit));
+            if (!c) throw new ConsoleError(t.notFound(String(kw.circuit)));
+            patch.circuit = c.id;
+          }
+        }
         if (kw.label !== undefined) patch.labelOffset = kw.label === null ? undefined : this.xy(kw.label);
         if (kw.name !== undefined) patch.name = kw.name === null || !String(kw.name).trim() ? undefined : String(kw.name).trim();
         this.commit(assignRegion(sk, arr, regionKey(r), patch));
@@ -966,7 +996,9 @@ const NODE_METHODS = {
     remove: 'remove("n1")',
     material: 'material("Cobre", mur=1, sigma=58, br=0, color="#e0914f")',
     del_material: 'del_material("Cobre")',
-    region: 'region((x, y), name="Bobina", material="Cobre", current="10", turns=100, angle="90", label=(dx, dy))',
+    circuit: 'circuit("Bobina", current="10", kind="series")',
+    del_circuit: 'del_circuit("Bobina")',
+    region: 'region((x, y), name="Bobina", material="Cobre", circuit="Bobina", current="10", turns=100, angle="90", label=(dx, dy))',
     boundary: 'boundary(["l1", "l2"], "nome do contorno" | "dirichlet" | "neumann" | "periodic" | "antiperiodic" | None)',
     boundary_def: 'boundary_def("Blindagem", type="dirichlet", value="0")',
     mesh_size: 'mesh_size((x, y), "0.5 mm" | "auto")',

@@ -104,7 +104,9 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
     assigned.add(r.index);
     nu[r.index] = 1 / (MU0 * m.mur);
     try {
-      const I = num(sk, a.current, 0);
+      // Corrente: do circuito (se a região estiver ligada a um) ou da própria região.
+      const circ = a.circuit ? sk.circuits.find((c) => c.id === a.circuit) : undefined;
+      const I = circ ? num(sk, circ.current, 0) : num(sk, a.current, 0);
       const N = a.turns ?? 1;
       if (I) J[r.index] = (I * N) / (Math.abs(r.area) * 1e-6);
       if (m.br) {
@@ -559,4 +561,68 @@ export function probeSmooth(sol: Solution, p: { x: number; y: number }) {
   const nu = r >= 0 ? sol.nu[r] : 1 / MU0;
   const hx = nu * (bx - (r >= 0 ? sol.brx[r] : 0)), hy = nu * (by - (r >= 0 ? sol.bry[r] : 0));
   return { region: r, A: e.val, bx, by, b: Math.hypot(bx, by), hx, hy, h: Math.hypot(hx, hy), mur: 1 / (nu * MU0) };
+}
+
+// ---------- Circuitos: fluxo concatenado, indutância, resistência e perdas ----------
+
+export interface CircuitResult {
+  id: Id;
+  name: string;
+  /** Corrente (A). */
+  I: number;
+  /** Fluxo concatenado λ = Σ (N/A) ∫ A dΩ × profundidade (plano) ou Σ (N/A) ∫ 2πψ dΩ (axissimétrico), Wb. */
+  lambda: number;
+  /** Indutância aparente λ/I (H); null se I = 0. */
+  L: number | null;
+  /** Resistência CC (Ω): Σ N² ℓ / (σ A), ℓ = profundidade (plano) ou 2π r̄ (axissimétrico); null se σ = 0. */
+  R: number | null;
+  /** Tensão CC = R·I (V) e perdas Joule R·I² (W). */
+  V: number | null;
+  P: number | null;
+  regions: number;
+  turns: number;
+}
+
+export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): CircuitResult[] {
+  const { xy, triangles, triRegion } = sol.mesh;
+  const nt = triangles.length / 3;
+  // ∫A dΩ (m²·valor), área (m²) e raio médio (m) por região, a partir da malha.
+  const nr = arr.regions.length;
+  const intA = new Float64Array(nr), area = new Float64Array(nr), rA = new Float64Array(nr);
+  for (let t = 0; t < nt; t++) {
+    const r = triRegion[t];
+    if (r < 0 || r >= nr) continue;
+    const a = triangles[3 * t], b = triangles[3 * t + 1], c = triangles[3 * t + 2];
+    const ar = (Math.abs((xy[2 * b] - xy[2 * a]) * (xy[2 * c + 1] - xy[2 * a + 1]) - (xy[2 * c] - xy[2 * a]) * (xy[2 * b + 1] - xy[2 * a + 1])) / 2) * 1e-6;
+    intA[r] += ((sol.A[a] + sol.A[b] + sol.A[c]) / 3) * ar;
+    area[r] += ar;
+    rA[r] += (((xy[2 * a] + xy[2 * b] + xy[2 * c]) / 3) * 1e-3) * ar;
+  }
+  const depth = depthOf(sk);
+  const mats = new Map(sk.materials.map((m) => [m.id, m]));
+  return sk.circuits.map((c) => {
+    let I = 0;
+    try {
+      I = num(sk, c.current, 0);
+    } catch {
+      I = 0;
+    }
+    let lambda = 0, R = 0, rOk = true, regions = 0, turns = 0;
+    for (const a of sk.regionAssigns) {
+      if (a.circuit !== c.id) continue;
+      const reg = findRegion(arr, a);
+      if (!reg || !area[reg.index]) continue;
+      const i = reg.index;
+      const N = a.turns ?? 1;
+      regions++;
+      turns += Math.abs(N);
+      lambda += sol.axisymmetric ? (N / area[i]) * 2 * Math.PI * intA[i] : (N / area[i]) * intA[i] * depth;
+      const sigma = (a.material ? mats.get(a.material)?.sigma ?? 0 : 0) * 1e6; // MS/m → S/m
+      const len = sol.axisymmetric ? 2 * Math.PI * (rA[i] / area[i]) : depth;
+      if (sigma > 0) R += (N * N * len) / (sigma * area[i]);
+      else rOk = false;
+    }
+    const Rv = rOk && regions ? R : null;
+    return { id: c.id, name: c.name, I, lambda, L: I ? lambda / I : null, R: Rv, V: Rv !== null ? Rv * I : null, P: Rv !== null ? Rv * I * I : null, regions, turns };
+  });
 }

@@ -439,6 +439,27 @@ export interface Translations {
     hide: string;
     show: string;
   };
+  circuit: {
+    name: string;
+    title: string;
+    add: string;
+    current: string;
+    kind: string;
+    series: string;
+    parallel: string;
+    parallelSoon: string;
+    remove: string;
+    none: string;
+    fromCircuit: (name: string, i: string) => string;
+    regions: (n: number) => string;
+    help: string;
+    results: string;
+    table: string;
+    tableMenu: string;
+    cols: { name: string; I: string; turns: string; lambda: string; L: string; R: string; V: string; P: string };
+    note: string;
+    empty: string;
+  };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
   expr: {
     badNumber: (s: string) => string;
@@ -960,6 +981,27 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     outside: 'A curva está fora da malha.',
     hide: 'Ocultar',
     show: 'Mostrar',
+  },
+  circuit: {
+    name: 'Circuito',
+    title: 'Circuitos',
+    add: 'Novo circuito',
+    current: 'Corrente (A)',
+    kind: 'Ligação',
+    series: 'Série',
+    parallel: 'Paralelo',
+    parallelSoon: 'Paralelo entra com o transitório/harmônico (divisão de corrente pelas impedâncias).',
+    remove: 'Remover circuito',
+    none: '— nenhum (corrente da região) —',
+    fromCircuit: (n, i) => `do circuito ${n}: ${i} A`,
+    regions: (n) => `${n} região${n === 1 ? '' : 'ões'}`,
+    help: 'Ligue regiões ao circuito em Materiais › região › Circuito. A corrente vem do circuito; cada região usa suas espiras (negativo = sentido de volta).',
+    results: 'Circuitos',
+    table: 'Tabela de circuitos',
+    tableMenu: 'Circuitos (tabela)',
+    cols: { name: 'Circuito', I: 'I (A)', turns: 'Espiras', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'R CC (Ω)', V: 'V CC (V)', P: 'Perdas I²R (W)' },
+    note: 'Indutância aparente λ/I (com vários circuitos, inclui o acoplamento). R CC com fator de enchimento 1; no plano, sem as cabeceiras.',
+    empty: 'Nenhum circuito. Crie em Malha › Circuitos.',
   },
   hist: {
     title: 'Histórico',
@@ -1488,6 +1530,27 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     outside: 'The curve is outside the mesh.',
     hide: 'Hide',
     show: 'Show',
+  },
+  circuit: {
+    name: 'Circuit',
+    title: 'Circuits',
+    add: 'New circuit',
+    current: 'Current (A)',
+    kind: 'Connection',
+    series: 'Series',
+    parallel: 'Parallel',
+    parallelSoon: 'Parallel comes with transient/harmonic analysis (current split by impedances).',
+    remove: 'Remove circuit',
+    none: '— none (region current) —',
+    fromCircuit: (n, i) => `from circuit ${n}: ${i} A`,
+    regions: (n) => `${n} region${n === 1 ? '' : 's'}`,
+    help: 'Link regions to the circuit under Materials › region › Circuit. The current comes from the circuit; each region uses its turns (negative = return direction).',
+    results: 'Circuits',
+    table: 'Circuit table',
+    tableMenu: 'Circuits (table)',
+    cols: { name: 'Circuit', I: 'I (A)', turns: 'Turns', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'DC R (Ω)', V: 'DC V (V)', P: 'I²R losses (W)' },
+    note: 'Apparent inductance λ/I (with several circuits it includes coupling). DC R with fill factor 1; planar excludes end turns.',
+    empty: 'No circuits. Create one under Mesh › Circuits.',
   },
   hist: {
     title: 'History',

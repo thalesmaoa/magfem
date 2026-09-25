@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { updateMaterial } from '../cad/mesh';
-import { lineProfile, quantityLabel } from '../cad/solve';
+import { circuitResults, lineProfile, quantityLabel } from '../cad/solve';
 import type { TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode } from '../cad/types';
 import { useT } from '../i18n';
@@ -24,6 +24,7 @@ export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s:
       return v ? `${ph?.name ?? ''} · ${v.name}` : '?';
     }
     if (tab.kind === 'chart') return `${t.post.chart}: ${sk.nodes.find((n) => n.id === tab.plot)?.name ?? '?'}`;
+    if (tab.kind === 'circuits') return `${t.circuit.title}: ${sk.nodes.find((n) => n.id === tab.physics)?.name ?? '?'}`;
     return `${t.post.bhTab}: ${sk.materials.find((m) => m.id === tab.material)?.name ?? '?'}`;
   };
   if (tabs.length < 2) return null;
@@ -159,6 +160,12 @@ export function ChartPane({ ed, tab }: { ed: SketchEditor; tab: string }) {
   const [lx, ly] = logs[tab] ?? [false, false];
   const setLog = (x: boolean, y: boolean) => setLogs((l) => ({ ...l, [tab]: [x, y] }));
   if (tab.startsWith('chart:')) return <LinePane ed={ed} id={tab.slice(6)} lx={lx} ly={ly} setLog={setLog} />;
+  if (tab.startsWith('circuits:'))
+    return (
+      <div className="chart-pane">
+        <CircuitTable ed={ed} physics={tab.slice(9)} big />
+      </div>
+    );
   const m = ed.sketch.materials.find((x) => x.id === tab.slice(3));
   return m ? <BHPane ed={ed} m={m} lx={lx} ly={ly} setLog={setLog} /> : null;
 }
@@ -334,6 +341,60 @@ export function LegendModal({ ed }: { ed: SketchEditor }) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+const eng = (v: number | null, unit: string) => {
+  if (v === null || !Number.isFinite(v)) return '—';
+  if (v === 0) return `0 ${unit}`;
+  const e = Math.floor(Math.log10(Math.abs(v)) / 3) * 3;
+  const pre: Record<number, string> = { [-12]: 'p', [-9]: 'n', [-6]: 'µ', [-3]: 'm', 0: '', 3: 'k', 6: 'M', 9: 'G' };
+  const p = pre[Math.max(-12, Math.min(9, e))];
+  return `${(v / Math.pow(10, Math.max(-12, Math.min(9, e)))).toPrecision(4)} ${p}${unit}`;
+};
+
+/** Tabela de circuitos (I, espiras, λ, L, R, V, perdas) de uma física resolvida. */
+export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: string; big?: boolean }) {
+  const t = useT();
+  useEditor(ed);
+  const sol = ed.solutions.get(physics);
+  if (!ed.sketch.circuits.length) return <p className="muted">{t.circuit.empty}</p>;
+  if (!sol) return <p className="muted">{t.solve.noSolution}</p>;
+  const rows = circuitResults(ed.sketch, ed.arrangement(), sol);
+  const c = t.circuit.cols;
+  return (
+    <div className={big ? 'circ big' : 'circ'}>
+      {big && <h3>{t.circuit.table}</h3>}
+      <table className="circ-table">
+        <thead>
+          <tr>
+            <th>{c.name}</th>
+            <th>{c.I}</th>
+            <th>{c.turns}</th>
+            <th>{c.lambda}</th>
+            <th>{c.L}</th>
+            <th>{c.R}</th>
+            <th>{c.V}</th>
+            <th>{c.P}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <td>{r.name}</td>
+              <td>{r.I.toPrecision(4)}</td>
+              <td>{r.turns}</td>
+              <td>{eng(r.lambda, 'Wb')}</td>
+              <td>{eng(r.L, 'H')}</td>
+              <td>{eng(r.R, 'Ω')}</td>
+              <td>{eng(r.V, 'V')}</td>
+              <td>{eng(r.P, 'W')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="help-line">{t.circuit.note}</p>
     </div>
   );
 }

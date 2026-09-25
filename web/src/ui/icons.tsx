@@ -138,6 +138,15 @@ export const Icons = {
       <rect x="11" y="11" width="6" height="6" rx="1" />
     </S>
   ),
+  circuit: (
+    // Bobina (espiras) ligada a uma fonte.
+    <S>
+      <path d="M2 10h3" />
+      <path d="M5 10c0-3 3-3 3 0s3 3 3 0 3-3 3 0" />
+      <path d="M14 10h4" />
+      <circle cx="10" cy="15.5" r="2" />
+    </S>
+  ),
   region: (
     <S>
       <path d="M3 5l7-2 7 4-2 9-9 1z" fill="currentColor" fillOpacity="0.25" />

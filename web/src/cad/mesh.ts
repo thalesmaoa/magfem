@@ -2,7 +2,7 @@
 import { T } from '../i18n';
 import { findRegion, regionAt, type Arrangement, type Region } from './regions';
 import type { Vec } from './geometry';
-import type { Boundary, BoundaryType, Id, Material, MaterialGroup, RegionAssign, Sketch } from './types';
+import type { Boundary, BoundaryType, Circuit, Id, Material, MaterialGroup, RegionAssign, Sketch } from './types';
 
 export type RegionKey = { curves: Id[]; seed: Vec };
 
@@ -128,3 +128,30 @@ export function removeMaterial(sk: Sketch, id: Id): Sketch {
 
 /** Coordenada curta para o código gerado. */
 export const pointCode = (p: Vec) => `(${Number(p.x.toFixed(4))}, ${Number(p.y.toFixed(4))})`;
+
+/** Novo circuito (série, 1 A) com nome único. */
+export function addCircuit(sk: Sketch, name?: string, current = '1'): { sketch: Sketch; circuit: Circuit } {
+  const base = name ?? T().circuit.name;
+  let n = name ?? `${base} ${sk.circuits.length + 1}`;
+  for (let k = 2; sk.circuits.some((c) => c.name === n); k++) n = `${base} ${k}`;
+  const circuit: Circuit = { id: `c${sk.nextId}`, name: n, current, kind: 'series' };
+  return { sketch: { ...sk, circuits: [...sk.circuits, circuit], nextId: sk.nextId + 1 }, circuit };
+}
+
+export function updateCircuit(sk: Sketch, id: Id, patch: Partial<Omit<Circuit, 'id'>>): Sketch {
+  if (patch.name !== undefined && sk.circuits.some((c) => c.id !== id && c.name === patch.name)) throw new Error(T().mesh.nameTaken(patch.name));
+  return { ...sk, circuits: sk.circuits.map((c) => (c.id === id ? { ...c, ...patch } : c)) };
+}
+
+/** Remove o circuito; as regiões ligadas a ele ficam sem circuito. */
+export function removeCircuit(sk: Sketch, id: Id): Sketch {
+  return {
+    ...sk,
+    circuits: sk.circuits.filter((c) => c.id !== id),
+    regionAssigns: sk.regionAssigns.map((a) => (a.circuit === id ? { ...a, circuit: undefined } : a)),
+  };
+}
+
+export function findCircuit(sk: Sketch, ref: string): Circuit | undefined {
+  return sk.circuits.find((c) => c.id === ref) ?? sk.circuits.find((c) => c.name.toLowerCase() === ref.toLowerCase());
+}

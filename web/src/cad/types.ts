@@ -271,6 +271,8 @@ export interface RegionAssign {
   labelOffset?: { x: number; y: number };
   /** Material da região (sem material: não pode resolver). */
   material?: Id;
+  /** Circuito da região (a corrente vem dele; as espiras continuam na região). */
+  circuit?: Id;
   /** Tamanho do elemento na região (expressão de comprimento); ausente = o da malha (automático). */
   meshSize?: string;
   /** Corrente total na região (A, expressão) — condutores/bobinas. */
@@ -279,6 +281,16 @@ export interface RegionAssign {
   turns?: number;
   /** Direção de magnetização (graus, expressão) — ímãs. */
   magnetAngle?: string;
+}
+
+/** Circuito (como no FEMM): regiões ligadas a ele recebem a corrente do circuito × espiras da região. */
+export interface Circuit {
+  id: Id;
+  name: string;
+  /** Corrente do circuito (A, expressão). */
+  current: string;
+  /** Série (a mesma corrente em todas as regiões). Paralelo fica para o transitório/harmônico. */
+  kind: 'series' | 'parallel';
 }
 
 export type BoundaryType = 'dirichlet' | 'neumann' | 'periodic' | 'antiperiodic';
@@ -356,6 +368,7 @@ export interface Sketch {
   materials: Material[];
   regionAssigns: RegionAssign[];
   boundaries: Boundary[];
+  circuits: Circuit[];
   nextId: number;
 }
 
@@ -383,6 +396,7 @@ export function emptySketch(): Sketch {
     materials: DEFAULT_MATERIALS.map((m) => ({ ...m })),
     regionAssigns: [],
     boundaries: [],
+    circuits: [],
     nextId: 3,
   };
 }

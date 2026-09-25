@@ -10,6 +10,7 @@ import { LazyInput } from './common';
 import { Icons } from './icons';
 import { useEditor } from './useStore';
 import { openTab } from './tabsStore';
+import { CircuitTable } from './CanvasTabs';
 
 const PLOT_ICON: Record<PlotKind, JSX.Element> = {
   surface: <span className="plot-ico map" />,
@@ -89,7 +90,7 @@ export function SolveSection({ ed, node, onSelect }: { ed: SketchEditor; node: P
 }
 
 /** (+) de resultados: escolhe o tipo de gráfico. */
-function PlotAddMenu({ label, onPick, onFilter }: { label: string; onPick: (k: PlotKind) => void; onFilter?: () => void }) {
+function PlotAddMenu({ label, onPick, onFilter, onCircuits }: { label: string; onPick: (k: PlotKind) => void; onFilter?: () => void; onCircuits?: () => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -133,6 +134,17 @@ function PlotAddMenu({ label, onPick, onFilter }: { label: string; onPick: (k: P
                 <span className="ticon">{FILTER_ICON}</span> {t.post.interpMenu}
               </button>
             </>
+          )}
+          {onCircuits && (
+            <button
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onCircuits();
+              }}
+            >
+              <span className="ticon">{Icons.circuit}</span> {t.circuit.tableMenu}
+            </button>
           )}
         </div>
       )}
@@ -275,6 +287,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                   <span className={`crefs${sol && ed.solutionStale(ph.id) ? ' bad' : ''}`}>{sol ? `${sol.bmax.toPrecision(3)} T` : '—'}</span>
                   <PlotAddMenu
                     label={t.post.newView}
+                    onCircuits={() => openTab({ kind: 'circuits', physics: ph.id })}
                     onFilter={() => {
                       // Vista interpolada (pai): já vem com superfície B e contorno A.
                       const v = addView(ed.sketch, ph.id, undefined, 3);
@@ -479,6 +492,15 @@ export function ResultsProps({ ed, id, onSelect }: { ed: SketchEditor; id: Id; o
           </>
         )}
       </section>
+      {sol && ed.sketch.circuits.length > 0 && (
+        <section>
+          <h3>{t.circuit.results}</h3>
+          <CircuitTable ed={ed} physics={id} />
+          <button className="btn secondary" onClick={() => openTab({ kind: 'circuits', physics: id })}>
+            {t.post.openChart}
+          </button>
+        </section>
+      )}
       {sol && <ProbeSection ed={ed} sol={sol} />}
     </div>
   );

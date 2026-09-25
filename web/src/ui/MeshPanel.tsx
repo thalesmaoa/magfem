@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { formatLength } from '../cad/expr';
-import { assignBoundary, assignRegion, pointCode, regionKey } from '../cad/mesh';
+import { addCircuit, assignBoundary, assignRegion, pointCode, regionKey, removeCircuit, updateCircuit } from '../cad/mesh';
 import { autoSize, regionSizes, sizeOf } from '../cad/meshgen';
 import { findRegion, type Region } from '../cad/regions';
 import { addNode, updateNode, type MeshSub, type TreeSel } from '../cad/tree';
@@ -97,7 +97,7 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
   const t = useT();
   const snap = useEditor(ed);
   const sk = ed.sketch;
-  const [open, setOpen] = useState<Set<string>>(() => new Set(['materials', 'boundaries', 'regions']));
+  const [open, setOpen] = useState<Set<string>>(() => new Set(['materials', 'circuits', 'boundaries', 'regions']));
   const toggle = (k: string) =>
     setOpen((o) => {
       const n = new Set(o);
@@ -192,6 +192,49 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
                 </li>
               );
             })}
+          </ul>
+        )}
+      </li>
+      {/* Circuitos (como no FEMM): corrente do circuito × espiras de cada região. */}
+      <li>
+        {section(
+          'circuits',
+          Icons.circuit,
+          t.circuit.title,
+          <button
+            className="icon-btn tadd"
+            title={t.circuit.add}
+            aria-label={t.circuit.add}
+            onClick={(e) => {
+              e.stopPropagation();
+              const r = addCircuit(ed.sketch);
+              if (ed.commit(r.sketch, [`m.circuit(${q(r.circuit.name)}, current="1")`])) {
+                setOpen((o) => new Set(o).add('circuits'));
+                ed.selectCurves([]);
+                onSelect({ kind: 'circuit', id: r.circuit.id });
+              }
+            }}
+          >
+            +
+          </button>,
+        )}
+        {open.has('circuits') && (
+          <ul role="group">
+            {sk.circuits.map((c) => (
+              <li key={c.id}>
+                <Row
+                  icon={Icons.circuit}
+                  label={c.name}
+                  selected={sel.kind === 'circuit' && sel.id === c.id}
+                  onClick={() => {
+                    ed.selectCurves([]);
+                    onSelect({ kind: 'circuit', id: c.id });
+                  }}
+                  onRename={(n) => n.trim() && ed.meshOp((s2) => updateCircuit(s2, c.id, { name: n.trim() }), `m.circuit(${q(c.name)}, name=${q(n.trim())})`)}
+                  extra={<span className="crefs">{c.current} A · {t.circuit.regions(sk.regionAssigns.filter((a) => a.circuit === c.id).length)}</span>}
+                />
+              </li>
+            ))}
           </ul>
         )}
       </li>
@@ -319,6 +362,7 @@ export function MeshProps({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
   const sub = sel.kind === 'mesh' ? sel.sub : undefined;
   let body: JSX.Element;
   if (node) body = <MeshNodeProps ed={ed} node={node} />;
+  else if (sel.kind === 'circuit') body = <CircuitProps ed={ed} id={sel.id} onRemoved={() => onSelect({ kind: 'mesh', sub: 'circuits' })} />;
   else if (sel.kind === 'boundary' && sel.id !== 'outer') body = <BoundaryProps ed={ed} id={sel.id} onRemoved={() => onSelect({ kind: 'mesh', sub: 'boundaries' })} />;
   else if (snap.meshSel?.kind === 'region') body = sub === 'regions' ? <RegionSizeProps ed={ed} /> : <RegionMaterialProps ed={ed} />;
   else if (snap.meshSel?.kind === 'curves') body = <CurvesProps ed={ed} ids={snap.meshSel.ids} onNew={(id) => onSelect({ kind: 'boundary', id })} />;
@@ -349,6 +393,7 @@ function RegionMaterialProps({ ed }: { ed: SketchEditor }) {
   if (!r) return null;
   const a = ed.assignOf(regionKey(r));
   const m = a?.material ? sk.materials.find((x) => x.id === a.material) : undefined;
+  const circ = a?.circuit ? sk.circuits.find((c) => c.id === a.circuit) : undefined;
   const f = UNIT_MM[sk.settings.unit] ?? 1;
   const set = (patch: Parameters<typeof assignRegion>[3], code: string) => ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), patch), regionCode(r, code));
   return (
@@ -378,9 +423,31 @@ function RegionMaterialProps({ ed }: { ed: SketchEditor }) {
       {m && (
         <>
           <label className="field">
-            <span>{t.mesh.current}</span>
-            <LazyInput value={a?.current ?? ''} placeholder="0" ariaLabel={t.mesh.current} onCommit={(v) => set({ current: v.trim() || undefined }, `current=${v.trim() ? q(v.trim()) : 'None'}`)} />
+            <span>{t.circuit.name}</span>
+            <select
+              aria-label={t.circuit.name}
+              value={a?.circuit ?? ''}
+              onChange={(e) => {
+                const c = sk.circuits.find((x) => x.id === e.target.value);
+                set({ circuit: c?.id }, `circuit=${c ? q(c.name) : 'None'}`);
+              }}
+            >
+              <option value="">{t.circuit.none}</option>
+              {sk.circuits.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </label>
+          {circ ? (
+            <p className="muted">{t.circuit.fromCircuit(circ.name, circ.current)}</p>
+          ) : (
+            <label className="field">
+              <span>{t.mesh.current}</span>
+              <LazyInput value={a?.current ?? ''} placeholder="0" ariaLabel={t.mesh.current} onCommit={(v) => set({ current: v.trim() || undefined }, `current=${v.trim() ? q(v.trim()) : 'None'}`)} />
+            </label>
+          )}
           <label className="field">
             <span>{t.mesh.turns}</span>
             <LazyInput
@@ -543,6 +610,47 @@ function MeshNodeProps({ ed, node }: { ed: SketchEditor; node: MeshNode }) {
       <p className={stale ? 'err-text' : 'muted'}>{m ? (stale ? t.mesh.stale : t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)) : t.mesh.notGenerated}</p>
       {m && stale && <p className="muted">{t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)}</p>}
       <p className="help-line">{t.mesh.mesher}</p>
+    </section>
+  );
+}
+
+function CircuitProps({ ed, id, onRemoved }: { ed: SketchEditor; id: Id; onRemoved: () => void }) {
+  const t = useT();
+  const c = ed.sketch.circuits.find((x) => x.id === id);
+  if (!c) return null;
+  const set = (patch: Parameters<typeof updateCircuit>[2], code: string) => ed.meshOp((s) => updateCircuit(s, id, patch), `m.circuit(${q(c.name)}, ${code})`);
+  const regions = ed.sketch.regionAssigns.filter((a) => a.circuit === id);
+  return (
+    <section>
+      <h3>{t.circuit.name}</h3>
+      <label className="field">
+        <span>{t.mesh.name}</span>
+        <LazyInput value={c.name} ariaLabel={t.mesh.name} onCommit={(v) => v.trim() && v.trim() !== c.name && set({ name: v.trim() }, `name=${q(v.trim())}`)} />
+      </label>
+      <label className="field">
+        <span>{t.circuit.current}</span>
+        <LazyInput value={c.current} ariaLabel={t.circuit.current} onCommit={(v) => v.trim() && set({ current: v.trim() }, `current=${q(v.trim())}`)} />
+      </label>
+      <label className="field">
+        <span>{t.circuit.kind}</span>
+        <select aria-label={t.circuit.kind} value={c.kind} onChange={(e) => set({ kind: e.target.value as 'series' | 'parallel' }, `kind=${q(e.target.value)}`)}>
+          <option value="series">{t.circuit.series}</option>
+          <option value="parallel" disabled>
+            {t.circuit.parallel}
+          </option>
+        </select>
+      </label>
+      <p className="muted">{t.circuit.regions(regions.length)}</p>
+      <p className="help-line">{t.circuit.help}</p>
+      <p className="help-line">{t.circuit.parallelSoon}</p>
+      <button
+        className="btn danger"
+        onClick={() => {
+          if (ed.meshOp((s) => removeCircuit(s, id), `m.del_circuit(${q(c.name)})`)) onRemoved();
+        }}
+      >
+        {t.circuit.remove}
+      </button>
     </section>
   );
 }
