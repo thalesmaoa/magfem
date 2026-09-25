@@ -59,6 +59,17 @@ export interface Translations {
     groupFromSelection: string;
     groupNeedsSelection: string;
   };
+  about: {
+    button: string;
+    intro: string;
+    author: string;
+    license: string;
+    mit: string;
+    thirdParty: string;
+    triangle: string;
+    femm: string;
+    source: string;
+  };
   drawer: { open: string; close: string };
   theme: { title: string; auto: string; light: string; dark: string };
   phase: (n: number) => string;
@@ -676,6 +687,17 @@ const PT: Translations = {
     variable: 'Variável',
     groupFromSelection: 'Grupo (da seleção)',
     groupNeedsSelection: 'Selecione entidades no desenho primeiro',
+  },
+  about: {
+    button: 'Sobre',
+    intro: 'Elementos finitos magnéticos 2D (plano e axissimétrico) no navegador: CAD paramétrico, malha, solver não linear, transitório com circuito e pós-processamento. Tudo roda localmente (WebAssembly); seus projetos não saem da sua máquina.',
+    author: 'Autor',
+    license: 'Licença',
+    mit: 'Código do MagFEM sob a licença MIT: use, modifique e redistribua livremente, mantendo o aviso de copyright.',
+    thirdParty: 'Componentes de terceiros',
+    triangle: 'Triangle 1.6 (J. R. Shewchuk) — livre para uso acadêmico e redistribuição gratuita; uso comercial exige acordo com o autor',
+    femm: 'Biblioteca de materiais do FEMM 4.2 (D. Meeker, femm.info) — Aladdin Free Public License',
+    source: 'Código-fonte no GitHub',
   },
   drawer: { open: 'Problema e bibliotecas', close: 'Fechar painel' },
   theme: { title: 'Tema', auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' },
@@ -1369,6 +1391,17 @@ const EN: Translations = {
     variable: 'Variable',
     groupFromSelection: 'Group (from selection)',
     groupNeedsSelection: 'Select entities in the drawing first',
+  },
+  about: {
+    button: 'About',
+    intro: '2D magnetic finite elements (planar and axisymmetric) in the browser: parametric CAD, meshing, nonlinear solver, transient with circuits and post-processing. Everything runs locally (WebAssembly); your projects never leave your machine.',
+    author: 'Author',
+    license: 'License',
+    mit: 'MagFEM code under the MIT license: use, modify and redistribute freely, keeping the copyright notice.',
+    thirdParty: 'Third-party components',
+    triangle: 'Triangle 1.6 (J. R. Shewchuk) — free for academic use and free redistribution; commercial use requires an arrangement with the author',
+    femm: 'FEMM 4.2 material library (D. Meeker, femm.info) — Aladdin Free Public License',
+    source: 'Source code on GitHub',
   },
   drawer: { open: 'Problem and libraries', close: 'Close panel' },
   theme: { title: 'Theme', auto: 'automatic (follows the system)', light: 'light', dark: 'dark' },

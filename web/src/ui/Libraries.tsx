@@ -7,7 +7,7 @@ import { addBoundaryDef, addMaterial, assignBoundary, duplicateMaterial, removeB
 import { parseMatlib, type FemmMaterial } from '../io/femm';
 import { materialLine } from '../cad/script';
 import { BOUNDARY_TYPES, BOUNDARY_UNSUPPORTED, boundaryColor, OUTER_BOUNDARY, DEFAULT_MATERIALS, MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type MaterialGroup } from '../cad/types';
-import { useT } from '../i18n';
+import { displayName, useT } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
 import { openTab } from './tabsStore';
@@ -491,7 +491,7 @@ export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
         {ed.sketch.boundaries.map((b) => (
           <li key={b.id}>
             <button role="option" aria-selected={focus === b.id} className={`lib-item${focus === b.id ? ' on' : ''}`} onClick={() => onFocus(focus === b.id ? null : b.id)}>
-              <span className="bswatch" style={{ background: boundaryColor(b) }} /> <span className="tname">{b.name}</span>
+              <span className="bswatch" style={{ background: boundaryColor(b) }} /> <span className="tname">{displayName(b.name)}</span>
               <span className="crefs">
                 {t.mesh[b.type]} · {t.mesh.curvesOf(b.curves.length + (b.id === OUTER_BOUNDARY && hasOuterB ? outer.length : 0))}
               </span>

@@ -8,7 +8,7 @@ import { autoSize, regionSizes, sizeOf } from '../cad/meshgen';
 import { findRegion, type Region } from '../cad/regions';
 import { addNode, updateNode, type MeshSub, type TreeSel } from '../cad/tree';
 import type { Id, MeshNode } from '../cad/types';
-import { T, useT } from '../i18n';
+import { T, useT, displayName } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
 import { boundaryColor, OUTER_BOUNDARY } from '../cad/types';
@@ -288,7 +288,7 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
                 <li key={b.id}>
                   <Row
                     icon={<span className="bswatch" style={{ background: boundaryColor(b) }} />}
-                    label={b.name}
+                    label={displayName(b.name)}
                     selected={sel.kind === 'boundary' && sel.id === b.id}
                     onClick={() => {
                       ed.selectCurves(curves);

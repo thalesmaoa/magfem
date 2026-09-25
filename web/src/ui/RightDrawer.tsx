@@ -56,7 +56,7 @@ function ProblemPanel({ ed }: { ed: SketchEditor }) {
 }
 
 /** Gaveta da direita (oculta por padrão): Problema e bibliotecas de materiais e contornos. */
-export function RightDrawer({ ed, open, onToggle }: { ed: SketchEditor; open: boolean; onToggle: () => void }) {
+export function RightDrawer({ ed, open, onToggle, onAbout }: { ed: SketchEditor; open: boolean; onToggle: () => void; onAbout: () => void }) {
   const t = useT();
   useDocVersion(ed.doc);
   useEditor(ed);
@@ -68,10 +68,16 @@ export function RightDrawer({ ed, open, onToggle }: { ed: SketchEditor; open: bo
   ];
   return (
     <aside className={`drawer${open ? ' open' : ''}`}>
-      <button className="drawer-tab" onClick={onToggle} aria-expanded={open} aria-label={open ? t.drawer.close : t.drawer.open} title={open ? t.drawer.close : t.drawer.open}>
-        <span>{open ? '›' : '‹'}</span>
-        <span className="drawer-tab-label">{t.drawer.open}</span>
-      </button>
+      {/* Faixa vertical da direita: "Problema e bibliotecas" e, abaixo, "Sobre". */}
+      <div className="drawer-strip">
+        <button className="drawer-tab" onClick={onToggle} aria-expanded={open} aria-label={open ? t.drawer.close : t.drawer.open} title={open ? t.drawer.close : t.drawer.open}>
+          <span>{open ? '›' : '‹'}</span>
+          <span className="drawer-tab-label">{t.drawer.open}</span>
+        </button>
+        <button className="drawer-tab about-tab" onClick={onAbout} title={t.about.button}>
+          <span className="drawer-tab-label">{t.about.button}</span>
+        </button>
+      </div>
       {open && (
         <div className="drawer-body side">
           <div className="drawer-tabs" role="tablist">
