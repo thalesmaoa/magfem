@@ -13,6 +13,7 @@ import { openTab } from './tabsStore';
 import { CircuitTable, tableItemRows } from './CanvasTabs';
 import { findRegion as findRegionP } from '../cad/regions';
 import { pointCode } from '../cad/mesh';
+import { defaultVarName, resultVars, safeName } from '../cad/results';
 
 const PLOT_ICON: Record<PlotKind, JSX.Element> = {
   surface: <span className="plot-ico map" />,
@@ -23,7 +24,7 @@ const PLOT_ICON: Record<PlotKind, JSX.Element> = {
 
 const FILTER_ICON = <span className="plot-ico iso">∿</span>;
 const TABLE_ICON = <span className="plot-ico iso">▦</span>;
-const ITEM_ICON: Record<TableItem, JSX.Element> = { circuits: Icons.circuit, lineint: <span className="plot-ico iso">∫ℓ</span>, surfint: <span className="plot-ico iso">∬</span> };
+const ITEM_ICON: Record<TableItem, JSX.Element> = { circuits: Icons.circuit, lineint: <span className="plot-ico iso">∫ℓ</span>, surfint: <span className="plot-ico iso">∬</span>, formula: <span className="plot-ico iso">ƒx</span> };
 
 /** Botão (+) com uma lista de escolhas. */
 function ChoiceMenu({ label, items }: { label: string; items: { icon: JSX.Element; label: string; note?: string; onClick: () => void }[] }) {
@@ -953,10 +954,36 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
   const arr = ed.arrangement();
   const chosen = new Set((node.regions ?? []).map((k) => findRegionP(arr, k)?.index).filter((x): x is number => x !== undefined));
   const rows = tableItemRows(ed, node);
+  const sol = node.physics ? ed.shownSol(node.physics) : undefined;
+  const vars = sol && node.physics ? resultVars(sk, arr, sol, node.physics) : null;
   return (
     <div className="props-body">
       <section>
         <h3>{t.table.items[node.item ?? 'circuits']}</h3>
+        {node.item !== 'circuits' && (
+          <label className="field">
+            <span>{t.table.varName}</span>
+            <LazyInput
+              value={node.varName ?? ''}
+              placeholder={defaultVarName(sk, node)}
+              ariaLabel={t.table.varName}
+              onCommit={(v) => set({ varName: v.trim() ? safeName(v.trim()) : undefined }, `r.show(${q(node.id)}, var_name=${v.trim() ? q(safeName(v.trim())) : 'None'})`)}
+            />
+          </label>
+        )}
+        {node.item === 'formula' && (
+          <>
+            <label className="field">
+              <span>{t.table.expr}</span>
+              <LazyInput value={node.expr ?? ''} placeholder="400 * S1_intA / S1_area * depth_m" ariaLabel={t.table.expr} onCommit={(v) => set({ expr: v.trim() || undefined }, `r.show(${q(node.id)}, expr=${q(v.trim())})`)} />
+            </label>
+            <label className="field">
+              <span>{t.table.unitLabel}</span>
+              <LazyInput value={node.unitLabel ?? ''} placeholder="Wb" ariaLabel={t.table.unitLabel} onCommit={(v) => set({ unitLabel: v.trim() || undefined }, `r.show(${q(node.id)}, unit_label=${q(v.trim())})`)} />
+            </label>
+            <p className="help-line">{t.table.formulaHelp}</p>
+          </>
+        )}
         {node.item === 'lineint' && (
           <>
             <label className="field">
@@ -1021,6 +1048,25 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
               ))}
             </tbody>
           </table>
+        )}
+        {node.item === 'formula' && vars && (
+          <details className="var-list" open>
+            <summary>{t.table.available}</summary>
+            <table className="circ-table kv">
+              <tbody>
+                {vars.list.map((v) => (
+                  <tr key={v.name}>
+                    <th>
+                      <code>{v.name}</code>
+                    </th>
+                    <td>
+                      {v.value.toPrecision(5)} {v.unit}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
         )}
         {node.view && (
           <button className="btn secondary" onClick={() => openTab({ kind: 'table', id: node.view! })}>

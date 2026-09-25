@@ -704,13 +704,14 @@ export interface SurfaceIntegrals {
   b2: number; // ∫|B|² dV (T²·m³)
   bx: number; // média de B_x (ou B_r) (T)
   by: number; // média de B_y (ou B_z) (T)
+  intA: number; // ∫A dS (Wb·m no plano; ∫ψ dS no axissimétrico)
 }
 
 /** Integrais sobre as regiões dadas (índices do arranjo). */
 export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>): SurfaceIntegrals {
   const { xy, triangles, triRegion } = sol.mesh;
   const depth = depthOf(sk);
-  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0 };
+  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0, intA: 0 };
   for (let t = 0; t < triangles.length / 3; t++) {
     const r = triRegion[t];
     if (!regions.has(r)) continue;
@@ -729,6 +730,7 @@ export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>
     out.b2 += bb * dV;
     out.bx += bx * ar;
     out.by += by * ar;
+    out.intA += ((sol.A[a] + sol.A[b] + sol.A[c]) / 3) * ar;
   }
   if (out.area > 0) {
     out.bAvg /= out.area;

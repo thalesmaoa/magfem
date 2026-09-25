@@ -5,6 +5,7 @@ import type { SketchEditor } from '../cad/editor';
 import { updateMaterial } from '../cad/mesh';
 import { circuitResults, lineIntegrals, lineProfile, quantityLabel, surfaceIntegrals } from '../cad/solve';
 import { findRegion } from '../cad/regions';
+import { resultVars, varNameOf } from '../cad/results';
 import type { TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT } from '../i18n';
@@ -547,6 +548,7 @@ export function tableItemRows(ed: SketchEditor, it: PostNode): { rows: [string, 
     return {
       rows: [
         [S.area, `${Number((si.area * 1e6).toPrecision(5))} mm²`],
+        [S.intA, eng(si.intA, sol.axisymmetric ? 'Wb·m/rad' : 'Wb·m')],
         [S.volume, `${Number((si.volume * 1e9).toPrecision(5))} mm³`],
         [S.current, eng(si.current, 'A')],
         [S.energy, eng(si.energy, 'J')],
@@ -555,6 +557,14 @@ export function tableItemRows(ed: SketchEditor, it: PostNode): { rows: [string, 
         [S.bmean, `${si.bx.toPrecision(4)}, ${si.by.toPrecision(4)} T`],
       ],
     };
+  }
+  if (it.item === 'formula') {
+    const phys = it.physics!;
+    const rv = resultVars(sk, ed.arrangement(), sol, phys);
+    const f = rv.formulas.get(it.id);
+    if (!f || f.error) return { rows: [], msg: f?.error ?? t.table.noExpr };
+    const unit = it.unitLabel ?? '';
+    return { rows: [[`${varNameOf(sk, it)} = ${it.expr}`, `${Number(f.value!.toPrecision(6))} ${unit}`]] };
   }
   return { rows: [] };
 }

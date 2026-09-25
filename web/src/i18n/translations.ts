@@ -488,12 +488,18 @@ export interface Translations {
     newTableNote: string;
     resultsName: string;
     addItem: string;
-    items: Record<'circuits' | 'lineint' | 'surfint', string>;
-    itemHelp: Record<'circuits' | 'lineint' | 'surfint', string>;
+    items: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
+    itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
+    varName: string;
+    expr: string;
+    unitLabel: string;
+    noExpr: string;
+    available: string;
+    formulaHelp: string;
     pickRegions: string;
     noRegions: string;
     line: { length: string; flux: string; intB: string; intBn: string; mmf: string; bAvg: string };
-    surf: { area: string; volume: string; current: string; energy: string; bAvg: string; b2: string; bmean: string };
+    surf: { area: string; volume: string; current: string; energy: string; bAvg: string; b2: string; bmean: string; intA: string };
     empty: string;
   };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
@@ -1076,12 +1082,18 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     newTableNote: 'integrais sobre linha e de superfície',
     resultsName: 'Resultados',
     addItem: 'Incluir na tabela',
-    items: { circuits: 'Circuitos', lineint: 'Integral sobre linha', surfint: 'Integral de superfície' },
-    itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'corrente, energia, |B| médio' },
+    items: { circuits: 'Circuitos', lineint: 'Integral sobre linha', surfint: 'Integral de superfície', formula: 'Fórmula' },
+    itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'área, ∫A dS, corrente, energia', formula: 'expressão com variáveis de resultado' },
+    varName: 'Nome (variáveis)',
+    expr: 'Expressão',
+    unitLabel: 'Unidade (exibição)',
+    noExpr: 'Escreva uma expressão.',
+    available: 'Variáveis disponíveis (SI)',
+    formulaHelp: 'Use as variáveis de resultado (SI, sem unidade) e as do projeto. Ex.: fluxo concatenado = N·∫A dS / área × profundidade → 400 * S1_intA / S1_area * depth_m.',
     pickRegions: 'Regiões da integral',
     noRegions: 'Marque ao menos uma região.',
     line: { length: 'Comprimento', flux: 'Fluxo Φ', intB: '∫|B| dl', intBn: '∫B·n dl', mmf: '∫H·dl (FMM)', bAvg: '|B| médio' },
-    surf: { area: 'Área', volume: 'Volume', current: 'Corrente ∫J dA', energy: 'Energia ½∫B·H dV', bAvg: '|B| médio', b2: '∫|B|² dV', bmean: 'B médio (x, y)' },
+    surf: { area: 'Área', volume: 'Volume', current: 'Corrente ∫J dA', energy: 'Energia ½∫B·H dV', bAvg: '|B| médio', b2: '∫|B|² dV', bmean: 'B médio (x, y)', intA: '∫A dS' },
     empty: 'Tabela vazia: use o + para incluir circuitos ou integrais.',
   },
   hist: {
@@ -1670,12 +1682,18 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     newTableNote: 'line and surface integrals',
     resultsName: 'Results',
     addItem: 'Add to table',
-    items: { circuits: 'Circuits', lineint: 'Line integral', surfint: 'Surface integral' },
-    itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'current, energy, mean |B|' },
+    items: { circuits: 'Circuits', lineint: 'Line integral', surfint: 'Surface integral', formula: 'Formula' },
+    itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'area, ∫A dS, current, energy', formula: 'expression with result variables' },
+    varName: 'Name (variables)',
+    expr: 'Expression',
+    unitLabel: 'Unit (display)',
+    noExpr: 'Write an expression.',
+    available: 'Available variables (SI)',
+    formulaHelp: 'Use the result variables (SI, unitless) and the project variables. E.g. flux linkage = N·∫A dS / area × depth → 400 * S1_intA / S1_area * depth_m.',
     pickRegions: 'Integration regions',
     noRegions: 'Check at least one region.',
     line: { length: 'Length', flux: 'Flux Φ', intB: '∫|B| dl', intBn: '∫B·n dl', mmf: '∫H·dl (MMF)', bAvg: 'Mean |B|' },
-    surf: { area: 'Area', volume: 'Volume', current: 'Current ∫J dA', energy: 'Energy ½∫B·H dV', bAvg: 'Mean |B|', b2: '∫|B|² dV', bmean: 'Mean B (x, y)' },
+    surf: { area: 'Area', volume: 'Volume', current: 'Current ∫J dA', energy: 'Energy ½∫B·H dV', bAvg: 'Mean |B|', b2: '∫|B|² dV', bmean: 'Mean B (x, y)', intA: '∫A dS' },
     empty: 'Empty table: use + to add circuits or integrals.',
   },
   hist: {

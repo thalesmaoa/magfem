@@ -62,4 +62,21 @@ test('circuito: λ, L = λ/I (½LI² = energia), R e perdas; tabela nos resultad
   // Corrente total = I × espiras (a região é a única).
   await expect(page.locator('.props .circ-table')).toContainText('1.000 kA');
   await expect(page.locator('.chart-pane .table-item')).toContainText('Energia');
+
+  // Fórmula com variáveis de resultado: fluxo concatenado = N ∫A dS / área × profundidade (N = 1) = λ do circuito.
+  await tbl.getByRole('button', { name: 'Incluir na tabela' }).click();
+  await page.getByRole('menuitem', { name: /Fórmula/ }).click();
+  await page.getByLabel('Expressão').fill('S1_intA / S1_area * depth_m');
+  await page.getByLabel('Expressão').press('Enter');
+  await expect(page.locator('.var-list')).toContainText('S1_intA');
+  const f = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { resultVars } = await import('/tools/magfem-web/src/cad/results.ts');
+    const phys = ed.sketch.nodes.find((n: any) => n.kind === 'physics').id;
+    const rv = resultVars(ed.sketch, ed.arrangement(), ed.shownSol(phys), phys);
+    const it = ed.sketch.nodes.find((n: any) => n.item === 'formula');
+    return { f: rv.formulas.get(it.id).value, lambda: rv.env.get('Bobina_lambda').v };
+  });
+  expect(Math.abs(f.f - f.lambda) / f.lambda).toBeLessThan(1e-9);
+  await expect(page.locator('.chart-pane .table-item').last()).toContainText('F1 =');
 });

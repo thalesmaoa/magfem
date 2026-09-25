@@ -209,6 +209,11 @@ export interface PostNode {
   curve?: Id;
   /** Item de tabela de resultados (quando o pai é uma tabela). */
   item?: TableItem;
+  /** Nome das variáveis de resultado deste item (ex.: "S1" → S1_area, S1_intA…); fórmula: nome do resultado. */
+  varName?: string;
+  /** Fórmula (item 'formula'): expressão com variáveis do projeto e de resultado; unidade só para exibir. */
+  expr?: string;
+  unitLabel?: string;
   /** Integral de superfície: regiões escolhidas (identidade pelas curvas + ponto interno). */
   regions?: { curves: Id[]; seed: { x: number; y: number } }[];
   /** Cor sólida (contorno, glifos, curva). */
@@ -240,8 +245,8 @@ export interface ViewNode {
 }
 
 /** Itens de uma tabela de resultados. */
-export type TableItem = 'circuits' | 'lineint' | 'surfint';
-export const TABLE_ITEMS: TableItem[] = ['circuits', 'lineint', 'surfint'];
+export type TableItem = 'circuits' | 'lineint' | 'surfint' | 'formula';
+export const TABLE_ITEMS: TableItem[] = ['circuits', 'lineint', 'surfint', 'formula'];
 
 /** Tabela de resultados: uma aba com itens numéricos (circuitos, integrais). */
 export interface TableNode {
