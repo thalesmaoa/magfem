@@ -198,6 +198,7 @@ export interface Translations {
   };
   cons: { title: string; none: string; del: string; edit: string };
   consoleCmd: {
+    idTaken: (id: string) => string;
     placeholder: string;
     unclosedString: string;
     badChar: (c: string) => string;
@@ -732,6 +733,7 @@ const PT: Translations = {
   },
   cons: { title: 'Restrições', none: 'Nenhuma ainda.', del: 'Apagar restrição', edit: 'Editar valor' },
   consoleCmd: {
+    idTaken: (id) => `O id ${id} já existe.`,
     placeholder: 'Digite um comando (ex.: g.line((0, 0), (40, 0))) — Tab completa, help() lista os comandos',
     unclosedString: 'Texto entre aspas sem fechar',
     badChar: (c) => `Caractere inesperado "${c}"`,
@@ -1285,6 +1287,7 @@ const EN: Translations = {
   },
   cons: { title: 'Constraints', none: 'None yet.', del: 'Delete constraint', edit: 'Edit value' },
   consoleCmd: {
+    idTaken: (id) => `Id ${id} already exists.`,
     placeholder: 'Type a command (e.g. g.line((0, 0), (40, 0))) — Tab completes, help() lists the commands',
     unclosedString: 'Unclosed quoted string',
     badChar: (c) => `Unexpected character "${c}"`,

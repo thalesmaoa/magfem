@@ -27,7 +27,7 @@ import {
 import { addNode, addPlot, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
 import { addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
@@ -235,6 +235,27 @@ export interface RunResult {
   out: string | null;
 }
 
+
+/** Troca um id por outro em todo o projeto (chaves de entidades e referências), sem tocar em nomes/expressões. */
+export function renameId(sk: Sketch, from: string, to: string): Sketch {
+  if (from === to) return sk;
+  const walk = (v: unknown, key?: string): unknown => {
+    if (key === 'name' || key === 'expr' || key === 'current' || key === 'magnetAngle' || key === 'meshSize' || key === 'value' && typeof v === 'string') return v;
+    if (typeof v === 'string') return v === from ? to : v;
+    if (Array.isArray(v)) return v.map((x) => walk(x));
+    if (v && typeof v === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [k, x] of Object.entries(v)) out[k === from ? to : k] = walk(x, k);
+      return out;
+    }
+    return v;
+  };
+  const next = walk(sk) as Sketch;
+  const n = Number(/\d+$/.exec(to)?.[0] ?? NaN);
+  if (Number.isFinite(n)) next.nextId = Math.max(next.nextId, n + 1);
+  return next;
+}
+
 export class CommandConsole {
   /** Variáveis do console (ex.: l4 = s.line(...)). */
   env = new Map<string, Value>();
@@ -348,6 +369,35 @@ export class CommandConsole {
     const r = this.host.doc.commit(next, [this.code]);
     if (!r.ok) throw new ConsoleError(r.message!);
   }
+  /** Commit com id explícito (reprodução exata por script): renomeia o criado para `id`. */
+  private commitWithId(next: Sketch, created: string, id: Value | undefined): string {
+    if (id === undefined || id === null) {
+      this.commit(next);
+      return created;
+    }
+    const want = String(id);
+    if (want !== created && (next.entities[want] || next.constraints.some((c) => c.id === want) || next.groups.some((g) => g.id === want) || next.nodes.some((n) => n.id === want)))
+      throw new ConsoleError(T().consoleCmd.idTaken(want));
+    this.commit(renameId(next, created, want));
+    return want;
+  }
+  /** Id explícito para itens de biblioteca (materiais, circuitos, contornos). */
+  private commitWithIdOf(next: Sketch, created: string, id: Value | undefined): string {
+    if (id === undefined || id === null || String(id) === created) {
+      this.commit(next);
+      return created;
+    }
+    const want = String(id);
+    if (next.materials.some((m) => m.id === want) || next.circuits.some((c) => c.id === want) || next.boundaries.some((b) => b.id === want)) throw new ConsoleError(T().consoleCmd.idTaken(want));
+    this.commit(renameId(next, created, want));
+    return want;
+  }
+  /** Marcas de curva vindas do script (auxiliar, nome). */
+  private flags(sk: Sketch, id: string, kw: Record<string, Value>) {
+    const e = sk.entities[id] as { aux?: boolean; name?: string };
+    if (kw.aux === true) e.aux = true;
+    if (kw.name) e.name = String(kw.name);
+  }
 
   /** Comprimento que pode ser negativo ("-(2 mm)" no histórico do offset para o outro lado). */
   private signedLength(v: Value): number {
@@ -450,9 +500,12 @@ export class CommandConsole {
       case 'point': {
         need(1);
         const d = new Draft(sk);
-        const id = this.pointOf(d, a[0], true);
-        this.commit(d.sk);
-        return id;
+        const id = this.pointOf(d, a[0], kw.free !== false);
+        const e = d.sk.entities[id] as PointEnt;
+        if (kw.fixed === true) e.fixed = true;
+        if (kw.aux === true) e.aux = true;
+        if (kw.name) e.name = String(kw.name);
+        return this.commitWithId(d.sk, id, kw.id);
       }
       case 'line': {
         need(2);
@@ -460,8 +513,8 @@ export class CommandConsole {
         const p1 = this.pointOf(d, a[0]);
         const p2 = this.pointOf(d, a[1]);
         const id = d.addLine(p1, p2, kw.construction === true);
-        this.commit(d.sk);
-        return id;
+        this.flags(d.sk, id, kw);
+        return this.commitWithId(d.sk, id, kw.id);
       }
       case 'circle': {
         need(1);
@@ -469,8 +522,8 @@ export class CommandConsole {
         const c = this.pointOf(d, a[0]);
         const r = this.length(kw.r ?? a[1] ?? null);
         const id = d.addCircle(c, r, kw.construction === true);
-        this.commit(d.sk);
-        return id;
+        this.flags(d.sk, id, kw);
+        return this.commitWithId(d.sk, id, kw.id);
       }
       case 'arc': {
         need(3);
@@ -479,8 +532,8 @@ export class CommandConsole {
         const s = this.pointOf(d, a[1]);
         const e = this.pointOf(d, a[2]);
         const id = d.addArc(c, s, e, dist(pt(d.sk, c), pt(d.sk, s)), kw.construction === true);
-        this.commit(d.sk);
-        return id;
+        this.flags(d.sk, id, kw);
+        return this.commitWithId(d.sk, id, kw.id);
       }
       case 'rectangle':
       case 'rectangle_center': {
@@ -739,6 +792,47 @@ export class CommandConsole {
         const center = kw.center !== undefined ? (typeof kw.center === 'string' ? this.id(kw.center) : this.xy(kw.center)) : { x: 0, y: 0 };
         return this.commitGroup(circularArray(sk, this.ids([a[0]]), Number(kw.n ?? 4), this.angle(kw.angle ?? 360), center));
       }
+      // ----- baixo nível (script exportado): restrições, grupos e contador de ids -----
+      case 'constraint': {
+        need(2);
+        const refs = (seq(a[1]) ?? [a[1]]).map((r) => String(r));
+        const c: Constraint = { id: kw.id ? String(kw.id) : `k${sk.nextId}`, type: String(a[0]) as ConstraintType, refs };
+        if (kw.value !== undefined) c.value = Number(kw.value);
+        if (kw.expr !== undefined) c.expr = String(kw.expr);
+        if (kw.label !== undefined) c.label = this.xy(kw.label);
+        if (kw.flip !== undefined) c.flip = (seq(kw.flip) ?? []).map((x) => !!x) as [boolean, boolean];
+        if (kw.internal === true) c.internal = true;
+        if (kw.sign !== undefined) c.sign = Number(kw.sign) < 0 ? -1 : 1;
+        if (kw.param !== undefined) c.param = String(kw.param);
+        if (kw.offset_dim !== undefined) c.offsetDim = String(kw.offset_dim);
+        if (kw.axis !== undefined) c.axis = String(kw.axis) === 'y' ? 'y' : 'x';
+        const n = Number(/\d+$/.exec(c.id)?.[0] ?? NaN);
+        this.commit({ ...sk, constraints: [...sk.constraints, c], nextId: Number.isFinite(n) ? Math.max(sk.nextId, n + 1) : sk.nextId + 1 });
+        return c.id;
+      }
+      case 'group_def': {
+        need(1);
+        const id = String(a[0]);
+        const g: Group = { id, name: kw.name ? String(kw.name) : id, members: (seq(kw.members ?? []) ?? []).map(String) };
+        if (kw.parent !== undefined) g.parent = String(kw.parent);
+        if (kw.hidden === true) g.hidden = true;
+        if (kw.offset !== undefined) {
+          const o = seq(kw.offset) ?? [];
+          g.offset = { parents: (seq(o[0]) ?? []).map(String), distance: Number(o[1]), side: Number(o[2]) < 0 ? -1 : 1 };
+        }
+        if (kw.pattern !== undefined) {
+          const p = seq(kw.pattern) ?? [];
+          const src = (seq(p[1]) ?? []).map(String);
+          g.pattern = p[0] === 'circular' ? { kind: 'circular', src, n: Number(p[2]), angle: Number(p[3]), center: String(p[4]) } : { kind: 'linear', src, nx: Number(p[2]), ny: Number(p[3]), dx: Number(p[4]), dy: Number(p[5]) };
+        }
+        const n = Number(/\d+$/.exec(id)?.[0] ?? NaN);
+        this.commit({ ...sk, groups: [...sk.groups.filter((x) => x.id !== id), g], nextId: Number.isFinite(n) ? Math.max(sk.nextId, n + 1) : sk.nextId });
+        return id;
+      }
+      case 'next_id':
+        need(1);
+        this.commit({ ...sk, nextId: Math.max(sk.nextId, Number(a[0])) });
+        return null;
       // ----- problema e árvore -----
       case 'units':
         need(1);
@@ -756,8 +850,7 @@ export class CommandConsole {
         const kind = fn === 'add_physics' ? 'physics-magnetic' : fn === 'add_mesh' ? 'mesh' : 'post';
         const name = kw.name ? String(kw.name) : fn === 'add_physics' ? T().tree.magnetic : fn === 'add_mesh' ? T().tree.addMesh : T().tree.addPost;
         const r = addNode(sk, kind, name);
-        this.commit(r.sketch);
-        return r.node.id;
+        return this.commitWithId(r.sketch, r.node.id, kw.id);
       }
       case 'physics': {
         need(1);
@@ -776,14 +869,14 @@ export class CommandConsole {
         if (kw.color !== undefined) patch.color = String(kw.color);
         if (kw.bh !== undefined) patch.bh = kw.bh === null ? undefined : (seq(kw.bh) ?? []).map((p) => (seq(p) ?? []).map(Number) as [number, number]);
         if (kw.name !== undefined) patch.name = String(kw.name);
+        if (kw.group !== undefined) patch.group = String(kw.group) as MaterialGroup;
         const cur = findMaterial(sk, String(a[0]));
         if (cur) {
           this.commit(updateMaterial(sk, cur.id, patch));
           return cur.id;
         }
-        const r = addMaterial(sk, String(a[0]), patch);
-        this.commit(r.sketch);
-        return r.material.id;
+        const r = addMaterial(sk, String(a[0]), patch, kw.group !== undefined ? (String(kw.group) as MaterialGroup) : 'custom');
+        return this.commitWithIdOf(r.sketch, r.material.id, kw.id);
       }
       case 'circuit': {
         need(1);
@@ -797,8 +890,7 @@ export class CommandConsole {
           return cur.id;
         }
         const r = addCircuit(sk, String(a[0]), patch.current ?? '1');
-        this.commit(patch.kind ? updateCircuit(r.sketch, r.circuit.id, { kind: patch.kind }) : r.sketch);
-        return r.circuit.id;
+        return this.commitWithIdOf(patch.kind ? updateCircuit(r.sketch, r.circuit.id, { kind: patch.kind }) : r.sketch, r.circuit.id, kw.id);
       }
       case 'del_circuit': {
         need(1);
@@ -859,8 +951,7 @@ export class CommandConsole {
           return cur.id;
         }
         const r = addBoundaryDef(sk, patch.type ?? 'dirichlet', name);
-        this.commit(patch.value !== undefined ? updateBoundaryDef(r.sketch, r.boundary.id, { value: patch.value }) : r.sketch);
-        return r.boundary.id;
+        return this.commitWithIdOf(patch.value !== undefined ? updateBoundaryDef(r.sketch, r.boundary.id, { value: patch.value }) : r.sketch, r.boundary.id, kw.id);
       }
       case 'mesh_size': {
         need(1);
@@ -902,8 +993,7 @@ export class CommandConsole {
           viewId = v.node.id;
         }
         const r = addPlot(base, viewId, kind, kw.name ? String(kw.name) : `${T().post.plots[kind]}: ${T().post.qty[qty].split(' —')[0]}`, qty);
-        this.commit(r.sketch);
-        return r.node.id;
+        return this.commitWithId(r.sketch, r.node.id, kw.id);
       }
       case 'move': {
         need(2);
@@ -920,14 +1010,12 @@ export class CommandConsole {
       case 'view': {
         need(1);
         const r = addView(sk, String(a[0]), kw.name ? String(kw.name) : undefined);
-        this.commit(r.sketch);
-        return r.node.id;
+        return this.commitWithId(r.sketch, r.node.id, kw.id);
       }
       case 'interpolate': {
         need(1);
         const r = addView(sk, String(a[0]), kw.name ? String(kw.name) : undefined, Math.max(1, Math.min(6, Math.round(kw.level !== undefined ? Number(kw.level) : 3))));
-        this.commit(r.sketch);
-        return r.node.id;
+        return this.commitWithId(r.sketch, r.node.id, kw.id);
       }
       case 'post_show': {
         need(1);
@@ -965,6 +1053,12 @@ export class CommandConsole {
         need(1);
         this.commit(removeNode(sk, String(a[0])));
         return null;
+      case 'clear': {
+        // Projeto vazio (sem nós, materiais, regiões, contornos nem circuitos): ponto de partida do script exportado.
+        const e = emptySketch();
+        this.commit({ ...e, nodes: [], materials: [], regionAssigns: [], boundaries: [], circuits: [], nextId: 1 });
+        return null;
+      }
       case 'new':
       case 'open':
         throw new ConsoleError(t.useMenu);
