@@ -907,7 +907,7 @@ export class SketchEditor {
           outer: r.outer.poly,
           holes: r.holes.map((h) => h.poly),
           color: m?.color ?? null,
-          label: m?.name ?? T().mesh.noMaterial,
+          label: a?.name ? `${a.name} · ${m?.name ?? T().mesh.noMaterial}` : (m?.name ?? T().mesh.noMaterial),
           at: r.label,
           selected: selKey === r,
           hovered: this.meshHover?.kind === 'region' && this.meshHover.index === r.index,

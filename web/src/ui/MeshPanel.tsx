@@ -6,9 +6,9 @@ import { formatLength } from '../cad/expr';
 import { assignBoundary, assignRegion, pointCode, regionKey } from '../cad/mesh';
 import { autoSize, regionSizes, sizeOf } from '../cad/meshgen';
 import { findRegion, type Region } from '../cad/regions';
-import { addNode, removeNode, updateNode, type MeshSub, type TreeSel } from '../cad/tree';
+import { addNode, updateNode, type MeshSub, type TreeSel } from '../cad/tree';
 import type { Id, MeshNode } from '../cad/types';
-import { useT } from '../i18n';
+import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
 import { Icons } from './icons';
@@ -25,9 +25,13 @@ type RowProps = {
   extra?: React.ReactNode;
   toggle?: { open: boolean; onToggle: () => void };
   title?: string;
+  /** Duplo clique no nome renomeia. */
+  onRename?: (name: string) => void;
 };
 
 function Row(p: RowProps) {
+  const t = useT();
+  const [renaming, setRenaming] = useState(false);
   return (
     <div className={`tnode${p.selected ? ' on' : ''}`} role="treeitem" aria-selected={!!p.selected} aria-label={p.label} onClick={p.onClick} title={p.title}>
       {p.toggle ? (
@@ -45,10 +49,44 @@ function Row(p: RowProps) {
         <span className="twisty-space" />
       )}
       <span className="ticon">{p.icon}</span>
-      <span className="tname">{p.label}</span>
+      {renaming && p.onRename ? (
+        <LazyInput autoFocus value={p.label} ariaLabel={t.tree.rename} onCommit={(n) => p.onRename!(n)} onDone={() => setRenaming(false)} />
+      ) : (
+        <span
+          className="tname"
+          title={p.onRename ? t.tree.rename : undefined}
+          onDoubleClick={(e) => {
+            if (!p.onRename) return;
+            e.stopPropagation();
+            setRenaming(true);
+          }}
+        >
+          {p.label}
+        </span>
+      )}
       {p.extra}
     </div>
   );
+}
+
+/** O nó de malha (único); cria se o projeto não tiver. */
+function ensureMeshNode(ed: SketchEditor): Id | null {
+  const n = ed.sketch.nodes.find((x) => x.kind === 'mesh');
+  if (n) return n.id;
+  const r = addNode(ed.sketch, 'mesh', T().mesh.elementsNode);
+  return ed.commit(r.sketch, [r.code]) ? r.node.id : null;
+}
+
+/** Nome da região: o dado pelo usuário ou "Região N". */
+export function regionName(ed: SketchEditor, r: Region): string {
+  return ed.assignOf(regionKey(r))?.name ?? T().mesh.region(r.index + 1);
+}
+
+/** Renomeia a região (nome vazio volta ao padrão). */
+function renameRegion(ed: SketchEditor, r: Region, name: string) {
+  const n = name.trim();
+  if (n === regionName(ed, r)) return;
+  ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), { name: n || undefined }), regionCode(r, `name=${n ? q(n) : 'None'}`));
 }
 
 /** Código da atribuição (o ponto interno identifica a região). */
@@ -59,7 +97,7 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
   const t = useT();
   const snap = useEditor(ed);
   const sk = ed.sketch;
-  const [open, setOpen] = useState<Set<string>>(() => new Set(['materials', 'boundaries', 'regions', 'meshes']));
+  const [open, setOpen] = useState<Set<string>>(() => new Set(['materials', 'boundaries', 'regions']));
   const toggle = (k: string) =>
     setOpen((o) => {
       const n = new Set(o);
@@ -81,14 +119,13 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snap.meshSel]);
 
-  const section = (key: MeshSub | 'meshes', icon: JSX.Element, label: string, extra?: React.ReactNode) => (
+  const section = (key: MeshSub, icon: JSX.Element, label: string, extra?: React.ReactNode) => (
     <Row
       icon={icon}
       label={label}
-      selected={key !== 'meshes' && sub === key && !snap.meshSel}
+      selected={sub === key && !snap.meshSel}
       toggle={{ open: open.has(key), onToggle: () => toggle(key) }}
       onClick={() => {
-        if (key === 'meshes') return toggle(key);
         ed.selectCurves([]);
         onSelect({ kind: 'mesh', sub: key });
         setOpen((o) => new Set(o).add(key));
@@ -101,6 +138,9 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
     ed.selectRegion(r.index);
   };
   const sizes = meshNodes[0] ? regionSizes(sk, arr, meshNodes[0]) : [];
+  const meshNode = meshNodes[0];
+  const mesh = meshNode ? ed.meshes.get(meshNode.id) : undefined;
+  const stale = meshNode ? ed.meshStale(meshNode.id) : false;
 
   return (
     <ul role="group">
@@ -132,14 +172,15 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
                 <li key={r.index}>
                   <Row
                     icon={<Swatch color={m?.color} />}
-                    label={t.mesh.region(r.index + 1)}
+                    label={regionName(ed, r)}
+                    onRename={(n) => renameRegion(ed, r, n)}
                     selected={selRegion === r && sub !== 'regions'}
                     onClick={() => pickRegion(r, 'materials')}
                     extra={
                       <MaterialPicker
                         ed={ed}
                         value={a?.material}
-                        label={`${t.mesh.pickMaterial}: ${t.mesh.region(r.index + 1)}`}
+                        label={`${t.mesh.pickMaterial}: ${regionName(ed, r)}`}
                         onPick={(id) => {
                           const mm = ed.sketch.materials.find((x) => x.id === id);
                           if (mm) ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), { material: id }), regionCode(r, `material=${q(mm.name)}`));
@@ -222,7 +263,8 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
                 <li key={r.index}>
                   <Row
                     icon={Icons.region}
-                    label={t.mesh.region(r.index + 1)}
+                    label={regionName(ed, r)}
+                    onRename={(n) => renameRegion(ed, r, n)}
                     selected={selRegion === r && sub === 'regions'}
                     onClick={() => pickRegion(r, 'regions')}
                     extra={<span className="crefs">{own ? formatLength(own, unit) : sizes[r.index] ? `auto · ${formatLength(sizes[r.index], unit)}` : 'auto'}</span>}
@@ -233,72 +275,37 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
           </ul>
         )}
       </li>
-      {/* 4. Malhas: configurações globais e o botão de gerar. */}
+      {/* 4. Elementos (Triangle): nó único, sem filhos — configurações e o botão de gerar. */}
       <li>
-        {section(
-          'meshes',
-          Icons.treeMesh,
-          t.mesh.meshes,
-          <button
-            className="icon-btn tadd"
-            title={t.tree.addToMesh}
-            aria-label={t.tree.addToMesh}
-            onClick={(e) => {
-              e.stopPropagation();
-              const r = addNode(sk, 'mesh', `${t.tree.addMesh} ${meshNodes.length + 1}`);
-              if (ed.commit(r.sketch, [r.code])) onSelect({ kind: 'node', id: r.node.id });
-            }}
-          >
-            +
-          </button>,
-        )}
-        {open.has('meshes') && (
-          <ul role="group">
-            {meshNodes.map((n) => {
-              const m = ed.meshes.get(n.id);
-              const stale = ed.meshStale(n.id);
-              return (
-                <li key={n.id}>
-                  <Row
-                    icon={Icons.treeMesh}
-                    label={n.name}
-                    selected={sel.kind === 'node' && sel.id === n.id}
-                    onClick={() => onSelect({ kind: 'node', id: n.id })}
-                    extra={
-                      <>
-                        <span className={`crefs${stale ? ' bad' : ''}`}>{ed.meshBusy === n.id ? t.mesh.generating : m ? t.mesh.elements(m.elements) : '—'}</span>
-                        <button
-                          className="icon-btn"
-                          title={t.mesh.generate}
-                          aria-label={`${t.mesh.generate}: ${n.name}`}
-                          disabled={ed.meshBusy !== null}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelect({ kind: 'node', id: n.id });
-                            void ed.generateMesh(n.id);
-                          }}
-                        >
-                          ▶
-                        </button>
-                        <button
-                          className="x"
-                          title={t.tree.remove}
-                          aria-label={`${t.tree.remove} ${n.name}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            ed.commit(removeNode(ed.sketch, n.id), [`m.remove(${q(n.id)})`]);
-                          }}
-                        >
-                          ×
-                        </button>
-                      </>
-                    }
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <Row
+          icon={Icons.treeMesh}
+          label={t.mesh.elementsNode}
+          selected={sel.kind === 'node' && sel.id === meshNode?.id}
+          onClick={() => {
+            const id = ensureMeshNode(ed);
+            if (id) onSelect({ kind: 'node', id });
+          }}
+          extra={
+            <>
+              <span className={`crefs${stale ? ' bad' : ''}`}>{meshNode && ed.meshBusy === meshNode.id ? t.mesh.generating : mesh ? t.mesh.elements(mesh.elements) : '—'}</span>
+              <button
+                className="icon-btn"
+                title={t.mesh.generate}
+                aria-label={t.mesh.generate}
+                disabled={ed.meshBusy !== null}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const id = ensureMeshNode(ed);
+                  if (!id) return;
+                  onSelect({ kind: 'node', id });
+                  void ed.generateMesh(id);
+                }}
+              >
+                ▶
+              </button>
+            </>
+          }
+        />
       </li>
     </ul>
   );
@@ -346,7 +353,11 @@ function RegionMaterialProps({ ed }: { ed: SketchEditor }) {
   const set = (patch: Parameters<typeof assignRegion>[3], code: string) => ed.meshOp((s) => assignRegion(s, ed.arrangement(), regionKey(r), patch), regionCode(r, code));
   return (
     <section>
-      <h3>{t.mesh.region(r.index + 1)}</h3>
+      <h3>{regionName(ed, r)}</h3>
+      <label className="field">
+        <span>{t.mesh.name}</span>
+        <LazyInput value={a?.name ?? ''} placeholder={t.mesh.region(r.index + 1)} ariaLabel={t.mesh.regionName} onCommit={(v) => renameRegion(ed, r, v)} />
+      </label>
       <label className="field">
         <span>{t.mesh.area}</span>
         <span className="cval">
@@ -413,7 +424,11 @@ function RegionSizeProps({ ed }: { ed: SketchEditor }) {
   const bad = own.trim() !== '' && sizeOf(sk, own) === null;
   return (
     <section>
-      <h3>{t.mesh.region(r.index + 1)}</h3>
+      <h3>{regionName(ed, r)}</h3>
+      <label className="field">
+        <span>{t.mesh.name}</span>
+        <LazyInput value={a?.name ?? ''} placeholder={t.mesh.region(r.index + 1)} ariaLabel={t.mesh.regionName} onCommit={(v) => renameRegion(ed, r, v)} />
+      </label>
       <label className="field">
         <span>{t.mesh.meshSize}</span>
         <LazyInput
@@ -496,9 +511,7 @@ function MeshNodeProps({ ed, node }: { ed: SketchEditor; node: MeshNode }) {
   const badSize = !!node.size?.trim() && sizeOf(sk, node.size) === null;
   return (
     <section>
-      <h3>
-        {t.tree.meshProps}: {node.name}
-      </h3>
+      <h3>{t.mesh.elementsNode}</h3>
       <label className="field">
         <span>{t.mesh.globalSize}</span>
         <LazyInput

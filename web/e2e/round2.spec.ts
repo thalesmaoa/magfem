@@ -199,8 +199,8 @@ test('idioma EN/PT, citação e abas de etapa', async ({ page }) => {
   await page.getByRole('button', { name: 'Citar', exact: true }).click();
   await expect(dlg.locator('.cite-full')).toContainText('MAIA, Thales');
   await dlg.getByRole('button', { name: 'Fechar', exact: true }).click();
-  // Árvore: seção Malha já traz "Malha 1" em Malhas; selecioná-la põe o canvas no modo malha.
-  const meshNode = page.getByRole('treeitem', { name: 'Malha 1', exact: true });
+  // Árvore: "Elementos" (nó único da Malha) põe o canvas no modo malha.
+  const meshNode = page.getByRole('treeitem', { name: 'Elementos', exact: true });
   await meshNode.click();
   // Nó de malha: canvas no modo malha (regiões/contornos), sem aviso "em construção".
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('mesh');

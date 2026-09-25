@@ -343,6 +343,8 @@ export interface Translations {
     curvesOf: (n: number) => string;
     unassigned: string;
     elements: (n: number) => string;
+    elementsNode: string;
+    regionName: string;
     nameTaken: (n: string) => string;
   };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
@@ -772,6 +774,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     curvesOf: (n) => `${n} curva${n === 1 ? '' : 's'}`,
     unassigned: 'sem contorno (Neumann natural)',
     elements: (n) => `${n} el.`,
+    elementsNode: 'Elementos',
+    regionName: 'Nome da região',
   },
   hist: {
     title: 'Histórico',
@@ -1206,6 +1210,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     curvesOf: (n) => `${n} curve${n === 1 ? '' : 's'}`,
     unassigned: 'no boundary (natural Neumann)',
     elements: (n) => `${n} el.`,
+    elementsNode: 'Triangle',
+    regionName: 'Region name',
   },
   hist: {
     title: 'History',

@@ -621,7 +621,8 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
                   });
                 }}
                 extra={
-                  <AddMenu
+                  // Malha tem um único nó (Elementos), sem (+) na seção.
+                  sec.key !== 'mesh' && <AddMenu
                     ed={ed}
                     kinds={[...sec.kinds]}
                     label={sec.add}

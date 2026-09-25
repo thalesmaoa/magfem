@@ -214,6 +214,8 @@ export interface RegionAssign {
   id: Id;
   curves: Id[];
   seed: { x: number; y: number };
+  /** Nome dado pelo usuário (ex.: "Bobina primário"); ausente = "Região N". */
+  name?: string;
   /** Material da região (sem material: não pode resolver). */
   material?: Id;
   /** Tamanho do elemento na região (expressão de comprimento); ausente = o da malha (automático). */

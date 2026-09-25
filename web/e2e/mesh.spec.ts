@@ -37,6 +37,14 @@ test('malha: materiais por região, contornos, tamanho por região e geração c
   sk = await sketch(page);
   expect(sk.regionAssigns.map((a: any) => a.material).sort()).toEqual(['mat_1010', 'mat_cu']);
 
+  // Renomear a região: duplo clique na árvore.
+  await page.locator('.tree .tname', { hasText: 'Região 2' }).first().dblclick();
+  const ren = page.locator('.tree').getByRole('textbox', { name: 'Duplo clique para renomear' });
+  await ren.fill('Bobina primário');
+  await ren.press('Enter');
+  await expect(page.getByRole('treeitem', { name: 'Bobina primário' }).first()).toBeVisible();
+  expect((await sketch(page)).regionAssigns.some((a: any) => a.name === 'Bobina primário')).toBe(true);
+
   // 2. Contornos: borda do círculo → novo contorno → Neumann.
   await clickWorld(page, { x: 5, y: 0 });
   await page.getByLabel('Contorno', { exact: true }).selectOption({ label: 'Novo contorno…' });
@@ -57,7 +65,7 @@ test('malha: materiais por região, contornos, tamanho por região e geração c
   expect(sk.regionAssigns.find((a: any) => a.meshSize)?.meshSize).toBe('0.5 mm');
 
   // 4. Gerar a malha.
-  await page.getByRole('button', { name: 'Gerar malha: Malha 1' }).click();
+  await page.getByRole('treeitem', { name: 'Elementos', exact: true }).getByRole('button', { name: 'Gerar malha' }).click();
   await expect(page.locator('.props')).toContainText('triângulos');
   const m = await page.evaluate(() => {
     const ed = (window as any).__magfem;
