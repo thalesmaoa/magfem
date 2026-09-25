@@ -7,6 +7,7 @@ import { MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type Materi
 import { useT } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
+import { openTab } from './tabsStore';
 
 export const BOUNDARY_TYPES: BoundaryType[] = ['dirichlet', 'neumann', 'periodic', 'antiperiodic'];
 
@@ -292,34 +293,9 @@ export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
   );
 }
 
-/** Gráfico B(H) com os pontos da curva. */
-function BHChart({ bh }: { bh: [number, number][] }) {
-  const W = 250, H = 150, L = 36, B = 20;
-  const hs = bh.map((p) => p[0]), bs = bh.map((p) => p[1]);
-  const hmax = Math.max(...hs, 1), bmax = Math.max(...bs, 0.1);
-  const X = (h: number) => L + (h / hmax) * (W - L - 8);
-  const Y = (b: number) => 6 + (1 - b / bmax) * (H - B - 6);
-  const tk = (v: number) => (v >= 1e4 ? v.toExponential(1) : v >= 100 ? Math.round(v).toString() : v.toPrecision(2));
-  return (
-    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="B-H">
-      <line x1={L} y1={6} x2={L} y2={H - B} className="axis" />
-      <line x1={L} y1={H - B} x2={W - 8} y2={H - B} className="axis" />
-      <polyline points={bh.map((p) => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' ')} className="curve" />
-      {bh.map((p, i) => (
-        <circle key={i} cx={X(p[0])} cy={Y(p[1])} r={2} className="pt" />
-      ))}
-      <text x={L - 3} y={10} textAnchor="end">{tk(bmax)}</text>
-      <text x={L - 3} y={H - B} textAnchor="end">0</text>
-      <text x={W - 8} y={H - 5} textAnchor="end">{tk(hmax)} A/m</text>
-      <text x={L + 4} y={14} className="unit">B (T)</text>
-    </svg>
-  );
-}
-
 /** Curva B-H do material: gráfico, tabela editável, incluir/remover pontos, criar/remover a curva. */
 function BHEditor({ ed, m }: { ed: SketchEditor; m: Material }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
   const code = (bh: [number, number][] | undefined) => `m.material(${q(m.name)}, bh=${bh ? `[${bh.map((p) => `(${p[0]}, ${p[1]})`).join(', ')}]` : 'None'})`;
   const save = (bh: [number, number][] | undefined) => {
     if (bh) {
@@ -341,74 +317,26 @@ function BHEditor({ ed, m }: { ed: SketchEditor; m: Material }) {
             const pts: [number, number][] = [[0, 0]];
             for (const b of [0.5, 1.0, 1.4, 1.6, 1.8]) pts.push([Math.round((b / mu) * (b > 1 ? (b - 0.4) ** 3 * 4 : 1)), b]);
             save(pts);
-            setOpen(true);
+            openTab({ kind: 'bh', material: m.id });
           }}
         >
           {t.mesh.bhAdd}
         </button>
       </div>
     );
-  const bh = m.bh;
   return (
     <div className="bh">
       <div className="field">
         <span>{t.mesh.bh}</span>
-        <button className="btn secondary" onClick={() => setOpen(!open)} aria-expanded={open}>
-          {t.mesh.bhPoints(bh.length)} {open ? '▴' : '▾'}
-        </button>
+        <span className="cval">{t.mesh.bhPoints(m.bh.length)}</span>
       </div>
-      <BHChart bh={bh} />
-      {open && (
-        <>
-          <table className="bh-table">
-            <thead>
-              <tr>
-                <th>H (A/m)</th>
-                <th>B (T)</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {bh.map((p, i) => (
-                <tr key={i}>
-                  {[0, 1].map((k) => (
-                    <td key={k}>
-                      <LazyInput
-                        value={String(p[k])}
-                        ariaLabel={`${k ? 'B' : 'H'} ${i + 1}`}
-                        onCommit={(v) => {
-                          const n = Number(v.replace(',', '.'));
-                          if (!Number.isFinite(n) || n < 0) return ed.flash(t.msg.positive);
-                          save(bh.map((q2, j) => (j === i ? ((k ? [q2[0], n] : [n, q2[1]]) as [number, number]) : q2)));
-                        }}
-                      />
-                    </td>
-                  ))}
-                  <td>
-                    <button className="x" title={t.tree.remove} aria-label={`${t.tree.remove} ${i + 1}`} disabled={bh.length <= 2} onClick={() => save(bh.filter((_, j) => j !== i))}>
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button
-            className="btn secondary"
-            onClick={() => {
-              const [h1, b1] = bh[bh.length - 1];
-              const [h0, b0] = bh[bh.length - 2] ?? [0, 0];
-              save([...bh, [Math.round(h1 + (h1 - h0) * 2), +(b1 + Math.max((b1 - b0) * 0.5, 0.01)).toFixed(3)]]);
-            }}
-          >
-            + {t.mesh.bhAddPoint}
-          </button>
-          <button className="btn danger" onClick={() => save(undefined)}>
-            {t.mesh.bhRemove}
-          </button>
-          <p className="help-line">{t.mesh.bhHelp}</p>
-        </>
-      )}
+      <button className="btn" onClick={() => openTab({ kind: 'bh', material: m.id })}>
+        {t.mesh.bhOpen}
+      </button>
+      <button className="btn danger" onClick={() => save(undefined)}>
+        {t.mesh.bhRemove}
+      </button>
+      <p className="help-line">{t.mesh.bhHelp}</p>
     </div>
   );
 }

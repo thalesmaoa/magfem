@@ -225,14 +225,14 @@ test('árvore: física com análise, várias físicas, remover e desfazer', asyn
   await page.getByRole('button', { name: 'Incluir no método de resolução' }).click();
   await expect(page.getByRole('menuitem', { name: /Resultado/ })).toHaveCount(0);
   await page.getByRole('menuitem', { name: /Campo magnético/ }).click();
-  await page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético', exact: true }).last().getByRole('button', { name: 'Incluir visualização' }).click();
+  await page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético', exact: true }).last().getByRole('button', { name: 'Nova vista (aba) com…' }).click();
   await page.getByRole('menuitem', { name: /Superfície/ }).click();
   sk = await sketch(page);
-  expect(sk.nodes.map((n: any) => n.kind)).toEqual(['mesh', 'physics', 'physics', 'post']);
-  await page.getByRole('button', { name: /Remover Superfície: B/ }).click();
+  expect(sk.nodes.map((n: any) => n.kind)).toEqual(['mesh', 'physics', 'physics', 'view', 'post']);
+  await page.getByRole('button', { name: /Remover Vista 1/ }).click();
   expect((await sketch(page)).nodes).toHaveLength(3);
   await page.keyboard.press('Control+z');
-  expect((await sketch(page)).nodes).toHaveLength(4);
+  expect((await sketch(page)).nodes).toHaveLength(5);
   for (const sec of ['Geometria', 'Malha', 'Método de resolução', 'Resultados']) await expect(page.getByRole('treeitem', { name: sec, exact: true })).toBeVisible();
   const code = await page.locator('.console .code').innerText();
   expect(code).toContain('s.add_physics(name="Campo magnético 2")');

@@ -47,8 +47,9 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
   // Energia (profundidade padrão 1 m? usa a do problema): W = μ0 J² H L³ / 24 × profundidade.
   await expect(page.locator('.props')).toContainText('B_x, B_y');
 
-  // Resultados levam o nome da física; renomear a física renomeia o grupo.
+  // Resultados levam o nome da física; a vista abre como aba do canvas.
   await expect(page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' })).toHaveCount(2);
+  await expect(page.getByRole('tab', { name: /Campo magnético · Vista 1/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('treeitem', { name: 'Superfície: B' })).toBeVisible();
   await expect(page.getByRole('treeitem', { name: 'Contorno: A' })).toBeVisible();
 
@@ -59,21 +60,36 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
   await page.getByLabel('Componente').selectOption('y');
   expect((await sketch(page)).nodes.find((n: any) => n.plot === 'surface')).toMatchObject({ quantity: 'h', component: 'y' });
 
-  // Glifos: vetores de B.
-  const grp = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
-  await grp.getByRole('button', { name: 'Incluir visualização' }).click();
+  // Glifos na mesma vista (sobrepostos).
+  const view = page.getByRole('treeitem', { name: 'Vista 1', exact: true });
+  await view.getByRole('button', { name: 'Incluir nesta vista' }).click();
   await page.getByRole('menuitem', { name: /Glifos/ }).click();
   await expect(page.getByLabel('Orientação')).toHaveValue('b');
+
+  // Nova vista (outra aba) pelo + da física; Desenho continua lá e nada se perde.
+  const grp = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
+  await grp.getByRole('button', { name: 'Nova vista (aba) com…' }).click();
+  await page.getByRole('menuitem', { name: /Superfície/ }).click();
+  await expect(page.getByRole('tab', { name: /Vista 2/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Desenho' }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).not.toBe('post');
+  await page.getByRole('tab', { name: /Vista 1/ }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('post');
 
   // Gráfico sobre curva: linha de construção horizontal em y = 25 de x = 0 a 50.
   await run('g.line((0, 25), (50, 25), construction=True)');
   const results = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
-  await results.getByRole('button', { name: 'Incluir visualização' }).click();
+  await view.getByRole('button', { name: 'Incluir nesta vista' }).click();
   await page.getByRole('menuitem', { name: /Gráfico sobre linha/ }).click();
   await page.getByRole('button', { name: 'Escolher curva no desenho' }).click();
   await clickWorld(page, { x: 40, y: 25 });
   await expect(page.locator('.props')).toContainText('Fluxo através da curva');
-  await page.getByLabel('Grandeza').selectOption('bn');
+  await page.getByLabel('Grandeza').first().selectOption('bn');
+  // Gráfico em aba própria.
+  await page.getByRole('button', { name: 'Abrir gráfico em aba' }).click();
+  await expect(page.locator('.chart-pane svg.xychart')).toBeVisible();
+  await page.locator('.chart-tools input').first().check(); // eixo x log
+  await expect(page.locator('.chart-pane svg.xychart')).toBeVisible();
   await expect(page.locator('.props svg.chart')).toBeVisible();
   const flux = await page.evaluate(async () => {
     const ed = (window as any).__magfem;
@@ -99,4 +115,26 @@ test('resolver sem material numa região mostra o motivo', async ({ page }) => {
   await page.getByRole('treeitem', { name: /Campo magnético/ }).first().click();
   await page.locator('.props').getByRole('button', { name: '▶ Resolver' }).click();
   await expect(page.locator('.props .err-text')).toContainText('sem material');
+});
+
+test('curva B-H em aba: log/linear e modal ao clicar no ponto', async ({ page }) => {
+  await page.getByRole('button', { name: 'Problema e bibliotecas' }).click();
+  await page.getByRole('tab', { name: 'Materiais' }).click();
+  await page.getByRole('option', { name: /Aço M400-50A/ }).click();
+  await page.getByRole('button', { name: 'Ver curva B-H (aba)' }).click();
+  await expect(page.getByRole('tab', { name: /Curva B-H: Aço M400-50A/ })).toHaveAttribute('aria-selected', 'true');
+  await page.locator('.chart-tools input').first().check();
+  const pts = page.locator('.chart-pane circle.pt');
+  const n = await pts.count();
+  expect(n).toBeGreaterThan(3);
+  await page.locator('.chart-pane circle.pt[aria-label="3"]').click(); // 3º ponto da curva (com log em x o H = 0 some)
+  const dlg = page.getByRole('dialog');
+  await expect(dlg).toBeVisible();
+  const b = dlg.getByLabel('B (T)');
+  const old = Number(await b.inputValue());
+  await b.fill(String(old + 0.01));
+  await b.press('Enter');
+  await dlg.getByRole('button', { name: 'OK' }).click();
+  const sk = await sketch(page);
+  expect(sk.materials.find((m: any) => m.id === 'mat_m400').bh[2][1]).toBeCloseTo(old + 0.01, 6);
 });

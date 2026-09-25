@@ -431,3 +431,34 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .bh-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 2px 4px; }
 .bh-table td { padding: 1px 2px; }
 .bh-table input { width: 100%; box-sizing: border-box; }
+
+/* Abas do canvas (Desenho, vistas de resultados, gráficos) */
+.canvas-tabs { display: flex; gap: 2px; padding: 4px 6px 0; background: var(--panel); border-bottom: 1px solid var(--border); overflow-x: auto; flex: none; }
+.ctab { display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 12px; color: var(--muted); border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; white-space: nowrap; }
+.ctab:hover { color: var(--text); background: var(--accent-soft); }
+.ctab.on { color: var(--accent); background: var(--bg, #fff); border-color: var(--border); margin-bottom: -1px; }
+.ctab .x { font-size: 14px; line-height: 1; }
+.plot-ico.tab { width: 12px; height: 9px; border: 1.5px solid currentColor; border-top-width: 3px; border-radius: 2px; }
+.plot-ico.iso { width: auto; height: auto; font-size: 14px; line-height: 1; }
+.menu-note-inline { display: block; font-size: 11px; color: var(--muted); margin-left: 22px; }
+
+/* Painel de gráfico (por cima do canvas) */
+.chart-pane { position: absolute; inset: 0; background: var(--bg, #fff); display: flex; flex-direction: column; padding: 10px 16px; overflow: auto; z-index: 5; }
+.chart-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; font-size: 13px; }
+.chart-head .btn { margin-top: 0; }
+.chart-tools { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+.chart-stat { font-size: 12px; color: var(--muted); }
+.xychart { width: 100%; max-width: 1100px; height: auto; flex: 1; min-height: 0; }
+.xychart .grid { stroke: var(--border); stroke-width: 1; }
+.xychart .frame { fill: none; stroke: var(--muted); }
+.xychart .curve { fill: none; stroke: #e8408a; stroke-width: 2; }
+.xychart .pt { fill: #e8408a; stroke: var(--bg, #fff); stroke-width: 2; cursor: pointer; }
+.xychart .pt:hover { r: 7; }
+.xychart text { font-size: 12px; fill: var(--muted); }
+.xychart .axis-label { font-size: 13px; fill: var(--text); }
+
+/* Modal simples */
+.modal-back { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.modal { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; min-width: 260px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+.modal h3 { margin: 0 0 8px; font-size: 14px; }
+.modal-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }

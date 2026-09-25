@@ -347,6 +347,9 @@ export interface Translations {
     regionName: string;
     outerHelp: string;
     bhAdd: string;
+    bhPoint: string;
+    bhClickHint: string;
+    bhOpen: string;
     bhAddPoint: string;
     bhRemove: string;
     bhMonotonic: string;
@@ -387,6 +390,16 @@ export interface Translations {
     qty: Record<'b' | 'h' | 'a' | 'j' | 'bn' | 'bt', string>;
     component: string;
     comps: Record<'mag' | 'x' | 'y', string>;
+    view: string;
+    newView: string;
+    addToView: string;
+    drawing: string;
+    closeTab: string;
+    openChart: string;
+    chart: string;
+    logX: string;
+    logY: string;
+    bhTab: string;
     add: string;
     range: string;
     rangeAuto: string;
@@ -836,6 +849,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     elementsNode: 'Elementos',
     regionName: 'Nome da região',
     bhAdd: 'Incluir curva B-H (não linear)',
+    bhPoint: 'Ponto',
+    bhClickHint: 'Clique num ponto para editar.',
+    bhOpen: 'Ver curva B-H (aba)',
     bhAddPoint: 'Ponto',
     bhRemove: 'Remover curva (usar μr linear)',
     bhMonotonic: 'A curva precisa ter H e B crescentes.',
@@ -876,6 +892,16 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     qty: { b: 'B — densidade de fluxo', h: 'H — intensidade de campo', a: 'A — potencial vetor', j: 'J — densidade de corrente', bn: 'B normal', bt: 'B tangencial' },
     component: 'Componente',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
+    view: 'Vista',
+    newView: 'Nova vista (aba) com…',
+    addToView: 'Incluir nesta vista',
+    drawing: 'Desenho',
+    closeTab: 'Fechar aba',
+    openChart: 'Abrir gráfico em aba',
+    chart: 'Gráfico',
+    logX: 'eixo x log',
+    logY: 'eixo y log',
+    bhTab: 'Curva B-H',
     add: 'Incluir visualização',
     range: 'Faixa de cores',
     rangeAuto: 'automática (ex.: 0; 1,5)',
@@ -1331,6 +1357,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     elementsNode: 'Triangle',
     regionName: 'Region name',
     bhAdd: 'Add B-H curve (nonlinear)',
+    bhPoint: 'Point',
+    bhClickHint: 'Click a point to edit.',
+    bhOpen: 'View B-H curve (tab)',
     bhAddPoint: 'Point',
     bhRemove: 'Remove curve (use linear μr)',
     bhMonotonic: 'The curve needs increasing H and B.',
@@ -1371,6 +1400,16 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     qty: { b: 'B — flux density', h: 'H — field intensity', a: 'A — vector potential', j: 'J — current density', bn: 'Normal B', bt: 'Tangential B' },
     component: 'Component',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
+    view: 'View',
+    newView: 'New view (tab) with…',
+    addToView: 'Add to this view',
+    drawing: 'Drawing',
+    closeTab: 'Close tab',
+    openChart: 'Open chart in a tab',
+    chart: 'Chart',
+    logX: 'log x axis',
+    logY: 'log y axis',
+    bhTab: 'B-H curve',
     add: 'Add visualization',
     range: 'Color range',
     rangeAuto: 'automatic (e.g. 0; 1.5)',

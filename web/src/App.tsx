@@ -21,6 +21,8 @@ import { PopoutWindow } from './ui/PopoutWindow';
 import { ModelTree } from './ui/ModelTree';
 import { RightDrawer } from './ui/RightDrawer';
 import { setDrawer, useDrawer } from './ui/drawerStore';
+import { activateTab, openTab, pruneTabs, useTabs } from './ui/tabsStore';
+import { CanvasTabBar, ChartPane } from './ui/CanvasTabs';
 import { Toolbar } from './ui/Toolbar';
 import { LazyInput } from './ui/common';
 import { useDocVersion, useEditor } from './ui/useStore';
@@ -63,18 +65,35 @@ export default function App() {
 
   // Malha (seção, material, contorno ou nó de malha) troca o canvas para o modo malha.
   const meshMode = ed ? isMeshSel(treeSel, ed.sketch) : false;
-  // Resultados (grupo da física ou uma camada): canvas no modo resultados com as camadas visíveis.
-  const selNode = ed && treeSel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === treeSel.id) : undefined;
-  const resultsOf = treeSel.kind === 'results' ? treeSel.id : selNode?.kind === 'post' ? (selNode.physics ?? null) : null;
-  const layersKey = ed && resultsOf ? JSON.stringify(ed.sketch.nodes.filter((n) => n.kind === 'post' && n.physics === resultsOf)) : '';
+  // Abas do canvas: a seleção na árvore abre/ativa a aba certa (vista de resultados ou Desenho).
+  const tabs = useTabs();
   useEffect(() => {
-    ed?.setMode(resultsOf ? 'post' : meshMode ? 'mesh' : 'sketch');
-  }, [ed, meshMode, resultsOf]);
+    if (!ed) return;
+    const node = treeSel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === treeSel.id) : undefined;
+    const view =
+      node?.kind === 'view' ? node.id : node?.kind === 'post' ? node.view : treeSel.kind === 'results' ? ed.sketch.nodes.find((n) => n.kind === 'view' && n.physics === treeSel.id)?.id : undefined;
+    if (view) openTab({ kind: 'view', id: view });
+    else if (!(treeSel.kind === 'results')) activateTab('draw');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ed, treeSel]);
+  // Abas cujo alvo sumiu são fechadas.
   useEffect(() => {
-    if (!ed || !resultsOf) return;
-    const layers = ed.sketch.nodes.filter((n): n is PostNode => n.kind === 'post' && n.physics === resultsOf && !n.hidden);
-    ed.showSolution(resultsOf, layers);
-  }, [ed, resultsOf, layersKey]);
+    if (!ed) return;
+    pruneTabs((t) =>
+      t.kind === 'view' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'view') : t.kind === 'chart' ? ed.sketch.nodes.some((n) => n.id === t.plot) : t.kind === 'bh' ? ed.sketch.materials.some((m) => m.id === t.material && m.bh) : true,
+    );
+  }, [ed, version]);
+  const activeView = tabs.active.startsWith('view:') ? tabs.active.slice(5) : null;
+  const viewNode = ed && activeView ? ed.sketch.nodes.find((n) => n.id === activeView && n.kind === 'view') : undefined;
+  const layersKey = ed && activeView ? JSON.stringify(ed.sketch.nodes.filter((n) => n.kind === 'post' && n.view === activeView)) : '';
+  useEffect(() => {
+    ed?.setMode(activeView ? 'post' : meshMode ? 'mesh' : 'sketch');
+  }, [ed, meshMode, activeView]);
+  useEffect(() => {
+    if (!ed || !viewNode || viewNode.kind !== 'view') return;
+    const layers = ed.sketch.nodes.filter((n): n is PostNode => n.kind === 'post' && n.view === viewNode.id && !n.hidden);
+    ed.showSolution(viewNode.physics, layers);
+  }, [ed, viewNode, layersKey]);
   // Nó de malha selecionado: mostra os triângulos dele.
   const shownMesh = ed && treeSel.kind === 'node' && ed.sketch.nodes.some((n) => n.id === treeSel.id && n.kind === 'mesh') ? treeSel.id : null;
   useEffect(() => {
@@ -235,12 +254,14 @@ export default function App() {
           <ThemeSwitch />
         </nav>
       </header>
-      {ed && (treeSel.kind === 'geometry' || treeSel.kind === 'var') ? <Toolbar ed={ed} /> : <div className="toolbar" />}
+      {ed && tabs.active === 'draw' && (treeSel.kind === 'geometry' || treeSel.kind === 'var') ? <Toolbar ed={ed} /> : <div className="toolbar" />}
       <main className={`work${drawer ? ' drawer-open' : ''}`}>
         {ed ? <ModelTree ed={ed} sel={treeSel} onSelect={setTreeSel} /> : <aside className="side left" />}
         <div className="center">
+          {ed && <CanvasTabBar ed={ed} onSelect={setTreeSel} />}
           <div className="canvas-wrap">
             <canvas ref={canvasRef} className="sketch" tabIndex={0} />
+            {ed && (tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:')) && <ChartPane ed={ed} tab={tabs.active} />}
             {ed && <DimInput ed={ed} />}
             {ready !== 'ok' && <div className="overlay">{ready === 'loading' ? t.app.loading : ready}</div>}
             {ed && <StageOverlay ed={ed} sel={treeSel} />}
@@ -329,12 +350,14 @@ function ExportMenu({ ed, name }: { ed: SketchEditor; name: string }) {
 }
 
 /** Malha e pós ainda não existem: aviso sobre o canvas quando um desses nós está selecionado. */
-function StageOverlay({ ed, sel }: { ed: SketchEditor; sel: TreeSel }) {
+function StageOverlay({ ed }: { ed: SketchEditor; sel: TreeSel }) {
   const t = useT();
   useDocVersion(ed.doc);
-  const n = sel.kind === 'node' ? ed.sketch.nodes.find((x) => x.id === sel.id) : undefined;
-  const phys = sel.kind === 'results' ? sel.id : n?.kind === 'post' ? n.physics : undefined;
-  if (!phys || ed.solutions.has(phys)) return null;
+  useEditor(ed);
+  const tabs = useTabs();
+  if (!tabs.active.startsWith('view:')) return null;
+  const v = ed.sketch.nodes.find((n) => n.id === tabs.active.slice(5));
+  if (!v || v.kind !== 'view' || ed.solutions.has(v.physics)) return null;
   return <div className="overlay soon">{t.solve.noSolution}</div>;
 }
 

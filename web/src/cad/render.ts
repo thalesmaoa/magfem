@@ -238,7 +238,11 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
       }
-      ctx.strokeStyle = legends.length ? 'rgba(10,14,20,0.8)' : COLORS.dim;
+      // Linha escura com halo claro: legível sobre qualquer cor do mapa.
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+      ctx.lineWidth = 2.6;
+      ctx.stroke();
+      ctx.strokeStyle = '#0d1319';
       ctx.lineWidth = 1;
       ctx.stroke();
     } else if (plot === 'arrow') {
@@ -290,7 +294,8 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
       arrow(ctx, tip, { x: tip.x - q.x, y: tip.y - q.y });
     }
   }
-  legends.forEach((lg, i) => drawLegend(ctx, v, lg, i));
+  // Só a legenda da superfície de cima (é a que aparece).
+  if (legends.length) drawLegend(ctx, v, legends[legends.length - 1], 0);
   if (p.probe) {
     const q = v.toScreen(p.probe);
     ctx.strokeStyle = '#ffffff';

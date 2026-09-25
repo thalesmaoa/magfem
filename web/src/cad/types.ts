@@ -187,6 +187,8 @@ export interface PostNode {
   name: string;
   /** Física cujos resultados a camada mostra. */
   physics?: Id;
+  /** Vista (aba do canvas) onde a camada aparece. */
+  view?: Id;
   plot?: PlotKind;
   hidden?: boolean;
   /** Grandeza mostrada (padrão: a primeira do tipo). */
@@ -204,8 +206,16 @@ export interface PostNode {
   curve?: Id;
 }
 
+/** Vista de resultados: uma aba do canvas com camadas (como uma "view" do ParaView). */
+export interface ViewNode {
+  id: Id;
+  kind: 'view';
+  name: string;
+  physics: Id;
+}
+
 /** Nós que o usuário inclui na árvore (o Pré-processador/Geometria é fixo). */
-export type TreeNode = PhysicsNode | MeshNode | PostNode;
+export type TreeNode = PhysicsNode | MeshNode | PostNode | ViewNode;
 
 export const newPhysics = (id: Id, name: string): PhysicsNode => ({
   id,

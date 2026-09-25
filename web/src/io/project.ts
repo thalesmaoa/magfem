@@ -66,6 +66,24 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
   // Tipos de gráfico anteriores (grandeza embutida no tipo) → tipo + grandeza.
   const OLD: Record<string, [PlotKind, PlotQuantity]> = { bmap: ['surface', 'b'], hmap: ['surface', 'h'], amap: ['surface', 'a'], flux: ['contour', 'a'], vectors: ['arrow', 'b'] };
   sk.nodes = sk.nodes.map((n) => (n.kind === 'post' && n.plot && OLD[n.plot as string] ? { ...n, plot: OLD[n.plot as string][0], quantity: OLD[n.plot as string][1] } : n));
+  // Camadas cuja "vista" é na verdade uma física (versão intermediária): corrige.
+  sk.nodes = sk.nodes.map((n) => {
+    if (n.kind !== 'post' || !n.view) return n;
+    const target = sk.nodes.find((x) => x.id === n.view);
+    if (target?.kind === 'physics') return { ...n, physics: target.id, view: undefined };
+    if (target?.kind === 'view') return { ...n, physics: target.physics };
+    return { ...n, view: undefined };
+  });
+  // Camadas sem vista: vão para a "Vista 1" da física.
+  for (const n of [...sk.nodes]) {
+    if (n.kind !== 'post' || n.view || !n.physics) continue;
+    let v = sk.nodes.find((x) => x.kind === 'view' && x.physics === n.physics);
+    if (!v) {
+      v = { id: `n${sk.nextId++}`, kind: 'view', name: `${T().post.view} 1`, physics: n.physics };
+      sk.nodes.push(v);
+    }
+    n.view = v.id;
+  }
   // Offsets de versões anteriores: a primeira distância do grupo vira a cota visível do offset.
   for (const g of sk.groups) {
     if (!g.offset || sk.constraints.some((c) => c.offsetDim === g.id)) continue;

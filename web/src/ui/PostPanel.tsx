@@ -3,12 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { lineProfile, probe, quantityLabel, type Solution } from '../cad/solve';
-import { addPlot, removeNode, updateNode, type TreeSel } from '../cad/tree';
-import { PLOT_KINDS, PLOT_QUANTITIES, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode } from '../cad/types';
+import { addPlot, addView, removeNode, updateNode, type TreeSel } from '../cad/tree';
+import { PLOT_KINDS, PLOT_QUANTITIES, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { Icons } from './icons';
 import { useEditor } from './useStore';
+import { openTab } from './tabsStore';
 
 const PLOT_ICON: Record<PlotKind, JSX.Element> = {
   surface: <span className="plot-ico map" />,
@@ -23,15 +24,17 @@ export const plotName = (plot: PlotKind, qty: PlotQuantity) => {
   return `${t.post.plots[plot]}: ${t.post.qty[qty].split(' —')[0]}`;
 };
 
-/** Resolve; se deu certo, garante as camadas padrão (|B| + linhas) e abre os resultados da física. */
+/** Resolve; se deu certo, garante uma vista padrão (superfície B + contorno A) e abre os resultados. */
 export async function solveAndShow(ed: SketchEditor, id: Id, onSelect: (s: TreeSel) => void) {
   if (!(await ed.solve(id))) return;
-  if (!ed.sketch.nodes.some((n) => n.kind === 'post' && n.physics === id)) {
-    const a = addPlot(ed.sketch, id, 'surface', plotName('surface', 'b'), 'b');
-    const b = addPlot(a.sketch, id, 'contour', plotName('contour', 'a'), 'a');
-    ed.commit(b.sketch, [a.code, b.code]);
+  let view = ed.sketch.nodes.find((n) => n.kind === 'view' && n.physics === id)?.id;
+  if (!view) {
+    const v = addView(ed.sketch, id);
+    const a = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
+    const b = addPlot(a.sketch, v.node.id, 'contour', plotName('contour', 'a'), 'a');
+    if (ed.commit(b.sketch, [v.code, a.code, b.code])) view = v.node.id;
   }
-  onSelect({ kind: 'results', id });
+  onSelect(view ? { kind: 'node', id: view } : { kind: 'results', id });
 }
 
 /** Botão ▶ de uma física (linha da árvore). */
@@ -83,8 +86,8 @@ export function SolveSection({ ed, node, onSelect }: { ed: SketchEditor; node: P
   );
 }
 
-/** (+) do grupo de resultados: escolhe o tipo de visualização. */
-function PlotAddMenu({ ed, physics, onAdded }: { ed: SketchEditor; physics: Id; onAdded: (id: Id) => void }) {
+/** (+) de resultados: escolhe o tipo de gráfico. */
+function PlotAddMenu({ label, onPick }: { label: string; onPick: (k: PlotKind) => void }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -96,19 +99,19 @@ function PlotAddMenu({ ed, physics, onAdded }: { ed: SketchEditor; physics: Id; 
   }, [open]);
   return (
     <div className="add-menu" ref={ref} onClick={(e) => e.stopPropagation()}>
-      <button className="icon-btn tadd" title={t.post.add} aria-label={t.post.add} aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button className="icon-btn tadd" title={label} aria-label={label} aria-expanded={open} onClick={() => setOpen(!open)}>
         +
       </button>
       {open && (
         <div className="menu" role="menu">
+          <div className="menu-label">{label}</div>
           {PLOT_KINDS.map((k) => (
             <button
               key={k}
               role="menuitem"
               onClick={() => {
                 setOpen(false);
-                const r = addPlot(ed.sketch, physics, k, plotName(k, PLOT_QUANTITIES[k][0]));
-                if (ed.commit(r.sketch, [r.code])) onAdded(r.node.id);
+                onPick(k);
               }}
             >
               <span className="ticon">{PLOT_ICON[k]}</span> {t.post.plots[k]}
@@ -170,81 +173,123 @@ function Row(p: {
   );
 }
 
-/** Resultados na árvore: um grupo por física (mesmo nome) com as camadas. */
+/** Resultados na árvore: física (mesmo nome) › vistas (abas) › camadas. */
 export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel; onSelect: (s: TreeSel) => void }) {
   const t = useT();
   useEditor(ed);
   const [closed, setClosed] = useState<Set<Id>>(new Set());
+  const toggle = (id: Id) => setClosed((c) => (c.has(id) ? new Set([...c].filter((x) => x !== id)) : new Set(c).add(id)));
+  const openRow = (id: Id) => setClosed((c) => new Set([...c].filter((x) => x !== id)));
   const sk = ed.sketch;
   const physics = sk.nodes.filter((n): n is PhysicsNode => n.kind === 'physics');
+  const removeBtn = (id: Id, name: string) => (
+    <button
+      className="x"
+      title={t.tree.remove}
+      aria-label={`${t.tree.remove} ${name}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        ed.commit(removeNode(ed.sketch, id), [`r.remove(${q(id)})`]);
+      }}
+    >
+      ×
+    </button>
+  );
+  const rename = (id: Id) => (n: string) => n.trim() && ed.commit(updateNode(ed.sketch, id, { name: n.trim() }), [`r.rename(${q(id)}, ${q(n.trim())})`]);
   return (
     <ul role="group">
       {physics.map((ph) => {
-        const plots = sk.nodes.filter((n): n is PostNode => n.kind === 'post' && n.physics === ph.id);
+        const views = sk.nodes.filter((n): n is ViewNode => n.kind === 'view' && n.physics === ph.id);
         const sol = ed.solutions.get(ph.id);
-        const open = !closed.has(ph.id);
         return (
           <li key={ph.id}>
             <Row
               icon={Icons.treePhysics}
               label={ph.name}
               selected={sel.kind === 'results' && sel.id === ph.id}
-              toggle={{ open, onToggle: () => setClosed((c) => (c.has(ph.id) ? new Set([...c].filter((x) => x !== ph.id)) : new Set(c).add(ph.id))) }}
+              toggle={{ open: !closed.has(ph.id), onToggle: () => toggle(ph.id) }}
               onClick={() => onSelect({ kind: 'results', id: ph.id })}
               extra={
                 <>
                   <span className={`crefs${sol && ed.solutionStale(ph.id) ? ' bad' : ''}`}>{sol ? `${sol.bmax.toPrecision(3)} T` : '—'}</span>
                   <PlotAddMenu
-                    ed={ed}
-                    physics={ph.id}
-                    onAdded={(id) => {
-                      setClosed((c) => new Set([...c].filter((x) => x !== ph.id)));
-                      onSelect({ kind: 'node', id });
+                    label={t.post.newView}
+                    onPick={(k) => {
+                      const v = addView(ed.sketch, ph.id);
+                      const p = addPlot(v.sketch, v.node.id, k, plotName(k, PLOT_QUANTITIES[k][0]));
+                      if (ed.commit(p.sketch, [v.code, p.code])) {
+                        openRow(ph.id);
+                        onSelect({ kind: 'node', id: p.node.id });
+                      }
                     }}
                   />
                 </>
               }
             />
-            {open && (
+            {!closed.has(ph.id) && (
               <ul role="group">
-                {plots.map((p) => (
-                  <li key={p.id}>
-                    <Row
-                      icon={PLOT_ICON[p.plot ?? 'surface']}
-                      label={p.name}
-                      muted={p.hidden}
-                      selected={sel.kind === 'node' && sel.id === p.id}
-                      onClick={() => onSelect({ kind: 'node', id: p.id })}
-                      onRename={(n) => n.trim() && ed.commit(updateNode(sk, p.id, { name: n.trim() }), [`r.rename(${q(p.id)}, ${q(n.trim())})`])}
-                      extra={
-                        <>
-                          <button
-                            className="icon-btn"
-                            title={p.hidden ? t.post.show : t.post.hide}
-                            aria-label={`${p.hidden ? t.post.show : t.post.hide} ${p.name}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              ed.commit(updateNode(sk, p.id, { hidden: !p.hidden }), [`r.show(${q(p.id)}, visible=${p.hidden ? 'True' : 'False'})`]);
-                            }}
-                          >
-                            {p.hidden ? Icons.eyeOff : Icons.eye}
-                          </button>
-                          <button
-                            className="x"
-                            title={t.tree.remove}
-                            aria-label={`${t.tree.remove} ${p.name}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              ed.commit(removeNode(sk, p.id), [`r.remove(${q(p.id)})`]);
-                            }}
-                          >
-                            ×
-                          </button>
-                        </>
-                      }
-                    />
-                  </li>
-                ))}
+                {views.map((v) => {
+                  const plots = sk.nodes.filter((n): n is PostNode => n.kind === 'post' && n.view === v.id);
+                  return (
+                    <li key={v.id}>
+                      <Row
+                        icon={<span className="plot-ico tab" />}
+                        label={v.name}
+                        selected={sel.kind === 'node' && sel.id === v.id}
+                        toggle={{ open: !closed.has(v.id), onToggle: () => toggle(v.id) }}
+                        onClick={() => onSelect({ kind: 'node', id: v.id })}
+                        onRename={rename(v.id)}
+                        extra={
+                          <>
+                            <PlotAddMenu
+                              label={t.post.addToView}
+                              onPick={(k) => {
+                                const p = addPlot(ed.sketch, v.id, k, plotName(k, PLOT_QUANTITIES[k][0]));
+                                if (ed.commit(p.sketch, [p.code])) {
+                                  openRow(v.id);
+                                  onSelect({ kind: 'node', id: p.node.id });
+                                }
+                              }}
+                            />
+                            {removeBtn(v.id, v.name)}
+                          </>
+                        }
+                      />
+                      {!closed.has(v.id) && (
+                        <ul role="group">
+                          {plots.map((p) => (
+                            <li key={p.id}>
+                              <Row
+                                icon={PLOT_ICON[p.plot ?? 'surface']}
+                                label={p.name}
+                                muted={p.hidden}
+                                selected={sel.kind === 'node' && sel.id === p.id}
+                                onClick={() => onSelect({ kind: 'node', id: p.id })}
+                                onRename={rename(p.id)}
+                                extra={
+                                  <>
+                                    <button
+                                      className="icon-btn"
+                                      title={p.hidden ? t.post.show : t.post.hide}
+                                      aria-label={`${p.hidden ? t.post.show : t.post.hide} ${p.name}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        ed.commit(updateNode(ed.sketch, p.id, { hidden: !p.hidden }), [`r.show(${q(p.id)}, visible=${p.hidden ? 'True' : 'False'})`]);
+                                      }}
+                                    >
+                                      {p.hidden ? Icons.eyeOff : Icons.eye}
+                                    </button>
+                                    {removeBtn(p.id, p.name)}
+                                  </>
+                                }
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </li>
@@ -522,6 +567,9 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
             {node.curve && sol && !prof && <p className="muted">{t.post.outside}</p>}
             {prof && (
               <>
+                <button className="btn secondary" onClick={() => openTab({ kind: 'chart', plot: node.id })}>
+                  {t.post.openChart}
+                </button>
                 <Chart s={prof.s} y={prof[quantity as 'b' | 'bn' | 'bt' | 'h' | 'a']} unit={quantityLabel(quantity, 'mag', sol!.axisymmetric).replace(/^.*\(/, '').replace(')', '')} />
                 <label className="field">
                   <span>{t.post.flux}</span>

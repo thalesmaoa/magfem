@@ -1,4 +1,5 @@
 // Árvore do modelo: Pré-processador (Geometria + físicas), Malha e Pós-processador.
+import { T } from '../i18n';
 import { q } from './code';
 import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type Sketch, type TreeNode } from './types';
 
@@ -39,11 +40,21 @@ export function addNode(sk: Sketch, kind: AddKind, name: string): { sketch: Sket
 }
 
 /** Nova camada de visualização para os resultados de uma física. */
-export function addPlot(sk: Sketch, physics: Id, plot: PlotKind, name: string, quantity?: PlotQuantity): { sketch: Sketch; node: TreeNode; code: string } {
+export function addPlot(sk: Sketch, view: Id, plot: PlotKind, name: string, quantity?: PlotQuantity): { sketch: Sketch; node: TreeNode; code: string } {
+  const v = sk.nodes.find((n) => n.id === view && n.kind === 'view');
+  const physics = v?.kind === 'view' ? v.physics : undefined;
   const id = `n${sk.nextId}`;
   const qty = quantity ?? PLOT_QUANTITIES[plot][0];
-  const node: TreeNode = { id, kind: 'post', name, physics, plot, quantity: qty };
-  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.plot(${q(physics)}, ${q(plot)}, quantity=${q(qty)})` };
+  const node: TreeNode = { id, kind: 'post', name, physics, view, plot, quantity: qty };
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.plot(${q(view)}, ${q(plot)}, quantity=${q(qty)})` };
+}
+
+/** Nova vista (aba) de resultados de uma física. */
+export function addView(sk: Sketch, physics: Id, name?: string): { sketch: Sketch; node: TreeNode; code: string } {
+  const id = `n${sk.nextId}`;
+  const n = name ?? `${T().post.view} ${sk.nodes.filter((x) => x.kind === 'view' && x.physics === physics).length + 1}`;
+  const node: TreeNode = { id, kind: 'view', name: n, physics };
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.view(${q(physics)}, name=${q(n)})` };
 }
 
 export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch {
@@ -51,8 +62,12 @@ export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch
 }
 
 export function removeNode(sk: Sketch, id: Id): Sketch {
-  return { ...sk, nodes: sk.nodes.filter((n) => n.id !== id) };
+  // Remover uma vista leva junto as camadas dela; remover uma física leva vistas e camadas.
+  const gone = new Set([id]);
+  for (const n of sk.nodes) if ((n.kind === 'view' && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
+  for (const n of sk.nodes) if (n.kind === 'post' && n.view && gone.has(n.view)) gone.add(n.id);
+  return { ...sk, nodes: sk.nodes.filter((n) => !gone.has(n.id)) };
 }
 
 /** Objeto da API de cada seção da árvore: g (geometria), m (malha), s (solucionador), r (resultados). */
-export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r' };
+export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r' };

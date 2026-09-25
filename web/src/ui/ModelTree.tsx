@@ -662,6 +662,7 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
         {isMeshSel(sel, ed.sketch) && <MeshProps ed={ed} sel={sel} onSelect={onSelect} />}
         {current && current.kind === 'post' && <PlotProps ed={ed} node={current} />}
         {sel.kind === 'results' && <ResultsProps ed={ed} id={sel.id} onSelect={onSelect} />}
+        {current?.kind === 'view' && <ResultsProps ed={ed} id={current.physics} onSelect={onSelect} />}
       </div>
     </aside>
   );
