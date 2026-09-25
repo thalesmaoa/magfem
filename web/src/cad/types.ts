@@ -219,6 +219,8 @@ export interface PostNode {
   /** Fórmula (item 'formula'): expressão com variáveis do projeto e de resultado; unidade só para exibir. */
   expr?: string;
   unitLabel?: string;
+  /** Transitório: instante (índice do passo) para mostrar como tabela; ausente = curva no tempo. */
+  atTime?: number;
   /** Integral de superfície: regiões escolhidas (identidade pelas curvas + ponto interno). */
   regions?: { curves: Id[]; seed: { x: number; y: number } }[];
   /** Cor sólida (contorno, glifos, curva). */

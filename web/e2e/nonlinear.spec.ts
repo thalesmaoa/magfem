@@ -90,3 +90,47 @@ test('curva B-H: arrastar um ponto muda B (e respeita os vizinhos)', async ({ pa
   expect(after[2][1]).toBeLessThanOrEqual(after[3][1]);
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+
+test('transitório: resultados viram curvas no tempo (corrente senoidal) e tabela num instante escolhido', async ({ page }) => {
+  const box = await coreModel(page, '2*sin(2*pi*50*t)');
+  await page.getByRole('treeitem', { name: /Campo magnético/ }).first().click();
+  await page.locator('.props label', { hasText: 'Análise' }).locator('select').selectOption('transient');
+  const run = async (c: string) => {
+    await box.fill(c);
+    await box.press('Enter');
+  };
+  await run('s.physics("n2", dt="0.001", t_end="0.02")');
+  await run('tb = r.table("n2", id="tb1")');
+  await run('r.item("tb1", "surfint", id="it1")');
+  // Região da bobina e saída "corrente ∫J dA" (nome I_bob).
+  await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { updateNode } = await import('/tools/magfem-web/src/cad/tree.ts');
+    const r = ed.arrangement().regions.find((x: any) => Math.abs(x.label.x) < 1e-6 || (x.label.x > -25 && x.label.x < 25 && Math.abs(x.area - 5000) < 1));
+    ed.commit(updateNode(ed.sketch, 'it1', { regions: [{ curves: r.curves, seed: r.label }], outputs: [{ q: 'current', name: 'I_bob' }] }), []);
+  });
+  await page.getByRole('treeitem', { name: /Campo magnético/ }).first().getByRole('button', { name: 'Resolver' }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.size), { timeout: 30000 }).toBeGreaterThan(0);
+  const ts = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { itemTimeSeries } = await import('/tools/magfem-web/src/ui/CanvasTabs.tsx');
+    return itemTimeSeries(ed, ed.sketch.nodes.find((n: any) => n.id === 'it1'));
+  });
+  expect(ts.t).toHaveLength(20);
+  const s = ts.series.find((x: any) => x.label === 'I_bob');
+  // ∫J dA = N·i = 400 · 2 sin(2π·50·t).
+  for (let k = 0; k < 20; k++) expect(s.y[k]).toBeCloseTo(800 * Math.sin(2 * Math.PI * 50 * ts.t[k]), 3);
+  // Na aba da tabela: uma curva por variável; escolhendo um instante, vira tabela.
+  await page.getByRole('treeitem', { name: /Resultados|Tabela/ }).last().click().catch(() => {});
+  await page.evaluate(() => {
+    const ed = (window as any).__magfem;
+    ed.commit(ed.sketch, []);
+  });
+  await run('r.show("it1", at_time=4)');
+  const inst = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { tableItemRows } = await import('/tools/magfem-web/src/ui/CanvasTabs.tsx');
+    return tableItemRows(ed, ed.sketch.nodes.find((n: any) => n.id === 'it1')).rows;
+  });
+  expect(inst[0][1]).toMatch(/800/);
+});

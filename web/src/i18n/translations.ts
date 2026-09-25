@@ -553,6 +553,9 @@ export interface Translations {
     items: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
     varName: string;
+    show: string;
+    curve: string;
+    instant: (t: string) => string;
     outputs: string;
     noOutputs: string;
     expr: string;
@@ -1255,6 +1258,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     items: { circuits: 'Circuitos', lineint: 'Integral sobre linha', surfint: 'Integral de superfície', formula: 'Fórmula' },
     itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'área, ∫A dS, corrente, energia', formula: 'expressão com variáveis de resultado' },
     varName: 'Nome (variáveis)',
+    show: 'Mostrar',
+    curve: 'Curva no tempo',
+    instant: (t) => `Tabela em t = ${t}`,
     outputs: 'Grandezas e nomes das variáveis',
     noOutputs: 'Marque ao menos uma grandeza.',
     expr: 'Expressão',
@@ -1963,6 +1969,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     items: { circuits: 'Circuits', lineint: 'Line integral', surfint: 'Surface integral', formula: 'Formula' },
     itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'area, ∫A dS, current, energy', formula: 'expression with result variables' },
     varName: 'Name (variables)',
+    show: 'Show',
+    curve: 'Curve over time',
+    instant: (t) => `Table at t = ${t}`,
     outputs: 'Quantities and variable names',
     noOutputs: 'Check at least one quantity.',
     expr: 'Expression',

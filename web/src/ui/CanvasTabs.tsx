@@ -3,12 +3,13 @@ import { useRef, useState, useSyncExternalStore } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { updateMaterial } from '../cad/mesh';
-import { circuitResults, lineProfile, quantityLabel } from '../cad/solve';
+import { circuitResults, lineProfile, quantityLabel, frameOf } from '../cad/solve';
 import { findRegion } from '../cad/regions';
 import { outputsOf, resultVars, safeName, varNameOf } from '../cad/results';
 import type { TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT, displayName } from '../i18n';
+import { MultiChart } from './SchematicPane';
 import { LazyInput } from './common';
 import { useDocVersion, useEditor } from './useStore';
 import { activateTab, closeTab, tabKey, useTabs, type CanvasTab } from './tabsStore';
@@ -547,9 +548,67 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
 }
 
 /** Linhas (rótulo, valor) de um item de tabela, ou uma mensagem. */
+/** Solução do item: no transitório, o instante escolhido (atTime) ou o da animação. */
+function itemSol(ed: SketchEditor, it: PostNode) {
+  const full = it.physics ? ed.solutions.get(it.physics) : undefined;
+  if (full?.times && it.atTime !== undefined) return frameOf(full, Math.min(it.atTime, full.times.length - 1));
+  return it.physics ? ed.shownSol(it.physics) : undefined;
+}
+
+/** Nomes das variáveis de resultado de um item (as que viram curvas no tempo). */
+function itemVarNames(ed: SketchEditor, it: PostNode): string[] {
+  const sk = ed.sketch;
+  if (it.item === 'surfint' || it.item === 'lineint') return outputsOf(sk, it).map((o) => safeName(o.name));
+  if (it.item === 'formula') return [varNameOf(sk, it)];
+  if (it.item === 'circuits') return sk.circuits.flatMap((c) => [`${safeName(c.name)}_I`, `${safeName(c.name)}_lambda`]);
+  return [];
+}
+
+const seriesCache = new WeakMap<object, Map<string, { t: number[]; series: { label: string; unit: string; y: number[] }[] }>>();
+/** Transitório: cada variável do item em todos os instantes (null se a solução não é transitória). */
+export function itemTimeSeries(ed: SketchEditor, it: PostNode): { t: number[]; series: { label: string; unit: string; y: number[] }[] } | null {
+  const full = it.physics ? ed.solutions.get(it.physics) : undefined;
+  if (!full?.times || !it.physics) return null;
+  const key = `${ed.doc.version}|${it.id}`;
+  const byKey = seriesCache.get(full) ?? new Map();
+  seriesCache.set(full, byKey);
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const names = itemVarNames(ed, it);
+  const arr = ed.arrangement();
+  const series = names.map((label) => ({ label, unit: '', y: [] as number[] }));
+  for (let k = 0; k < full.times.length; k++) {
+    const rv = resultVars(ed.sketch, arr, frameOf(full, k), it.physics);
+    for (const s of series) {
+      const v = rv.list.find((x) => x.name === s.label);
+      s.y.push(v ? v.value : NaN);
+      if (v) s.unit = v.unit;
+    }
+  }
+  const res = { t: Array.from(full.times), series: series.filter((s) => s.y.some((v) => Number.isFinite(v))) };
+  byKey.set(key, res);
+  return res;
+}
+
+/** Curvas no tempo de um item (uma por variável, com o cursor no instante da animação). */
+function ItemTimeCharts({ ed, it }: { ed: SketchEditor; it: PostNode }) {
+  const t = useT();
+  const ts = itemTimeSeries(ed, it);
+  if (!ts) return null;
+  if (!ts.series.length) return <p className="muted">{t.table.noOutputs}</p>;
+  const cur = ed.shownSol(it.physics!)?.time;
+  return (
+    <div className="time-charts">
+      {ts.series.map((s) => (
+        <MultiChart key={s.label} x={ts.t.map((v) => v * 1e3)} series={[{ label: s.label, y: s.y }]} xLabel="t (ms)" yLabel={s.unit ? `${s.label} (${s.unit})` : s.label} cursor={cur !== undefined ? cur * 1e3 : undefined} />
+      ))}
+    </div>
+  );
+}
+
 export function tableItemRows(ed: SketchEditor, it: PostNode): { rows: [string, string][]; msg?: string } {
   const t = T();
-  const sol = it.physics ? ed.shownSol(it.physics) : undefined;
+  const sol = itemSol(ed, it);
   if (!sol) return { rows: [], msg: t.solve.noSolution };
   const sk = ed.sketch;
   if (it.item === 'lineint' || it.item === 'surfint') {
@@ -614,7 +673,9 @@ function TablePane({ ed, id }: { ed: SketchEditor; id: string }) {
       {items.map((it) => (
         <section key={it.id} className="table-item">
           <h4>{it.name}</h4>
-          {it.item === 'circuits' ? (
+          {ed.solutions.get(tb.physics ?? '')?.times && it.atTime === undefined ? (
+            <ItemTimeCharts ed={ed} it={it} />
+          ) : it.item === 'circuits' ? (
             <CircuitTable ed={ed} physics={tb.physics} big />
           ) : (
             (() => {

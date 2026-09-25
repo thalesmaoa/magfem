@@ -955,10 +955,34 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
   const rows = tableItemRows(ed, node);
   const sol = node.physics ? ed.shownSol(node.physics) : undefined;
   const vars = sol && node.physics ? resultVars(sk, arr, sol, node.physics) : null;
+  const phys = sk.nodes.find((n) => n.id === node.physics);
+  const times = node.physics ? ed.solutions.get(node.physics)?.times : undefined;
+  const transient = phys?.kind === 'physics' && phys.analysis === 'transient';
+  const fmtMs = (s: number) => `${Number((s * 1e3).toPrecision(4))} ms`;
   return (
     <div className="props-body">
       <section>
         <h3>{t.table.items[node.item ?? 'circuits']}</h3>
+        {transient && (
+          <label className="field">
+            <span>{t.table.show}</span>
+            <select
+              aria-label={t.table.show}
+              value={node.atTime ?? -1}
+              onChange={(e) => {
+                const k = Number(e.target.value);
+                set({ atTime: k < 0 ? undefined : k }, `r.show(${q(node.id)}, at_time=${k < 0 ? 'None' : k})`);
+              }}
+            >
+              <option value={-1}>{t.table.curve}</option>
+              {Array.from(times ?? [], (tm, k) => (
+                <option key={k} value={k}>
+                  {t.table.instant(fmtMs(tm))}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {node.item !== 'circuits' && (
           <label className="field">
             <span>{t.table.varName}</span>

@@ -1145,6 +1145,7 @@ export class CommandConsole {
         if (kw.var_name !== undefined) patch.varName = kw.var_name === null ? undefined : String(kw.var_name);
         if (kw.expr !== undefined) patch.expr = kw.expr === null ? undefined : String(kw.expr);
         if (kw.unit_label !== undefined) patch.unitLabel = kw.unit_label === null ? undefined : String(kw.unit_label);
+        if (kw.at_time !== undefined) patch.atTime = kw.at_time === null ? undefined : Math.max(0, Math.round(Number(kw.at_time)));
         if (kw.regions !== undefined) {
           const arr = computeArrangement(sk);
           patch.regions = (seq(kw.regions) ?? []).map((p) => regionKey(regionAtOrThrow(arr, this.xy(p))));

@@ -94,6 +94,8 @@ export interface Solution {
   /** Quadro derivado: a solução transitória de origem e o índice do passo. */
   frameOf?: Solution;
   frame?: number;
+  /** Tempo do quadro (s). */
+  time?: number;
 }
 
 /** Ambiente das expressões: variáveis do projeto + t (s, sem unidade). */
@@ -738,9 +740,18 @@ export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): Cir
   return sk.circuits.map((c) => {
     let I = 0;
     try {
-      I = num(sk, c.current, 0);
+      // Transitório: corrente no tempo do quadro (a expressão pode usar t).
+      I = num(sk, c.current, 0, sol.time !== undefined ? envAt(sk, sol.time) : undefined);
     } catch {
       I = 0;
+    }
+    // Acoplado ao circuito: a corrente vem da solução do circuito (bobina ligada a este circuito).
+    const cr = sol.circuit;
+    if (cr && sol.frame !== undefined) {
+      const sch = sk.nodes.find((n) => n.id === cr.schematic);
+      const part = sch?.kind === 'schematic' ? sch.parts.find((p) => p.kind === 'coil' && p.circuit === c.id) : undefined;
+      const e = part ? cr.partOf.indexOf(part.id) : -1;
+      if (e >= 0) I = cr.elI[sol.frame * cr.partOf.length + e] ?? I;
     }
     let lambda = 0, R = 0, rOk = true, regions = 0, turns = 0;
     for (const a of sk.regionAssigns) {
@@ -870,7 +881,7 @@ export function frameOf(sol: Solution, k: number): Solution {
   const w = 2 * Math.PI * (sol.freq ?? 0);
   const nr = sol.J.length;
   const J = sol.jSteps ? sol.J.map((_, r) => sol.jSteps![i * nr + r]) : sol.J.map((j, r) => (w ? j * Math.sin(w * sol.times![i] + (sol.jPhase?.[r] ?? 0)) : j));
-  const f: Solution = { ...sol, A: new Float64Array(A), bx, by, bmag, bmax, J, At: undefined, times: undefined, frameOf: sol, frame: i };
+  const f: Solution = { ...sol, A: new Float64Array(A), bx, by, bmag, bmax, J, At: undefined, times: undefined, frameOf: sol, frame: i, time: sol.times[i] };
   cache.set(i, f);
   return f;
 }

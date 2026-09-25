@@ -431,7 +431,7 @@ function SignalsPanel({ ed, sch, times, res }: { ed: SketchEditor; sch: Schemati
 const SERIES_COLORS = ['#e8408a', '#1f6fd1', '#2e8b57', '#d4880f', '#8e44ad', '#0aa3a3'];
 
 /** Gráfico com várias séries (mesma unidade) e cursor de tempo. */
-function MultiChart({ x, series, xLabel, yLabel, cursor }: { x: number[]; series: { label: string; y: number[] }[]; xLabel: string; yLabel: string; cursor?: number }) {
+export function MultiChart({ x, series, xLabel, yLabel, cursor }: { x: number[]; series: { label: string; y: number[] }[]; xLabel: string; yLabel: string; cursor?: number }) {
   const Wc = 520, Hc = 200, L = 56, R = 10, Tt = 10, B = 34;
   const x0 = x[0], x1 = x[x.length - 1];
   let lo = Math.min(...series.flatMap((s2) => s2.y)), hi = Math.max(...series.flatMap((s2) => s2.y));
