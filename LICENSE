@@ -23,10 +23,8 @@ SOFTWARE.
 -------------------------------------------------------------------------------
 Third-party components (not covered by the MIT license above):
 
-- Triangle 1.6 (J. R. Shewchuk), downloaded from netlib at build time. Free for
-  private, research and institutional use; redistribution must be free of charge
-  and keep its copyright notice; commercial use requires an arrangement with the
-  author. See the README of the Triangle package.
+- Tangle (David Meeker, MIT License; https://github.com/dcm3c/tangle), the mesh
+  generator of FEMM, downloaded at build time.
 - Eigen 3.4 (MPL 2.0), downloaded at build time.
 - PlaneGCS (FreeCAD) via @salusoft89/planegcs (LGPL-2.1).
 - web/src/data/femm-matlib.json: material properties converted from the

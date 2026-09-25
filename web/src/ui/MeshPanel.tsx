@@ -325,7 +325,7 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
           </ul>
         )}
       </li>
-      {/* 4. Elementos (Triangle): nó único, sem filhos — configurações e o botão de gerar. */}
+      {/* 4. Elementos (Tangle): nó único, sem filhos — configurações e o botão de gerar. */}
       <li>
         <Row
           icon={Icons.treeMesh}

@@ -4,7 +4,7 @@ import { findRegion, type Arrangement, type Edge } from './regions';
 import type { Vec } from './geometry';
 import type { Id, MeshNode, Sketch } from './types';
 
-/** Entrada do Triangle (ver core/src/mesh2d.h). */
+/** Entrada da Tangle (ver core/src/mesh2d.h). */
 export interface MeshInput {
   xy: number[];
   segments: number[];
@@ -13,7 +13,8 @@ export interface MeshInput {
   regions: number[];
   minAngle: number;
   maxArea: number;
-  keepBoundary: boolean;
+  /** Contornos periódicos para a Tangle: (marcador A, marcador B, 0 periódico / 1 antiperiódico). */
+  pbc: number[];
 }
 
 export interface MeshResult {
@@ -27,7 +28,7 @@ export interface MeshResult {
   minAngle: number;
   /** Assinatura da entrada (PSLG + tamanhos); se mudar, a malha está desatualizada. */
   key: string;
-  /** Nós da malha sobre cada curva, na ordem da curva (o Triangle mantém os nós de entrada). */
+  /** Nós da malha sobre cada curva, na ordem da curva (inclui os pontos que a Tangle acrescentou na curva). */
   curveNodes: Record<Id, number[]>;
   ms: number;
 }
@@ -141,11 +142,41 @@ export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { 
     const list = (curveNodes[c.curve] ??= []);
     for (const n of c.nodes) if (list[list.length - 1] !== n) list.push(n);
   }
+  // Periódicos: as duas curvas são divididas em sincronia pela Tangle (nós casados).
+  const pbc: number[] = [];
+  for (const b of sk.boundaries) {
+    if ((b.type !== 'periodic' && b.type !== 'antiperiodic') || b.curves.length !== 2) continue;
+    const [ma, mb] = b.curves.map((c) => curveIdx.get(c));
+    if (ma && mb && ma !== mb) pbc.push(ma, mb, b.type === 'periodic' ? 0 : 1);
+  }
   return {
-    input: { xy, segments, segMarkers, holes: [], regions, minAngle: node.minAngle ?? 30, maxArea: 0, keepBoundary: true },
+    input: { xy, segments, segMarkers, holes: [], regions, minAngle: node.minAngle ?? 30, maxArea: 0, pbc },
     curveIds,
     curveNodes,
   };
+}
+
+/**
+ * Nós de cada curva depois da malha: cada par consecutivo (u, v) da lista de entrada é um segmento, que a
+ * Tangle pode ter dividido; troca o par pela sequência de nós que o C++ devolve para aquele segmento.
+ */
+export function expandCurveNodes(curveNodes: Record<Id, number[]>, segments: number[], chainStart: Int32Array, chain: Int32Array): Record<Id, number[]> {
+  const segOf = new Map<string, number>();
+  for (let s = 0; s < segments.length / 2; s++) segOf.set(`${segments[2 * s]},${segments[2 * s + 1]}`, s);
+  const out: Record<Id, number[]> = {};
+  for (const [c, list] of Object.entries(curveNodes)) {
+    const res: number[] = list.length ? [list[0]] : [];
+    for (let i = 0; i + 1 < list.length; i++) {
+      const u = list[i], v = list[i + 1];
+      let s = segOf.get(`${u},${v}`);
+      let seq: number[] | null = null;
+      if (s !== undefined) seq = Array.from(chain.subarray(chainStart[s], chainStart[s + 1]));
+      else if ((s = segOf.get(`${v},${u}`)) !== undefined) seq = Array.from(chain.subarray(chainStart[s], chainStart[s + 1])).reverse();
+      for (const n of seq ?? [u, v]) if (res[res.length - 1] !== n) res.push(n);
+    }
+    out[c] = res;
+  }
+  return out;
 }
 
 /** Assinatura curta da entrada (detecta malha desatualizada). */

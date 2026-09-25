@@ -374,7 +374,7 @@ export const BOUNDARY_TYPES: BoundaryType[] = ['dirichlet', 'skin', 'mixed', 'du
 /** Tipos que o solver ainda não resolve (harmônico ou entreferro móvel). */
 export const BOUNDARY_UNSUPPORTED: BoundaryType[] = ['skin', 'dualImage', 'periodicAirGap', 'antiperiodicAirGap'];
 export const BOUNDARY_COLOR: Record<BoundaryType, string> = {
-  dirichlet: '#d93025',
+  dirichlet: '#2ea043',
   skin: '#c2185b',
   mixed: '#1f78c8',
   dualImage: '#6d4c41',
@@ -382,7 +382,7 @@ export const BOUNDARY_COLOR: Record<BoundaryType, string> = {
   antiperiodic: '#d4880f',
   periodicAirGap: '#00897b',
   antiperiodicAirGap: '#7cb342',
-  neumann: '#2e8b57',
+  neumann: '#d93025',
 };
 export const boundaryColor = (b: { type: BoundaryType; color?: string }) => b.color ?? BOUNDARY_COLOR[b.type];
 

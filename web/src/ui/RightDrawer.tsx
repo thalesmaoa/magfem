@@ -72,8 +72,14 @@ export function RightDrawer({ ed, open, onToggle }: { ed: SketchEditor; open: bo
     <aside className={`drawer${open ? ' open' : ''}`}>
       {/* Faixa vertical da direita: "Problema e bibliotecas" e, abaixo, "Sobre". */}
       <div className="drawer-strip">
-        <button className="drawer-tab" onClick={onToggle} aria-expanded={open} aria-label={open ? t.drawer.close : t.drawer.open} title={open ? t.drawer.close : t.drawer.open}>
-          <span>{open ? '›' : '‹'}</span>
+        <button
+          className={`drawer-tab${open && d.tab !== 'about' ? ' on' : ''}`}
+          onClick={() => (d.tab === 'about' ? setDrawer({ open: true, tab: 'problem', focus: null }) : onToggle())}
+          aria-expanded={open && d.tab !== 'about'}
+          aria-label={open ? t.drawer.close : t.drawer.open}
+          title={open ? t.drawer.close : t.drawer.open}
+        >
+          <span>{open && d.tab !== 'about' ? '›' : '‹'}</span>
           <span className="drawer-tab-label">{t.drawer.open}</span>
         </button>
         <button

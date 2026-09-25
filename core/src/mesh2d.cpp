@@ -1,78 +1,47 @@
-// Chamada ao Triangle (compilado como biblioteca, TRILIBRARY) e conversão dos arrays.
+// Utilitários comuns da malha: sequência de nós de cada segmento de entrada depois das divisões.
 #include "mesh2d.h"
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-extern "C" {
-#define REAL double
-#define VOID void
-#include "triangle.h"
-#undef VOID
-}
+#include <cmath>
 
 namespace magfem {
 
-namespace {
-void init(triangulateio& t) { std::memset(&t, 0, sizeof(t)); }
-void release(triangulateio& t) {
-  void* ptrs[] = {t.pointlist, t.pointattributelist, t.pointmarkerlist, t.trianglelist, t.triangleattributelist, t.trianglearealist,
-                  t.neighborlist, t.segmentlist, t.segmentmarkerlist, t.edgelist, t.edgemarkerlist, t.normlist};
-  for (void* p : ptrs) std::free(p);
-}
-}  // namespace
-
-MeshOutput triangulate_pslg(const MeshInput& in) {
-  MeshOutput out;
-  const int np = static_cast<int>(in.xy.size() / 2);
-  const int ns = static_cast<int>(in.segments.size() / 2);
-  if (np < 3 || ns < 3) {
-    out.error = "contorno insuficiente para malhar";
-    return out;
+void build_seg_chains(const MeshInput& in, const std::vector<double>& xy, const std::vector<int>& finalSegs, MeshOutput& out) {
+  // Vizinhos de cada nó pelos segmentos finais; cada segmento de entrada é percorrido de a até b
+  // pelos nós que ficam sobre ele (os pontos de divisão estão sobre a reta do segmento).
+  const int nv = static_cast<int>(xy.size() / 2);
+  std::vector<std::vector<int>> nb(nv);
+  for (size_t k = 0; k + 1 < finalSegs.size(); k += 2) {
+    const int a = finalSegs[k], b = finalSegs[k + 1];
+    if (a < 0 || b < 0 || a >= nv || b >= nv) continue;
+    nb[a].push_back(b);
+    nb[b].push_back(a);
   }
-  triangulateio tin, tout;
-  init(tin);
-  init(tout);
-  std::vector<double> xy(in.xy), holes(in.holes), regions(in.regions);
-  std::vector<int> seg(in.segments), mark(in.segMarkers);
-  if (static_cast<int>(mark.size()) != ns) mark.assign(ns, 0);
-  tin.numberofpoints = np;
-  tin.pointlist = xy.data();
-  tin.numberofsegments = ns;
-  tin.segmentlist = seg.data();
-  tin.segmentmarkerlist = mark.data();
-  tin.numberofholes = static_cast<int>(holes.size() / 2);
-  tin.holelist = holes.empty() ? nullptr : holes.data();
-  tin.numberofregions = static_cast<int>(regions.size() / 4);
-  tin.regionlist = regions.empty() ? nullptr : regions.data();
-
-  // p: PSLG, z: índices a partir de 0, A: atributos de região, a: área por região, q: qualidade,
-  // Q: silencioso, Y: sem pontos novos na borda.
-  double q = in.minAngle;
-  if (q > 34) q = 34;
-  char sw[128];
-  int n = std::snprintf(sw, sizeof sw, "pzAQ");
-  if (q > 0) n += std::snprintf(sw + n, sizeof sw - n, "q%.4g", q);
-  if (in.maxArea > 0) n += std::snprintf(sw + n, sizeof sw - n, "a%.10g", in.maxArea);
-  n += std::snprintf(sw + n, sizeof sw - n, "a");  // áreas por região (regionlist)
-  if (in.keepBoundary) std::snprintf(sw + n, sizeof sw - n, "Y");
-
-  triangulate(sw, &tin, &tout, nullptr);
-
-  out.xy.assign(tout.pointlist, tout.pointlist + 2 * tout.numberofpoints);
-  out.triangles.assign(tout.trianglelist, tout.trianglelist + 3 * tout.numberoftriangles);
-  out.triRegion.resize(tout.numberoftriangles, 0);
-  if (tout.numberoftriangleattributes > 0)
-    for (int i = 0; i < tout.numberoftriangles; ++i)
-      out.triRegion[i] = static_cast<int>(tout.triangleattributelist[i * tout.numberoftriangleattributes]);
-  if (tout.pointmarkerlist) out.nodeMarkers.assign(tout.pointmarkerlist, tout.pointmarkerlist + tout.numberofpoints);
-  else out.nodeMarkers.assign(tout.numberofpoints, 0);
-  // Arrays de entrada pertencem aos vectors; só libera o que o Triangle alocou.
-  tout.holelist = nullptr;
-  tout.regionlist = nullptr;
-  release(tout);
-  return out;
+  const int ns = static_cast<int>(in.segments.size() / 2);
+  out.segChainStart.assign(1, 0);
+  out.segChain.clear();
+  for (int s = 0; s < ns; ++s) {
+    const int a = in.segments[2 * s], b = in.segments[2 * s + 1];
+    const double ax = xy[2 * a], ay = xy[2 * a + 1], ex = xy[2 * b] - ax, ey = xy[2 * b + 1] - ay;
+    const double L2 = ex * ex + ey * ey;
+    auto param = [&](int n) { return ((xy[2 * n] - ax) * ex + (xy[2 * n + 1] - ay) * ey) / L2; };
+    auto onLine = [&](int n) { return std::fabs((xy[2 * n] - ax) * ey - (xy[2 * n + 1] - ay) * ex) <= 1e-9 * L2 + 1e-300; };
+    std::vector<int> chain{a};
+    int cur = a;
+    for (int guard = 0; cur != b && guard < nv; ++guard) {
+      int best = -1;
+      double tb = 2, tc = param(cur);
+      for (int n : nb[cur]) {
+        const double tn = param(n);
+        if (tn > tc + 1e-12 && tn < tb && tn <= 1 + 1e-9 && onLine(n)) tb = tn, best = n;
+      }
+      if (best < 0) break;
+      chain.push_back(best);
+      cur = best;
+    }
+    if (cur != b) chain = {a, b};  // não achou o caminho: fica o segmento original
+    out.segChain.insert(out.segChain.end(), chain.begin(), chain.end());
+    out.segChainStart.push_back(static_cast<int>(out.segChain.size()));
+  }
 }
 
 }  // namespace magfem

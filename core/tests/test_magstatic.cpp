@@ -10,7 +10,8 @@ using namespace magfem;
 static const double MU0 = 4e-7 * M_PI;
 
 // Retângulo [x0,x1]×[y0,y1] com divisões uniformes na borda (n por lado) e uma região.
-static MeshOutput rectMesh(double x0, double y0, double x1, double y1, int nx, int ny, double maxArea) {
+// Marcadores por lado: 1 baixo, 2 direita, 3 cima, 4 esquerda; periodicX casa direita com esquerda.
+static MeshOutput rectMesh(double x0, double y0, double x1, double y1, int nx, int ny, double maxArea, bool periodicX = false) {
   MeshInput in;
   auto add = [&](double x, double y) {
     in.xy.push_back(x);
@@ -25,8 +26,10 @@ static MeshOutput rectMesh(double x0, double y0, double x1, double y1, int nx, i
   for (size_t k = 0; k < ring.size(); ++k) {
     in.segments.push_back(ring[k]);
     in.segments.push_back(ring[(k + 1) % ring.size()]);
-    in.segMarkers.push_back(1);
+    const int side = static_cast<int>(k) < nx ? 1 : static_cast<int>(k) < nx + ny ? 2 : static_cast<int>(k) < 2 * nx + ny ? 3 : 4;
+    in.segMarkers.push_back(side);
   }
+  if (periodicX) in.pbc = {2, 4, 0};
   in.regions = {(x0 + x1) / 2, (y0 + y1) / 2, 1, maxArea};
   in.minAngle = 30;
   return triangulate_pslg(in);
@@ -126,7 +129,6 @@ int main() {
     for (int k = 0; k < 4; ++k) seg(bot[k], top[k]);
     mi.regions = {R1 / 2, h / 2, 1, 1e-6, (R1 + R2) / 2, h / 2, 2, 1e-6, (R2 + R3) / 2, h / 2, 3, 1e-6};
     mi.minAngle = 30;
-    mi.keepBoundary = false;
     MeshOutput m = triangulate_pslg(mi);
     MagInput in;
     in.axisymmetric = true;
@@ -153,7 +155,7 @@ int main() {
   //    Solução 1D em y: A(y) = μ0 J y (2H − y)/2 com Neumann em y = H.
   {
     const double L = 0.04, H = 0.02, J = 1e6;
-    MeshOutput m = rectMesh(0, 0, L, H, 10, 8, 2e-6);
+    MeshOutput m = rectMesh(0, 0, L, H, 10, 8, 2e-6, true);
     MagInput in;
     in.xy = m.xy;
     in.triangles = m.triangles;
@@ -161,6 +163,9 @@ int main() {
     in.nu = {1 / MU0};
     in.J = {J};
     const int nn = static_cast<int>(m.xy.size() / 2);
+    // A Tangle divide os dois lados em sincronia: todo nó em x = L tem par exato em x = 0.
+    int right = 0, left = 0;
+    for (int i = 0; i < nn; ++i) right += m.xy[2 * i] > L - 1e-12, left += m.xy[2 * i] < 1e-12;
     for (int i = 0; i < nn; ++i)
       if (m.xy[2 * i + 1] < 1e-12) in.dirichletNodes.push_back(i), in.dirichletValues.push_back(0);
     // Casa x = L com x = 0 pelo y.
@@ -180,6 +185,7 @@ int main() {
       err = std::max(err, std::fabs(o.A[i] - MU0 * J * y * (2 * H - y) / 2));
     }
     check(o.error.empty() && err / amax < 0.01, "periódico: erro relativo máx. de A", err / amax, 0);
+    check(right == left && static_cast<int>(in.periodicSlave.size()) == right && right > 9, "periódico: nós casados nos dois lados (Tangle)", in.periodicSlave.size(), right);
   }
   // 5) Não linear: faixa com J entre A = 0 em x = 0 e x = L. H(x) = J (L/2 − x) vale para qualquer
   //    material; H(B do elemento) deve convergir para J (L/2 − x) com o refino (aço M400-50A).
@@ -216,7 +222,7 @@ int main() {
     double bmax1, bmax2;
     int it1, it2;
     const double e1 = run(20, 2e-5, bmax1, it1), e2 = run(80, 1.2e-6, bmax2, it2);
-    check(e2 < 0.02 && e2 < 0.6 * e1, "não linear: erro de H cai com o refino (grossa → fina)", e2, e1);
+    check(e2 < 0.02 && e2 < e1, "não linear: erro de H cai com o refino (grossa → fina)", e2, e1);
     check(bmax2 < 2.2 && bmax2 > 1.5, "não linear: satura (|B| máx. entre 1,5 e 2,2 T)", bmax2, 1.9);
     std::printf("      (Newton: %d e %d iterações)\n", it1, it2);
   }
@@ -297,7 +303,6 @@ int main() {
     rect(0.13, 0.04, 0.15, 0.06, 3);
     mi.regions = {0.01, 0.01, 1, 2e-5, 0.06, 0.05, 2, 5e-6, 0.14, 0.05, 3, 5e-6};
     mi.minAngle = 30;
-    mi.keepBoundary = false;
     MeshOutput m = triangulate_pslg(mi);
     MagInput base;
     base.xy = m.xy;

@@ -5,6 +5,9 @@ export interface TriangulateOut {
   triangles: Int32Array;
   triRegion: Int32Array;
   nodeMarkers: Int32Array;
+  /** Nós de cada segmento de entrada depois das divisões (segmento s: segChain[segChainStart[s] .. segChainStart[s+1])). */
+  segChainStart: Int32Array;
+  segChain: Int32Array;
 }
 export interface MagOut {
   error: string;

@@ -27,7 +27,7 @@ val triangulate(val in) {
   m.regions = convertJSArrayToNumberVector<double>(in["regions"]);
   m.minAngle = in["minAngle"].as<double>();
   m.maxArea = in["maxArea"].as<double>();
-  m.keepBoundary = in["keepBoundary"].as<bool>();
+  if (!in["pbc"].isUndefined()) m.pbc = convertJSArrayToNumberVector<int>(in["pbc"]);
   magfem::MeshOutput o = magfem::triangulate_pslg(m);
   val r = val::object();
   r.set("error", o.error);
@@ -35,6 +35,8 @@ val triangulate(val in) {
   r.set("triangles", toTyped(o.triangles, "Int32Array"));
   r.set("triRegion", toTyped(o.triRegion, "Int32Array"));
   r.set("nodeMarkers", toTyped(o.nodeMarkers, "Int32Array"));
+  r.set("segChainStart", toTyped(o.segChainStart, "Int32Array"));
+  r.set("segChain", toTyped(o.segChain, "Int32Array"));
   return r;
 }
 // Entrada: ver MagInput (magstatic.h), com os mesmos nomes em camelCase.

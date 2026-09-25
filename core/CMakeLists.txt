@@ -16,23 +16,19 @@ if(NOT eigen_POPULATED)
   FetchContent_Populate(eigen)   # só os headers; não roda o CMake do Eigen
 endif()
 
-# Triangle (J. R. Shewchuk) — gerador de malha 2D; uso livre e sem cobrança (ver README do pacote).
-FetchContent_Declare(triangle
-  URL https://www.netlib.org/voronoi/triangle.zip
-  URL_HASH SHA256=1766327add038495fa3499e9b7cc642179229750f7201b94f8e1b7bee76f8480)
-FetchContent_GetProperties(triangle)
-if(NOT triangle_POPULATED)
-  FetchContent_Populate(triangle)
+# Tangle (David Meeker, MIT): gerador de malha do FEMM; compilado como biblioteca em mesh_tangle.cpp.
+FetchContent_Declare(tangle
+  URL https://github.com/dcm3c/tangle/archive/66221c398cd90f06a7beb0c0abf637b269313af3.tar.gz
+  URL_HASH SHA256=7b1509b83e4b347acbe868cfbe5d64341017f69a55690e15577487b51fe7912a)
+FetchContent_GetProperties(tangle)
+if(NOT tangle_POPULATED)
+  FetchContent_Populate(tangle)
 endif()
-add_library(triangle STATIC ${triangle_SOURCE_DIR}/triangle.c)
-target_compile_definitions(triangle PRIVATE TRILIBRARY ANSI_DECLARATORS NO_TIMER REAL=double)
-target_compile_options(triangle PRIVATE -w -O2)
-target_include_directories(triangle PUBLIC ${triangle_SOURCE_DIR})
 
-add_library(magfem STATIC src/poisson1d.cpp src/mesh2d.cpp src/magstatic.cpp)
+add_library(magfem STATIC src/poisson1d.cpp src/mesh2d.cpp src/mesh_tangle.cpp ${tangle_SOURCE_DIR}/float256.cpp src/magstatic.cpp)
 target_include_directories(magfem PUBLIC src ${eigen_SOURCE_DIR})
-target_compile_definitions(magfem PRIVATE ANSI_DECLARATORS)
-target_link_libraries(magfem PUBLIC triangle)
+target_include_directories(magfem PRIVATE ${tangle_SOURCE_DIR})
+set_source_files_properties(src/mesh_tangle.cpp ${tangle_SOURCE_DIR}/float256.cpp PROPERTIES COMPILE_OPTIONS "-w;-O2")
 target_compile_definitions(magfem PUBLIC EIGEN_MPL2_ONLY)
 
 if(EMSCRIPTEN)

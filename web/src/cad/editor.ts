@@ -34,7 +34,7 @@ import { isCurve, isDimension, ORIGIN_ID, type Constraint, type ConstraintType, 
 import { View } from './view';
 import { computeArrangement, findRegion, regionAt, type Arrangement } from './regions';
 import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './mesh';
-import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
+import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult, expandCurveNodes } from './meshgen';
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
 import { buildMagInput, depthOf, frameOf, regionJ, smoothSolution, typicalSize, type Solution } from './solve';
@@ -212,7 +212,7 @@ export class SketchEditor {
     this.changed();
   }
 
-  /** Gera a malha do nó (Triangle no Worker). Devolve o resultado ou null (erro vira mensagem). */
+  /** Gera a malha do nó (Tangle no Worker). Devolve o resultado ou null (erro vira mensagem). */
   async generateMesh(id: Id): Promise<MeshResult | null> {
     const node = this.sketch.nodes.find((n) => n.id === id);
     if (!node || node.kind !== 'mesh') return null;
@@ -228,7 +228,7 @@ export class SketchEditor {
     const t0 = performance.now();
     try {
       const out = await solver.call<TriangulateOut>({ cmd: 'triangulate', input });
-      // Atributo do Triangle = índice da região + 1.
+      // Atributo da região na Tangle = índice da região + 1.
       const triRegion = new Int32Array(out.triRegion.length);
       for (let i = 0; i < triRegion.length; i++) triRegion[i] = out.triRegion[i] - 1;
       const res: MeshResult = {
@@ -239,7 +239,7 @@ export class SketchEditor {
         elements: out.triangles.length / 3,
         minAngle: minTriangleAngle(out.xy, out.triangles),
         key: inputKey(input),
-        curveNodes,
+        curveNodes: expandCurveNodes(curveNodes, input.segments, out.segChainStart, out.segChain),
         ms: performance.now() - t0,
       };
       this.meshes.set(id, res);

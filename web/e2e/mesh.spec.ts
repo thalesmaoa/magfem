@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 const mode = (page: any) => page.evaluate(() => (window as any).__magfem.mode);
 
-test('malha: materiais por região, contornos, tamanho por região e geração com o Triangle', async ({ page }) => {
+test('malha: materiais por região, contornos, tamanho por região e geração com a Tangle', async ({ page }) => {
   const box = page.getByRole('textbox', { name: 'Console' });
   const run = async (cmd: string) => {
     await box.fill(cmd);

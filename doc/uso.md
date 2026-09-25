@@ -23,7 +23,7 @@ o **console**, onde cada ação aparece como comando da API.
 3. **Contornos:** a borda externa é A = 0 por padrão. Clique nas bordas no desenho (Shift para várias)
    e escolha o contorno (A prescrito, Neumann, periódico, antiperiódico).
 4. **Regiões:** tamanho do elemento por região (vazio = automático).
-5. **Elementos:** ▶ gera a malha (Triangle). O ângulo mínimo controla a qualidade.
+5. **Elementos:** ▶ gera a malha (Tangle, o gerador do FEMM). O ângulo mínimo controla a qualidade.
 
 ## 3. Método de resolução
 

@@ -39,7 +39,8 @@ entreferro móvel.
   - circuitos e tamanho de malha por região;
   - contornos como no FEMM: A prescrito (A0 + A1·x + A2·y), misto (c0, c1), periódico,
     antiperiódico e Neumann. A borda externa recebe Dirichlet A = 0 automaticamente.
-- **Malha:** gerador Triangle compilado para WebAssembly.
+- **Malha:** [Tangle](https://github.com/dcm3c/tangle) (o gerador do FEMM, MIT) compilada para
+  WebAssembly: triângulos de qualidade, tamanho por região e contornos periódicos casados nó a nó.
 - **Solver** (C++/Eigen compilado para WebAssembly, rodando num Web Worker):
   - magnetostático, **não linear** sempre que o material tem curva B-H (Newton-Raphson);
   - análise **transitória** com correntes parasitas, com correntes definidas como funções do tempo;
@@ -79,7 +80,7 @@ estáticos serve; o CI publica o `dist` na branch `dist`.
 ## Estrutura
 
 ```
-core/      núcleo numérico C++17 + Eigen + Triangle → WebAssembly (Emscripten) e nativo (testes)
+core/      núcleo numérico C++17 + Eigen + Tangle → WebAssembly (Emscripten) e nativo (testes)
 web/       interface Vite + React + TypeScript; malha e solver rodam num Web Worker
 doc/       documentação (uso, API, formulação, validação) e logo
 ```
@@ -97,9 +98,7 @@ Código do MagFEM: **MIT** (veja [`LICENSE`](LICENSE)). Use, modifique e redistr
 Componentes de terceiros:
 - **Eigen** (MPL-2.0).
 - **PlaneGCS/FreeCAD** via `@salusoft89/planegcs` (LGPL-2.1).
-- **Triangle 1.6**, de J. R. Shewchuk: livre para uso privado, acadêmico e institucional e para
-  redistribuição **gratuita** (com o aviso de copyright). **Uso comercial exige acordo com o
-  autor.** O gerador de malha fica isolado em `core/src/mesh2d.cpp` e pode ser trocado.
+- **Tangle**, de David Meeker (MIT): o gerador de malha, o mesmo do FEMM.
 - **Biblioteca de materiais** (`web/src/data/femm-matlib.json`, 245 materiais): convertida do
   `matlib.dat` do **FEMM 4.2** (David Meeker, [femm.info](https://www.femm.info)), distribuído sob a
   Aladdin Free Public License (redistribuição gratuita, sem uso comercial). O crédito é do FEMM. Em

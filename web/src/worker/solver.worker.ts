@@ -41,7 +41,7 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
       }
     }
   } catch (e) {
-    // O Triangle aborta (exit) em entradas inválidas: recria o módulo para as próximas chamadas.
+    // Um erro fatal no núcleo (entrada inválida) pode deixar o módulo inconsistente: recria para as próximas chamadas.
     core = createCore();
     res = { id: req.id, ok: false, error: e instanceof Error ? e.message : String(e) };
   }

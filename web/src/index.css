@@ -397,7 +397,7 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 
 /* Cor do tipo de contorno */
 .bswatch { display: inline-block; width: 12px; height: 4px; border-radius: 2px; vertical-align: middle; }
-.b-dirichlet { background: #d93025; }
+.b-dirichlet { background: #2ea043; }
 .b-neumann { background: #2e8b57; }
 .b-periodic { background: #8e44ad; }
 .b-antiperiodic { background: #d4880f; }

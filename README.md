@@ -38,7 +38,8 @@ such as **contactors**. The final step is **rotating machines**, with a moving a
   - circuits and per-region mesh size;
   - boundary conditions as in FEMM: prescribed A (A0 + A1·x + A2·y), mixed (c0, c1), periodic,
     anti-periodic and Neumann. The outer border gets Dirichlet A = 0 automatically.
-- **Meshing:** the Triangle mesher compiled to WebAssembly.
+- **Meshing:** [Tangle](https://github.com/dcm3c/tangle) (the FEMM mesher, MIT) compiled to
+  WebAssembly: quality triangles, per-region size and periodic boundaries meshed node to node.
 - **Solver** (C++/Eigen compiled to WebAssembly, running in a Web Worker):
   - magnetostatic, **nonlinear** whenever a material has a B-H curve (Newton-Raphson);
   - **transient** analysis with eddy currents, where currents can be functions of time;
@@ -78,7 +79,7 @@ CI publishes `dist` to the `dist` branch.
 ## Layout
 
 ```
-core/      C++17 numerical core + Eigen + Triangle → WebAssembly (Emscripten) and native (tests)
+core/      C++17 numerical core + Eigen + Tangle → WebAssembly (Emscripten) and native (tests)
 web/       Vite + React + TypeScript interface; mesher and solver run in a Web Worker
 doc/       documentation (usage, API, formulation, validation) and logo
 ```
@@ -96,9 +97,7 @@ MagFEM code: **MIT** (see [`LICENSE`](LICENSE)). You may use, modify and redistr
 Third-party components:
 - **Eigen** (MPL-2.0).
 - **PlaneGCS/FreeCAD** via `@salusoft89/planegcs` (LGPL-2.1).
-- **Triangle 1.6** by J. R. Shewchuk: free for private, academic and institutional use and for
-  **free** redistribution (keeping its copyright notice). **Commercial use requires an arrangement
-  with the author.** The mesher is isolated in `core/src/mesh2d.cpp` and can be replaced.
+- **Tangle** by David Meeker (MIT): the mesh generator, also used by FEMM.
 - **Material library** (`web/src/data/femm-matlib.json`, 245 materials): converted from the
   `matlib.dat` of **FEMM 4.2** (David Meeker, [femm.info](https://www.femm.info)), which is
   distributed under the Aladdin Free Public License (free redistribution, no commercial use).
