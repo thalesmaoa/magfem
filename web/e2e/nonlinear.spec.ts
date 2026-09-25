@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { openApp, sketch, defaultView } from './helpers';
+import { openApp, sketch, defaultView, addPhysics } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
+  await addPhysics(page);
 });
 
 const coreModel = async (page: any, current: string) => {

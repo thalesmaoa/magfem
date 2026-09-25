@@ -78,3 +78,11 @@ export async function defaultView(page: Page) {
   });
   await page.getByRole('treeitem', { name: 'Vista 1', exact: true }).click();
 }
+
+/** Projeto novo não tem física: inclui "Campo magnético" (id n2) pelo console, como o usuário faria. */
+export async function addPhysics(page: Page) {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  await box.fill('s.add_physics(id="n2")');
+  await box.press('Enter');
+  await expect(page.getByRole('treeitem', { name: /Campo magnético/ }).first()).toBeVisible();
+}

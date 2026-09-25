@@ -509,7 +509,7 @@ export function emptySketch(): Sketch {
     variables: [],
     groups: [],
     settings: { ...DEFAULT_SETTINGS },
-    nodes: [{ id: 'n1', kind: 'mesh', name: 'Malha 1', size: '', minAngle: 30 }, newPhysics('n2', 'Campo magnético')],
+    nodes: [{ id: 'n1', kind: 'mesh', name: 'Malha 1', size: '', minAngle: 30 }],
     materials: DEFAULT_MATERIALS.map((m) => ({ ...m })),
     regionAssigns: [],
     boundaries: DEFAULT_BOUNDARIES.map((b) => ({ ...b, curves: [] })),

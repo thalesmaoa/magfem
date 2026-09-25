@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { openApp, sketch, defaultView } from './helpers';
+import { openApp, sketch, defaultView, addPhysics } from './helpers';
 
 const MU0 = 4e-7 * Math.PI;
 
 test('circuito: λ, L = λ/I (½LI² = energia), R e perdas; tabela nos resultados', async ({ page }) => {
   await openApp(page);
+  await addPhysics(page);
   const box = page.getByRole('textbox', { name: 'Console' });
   const run = async (cmd: string) => {
     await box.fill(cmd);

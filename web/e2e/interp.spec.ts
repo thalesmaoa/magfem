@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { openApp, sketch, defaultView } from './helpers';
+import { openApp, sketch, defaultView, addPhysics } from './helpers';
 
 test('vista interpolada (pai), legenda com limites e duplicar gráfico', async ({ page }) => {
   await openApp(page);
+  await addPhysics(page);
   const box = page.getByRole('textbox', { name: 'Console' });
   const run = async (cmd: string) => {
     await box.fill(cmd);

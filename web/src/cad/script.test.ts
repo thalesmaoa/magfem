@@ -8,7 +8,7 @@ import { Draft } from './ops';
 import { computeArrangement } from './regions';
 import { generateScript } from './script';
 import { initSolver, solve } from './solver';
-import { addPlot, addSchematic, addTable, addTableItem, addView } from './tree';
+import { addNode, addPlot, addSchematic, addTable, addTableItem, addView } from './tree';
 import { emptySketch, ORIGIN_ID, type SchematicNode, type Sketch } from './types';
 
 beforeAll(async () => {
@@ -43,7 +43,9 @@ function model(): Sketch {
   const b = addBoundaryDef(sk, 'neumann', 'Lado');
   sk = assignBoundary(b.sketch, [c], b.boundary.id);
   sk = { ...sk, materials: sk.materials.map((m) => (m.id === 'mat_cu' ? { ...m, color: '#aa5500' } : m)), settings: { ...sk.settings, unit: 'cm', depth: '50 mm' } };
-  const phys = sk.nodes.find((n) => n.kind === 'physics')!;
+  const ph = addNode(sk, 'physics-magnetic', 'Campo magnético');
+  sk = ph.sketch;
+  const phys = ph.node;
   const v1 = addView(sk, phys.id);
   const pl = addPlot(v1.sketch, v1.node.id, 'surface', 'Superfície: B', 'b');
   const v2 = addView(pl.sketch, phys.id, undefined, 4);

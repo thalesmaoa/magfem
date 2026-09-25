@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickWorld, dof, dragWorld, openApp, sketch, toPage, typeDim } from './helpers';
+import { clickWorld, dof, dragWorld, openApp, sketch, toPage, typeDim, addPhysics } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
@@ -215,6 +215,9 @@ test('idioma EN/PT, citação e abas de etapa', async ({ page }) => {
 });
 
 test('árvore: física com análise, várias físicas, remover e desfazer', async ({ page }) => {
+  // Projeto novo começa sem física: o usuário escolhe o solver.
+  expect((await sketch(page)).nodes.filter((n: any) => n.kind === 'physics')).toHaveLength(0);
+  await addPhysics(page);
   await expect(page.getByRole('treeitem', { name: /Campo magnético/ }).first()).toBeVisible();
   await page.getByRole('treeitem', { name: /Campo magnético/ }).first().click();
   await page.locator('.props label', { hasText: 'Análise' }).locator('select').selectOption('harmonic');

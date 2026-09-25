@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { clickWorld, openApp, sketch, defaultView } from './helpers';
+import { clickWorld, openApp, sketch, defaultView, addPhysics } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
+  await addPhysics(page);
 });
 
 const MU0 = 4e-7 * Math.PI;
