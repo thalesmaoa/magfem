@@ -168,16 +168,40 @@ export interface MeshNode {
   minAngle?: number;
 }
 
+/** Tipos de gráfico dos resultados (a grandeza é escolhida dentro de cada um). */
+export type PlotKind = 'surface' | 'contour' | 'arrow' | 'line';
+export const PLOT_KINDS: PlotKind[] = ['surface', 'contour', 'arrow', 'line'];
+/** Grandezas: |B|, |H|, A (ou ψ), J; no gráfico sobre curva também B normal/tangencial. */
+export type PlotQuantity = 'b' | 'h' | 'a' | 'j' | 'bn' | 'bt';
+export const PLOT_QUANTITIES: Record<PlotKind, PlotQuantity[]> = {
+  surface: ['b', 'h', 'a', 'j'],
+  contour: ['a', 'b', 'h'],
+  arrow: ['b', 'h'],
+  line: ['b', 'bn', 'bt', 'h', 'a'],
+};
+
+/** Camada de visualização de uma física (em Resultados, dentro do nome da física). */
 export interface PostNode {
   id: Id;
   kind: 'post';
   name: string;
-  /** Mostrar o mapa de |B| (padrão sim). */
-  map?: boolean;
-  /** Mostrar as linhas de fluxo (padrão sim). */
-  lines?: boolean;
-  /** Número de linhas de fluxo (padrão 20). */
+  /** Física cujos resultados a camada mostra. */
+  physics?: Id;
+  plot?: PlotKind;
+  hidden?: boolean;
+  /** Grandeza mostrada (padrão: a primeira do tipo). */
+  quantity?: PlotQuantity;
+  /** Componente de grandezas vetoriais (B, H): magnitude, x (r) ou y (z), como no ParaView. */
+  component?: 'mag' | 'x' | 'y';
+  /** Linhas de contorno: quantidade (padrão 20). */
   nLines?: number;
+  /** Mapas: faixa de cores manual [mín, máx] (ausente = automática). */
+  range?: [number, number];
+  /** Vetores: espaçamento (mm; ausente = automático) e escala (1 = padrão). */
+  spacing?: number;
+  scale?: number;
+  /** Gráfico sobre curva: a curva do desenho. */
+  curve?: Id;
 }
 
 /** Nós que o usuário inclui na árvore (o Pré-processador/Geometria é fixo). */

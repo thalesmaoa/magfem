@@ -4,7 +4,7 @@ import { entityLabel, type SketchEditor } from '../cad/editor';
 import { evaluate, evaluateVariables, formatLength, formatQ } from '../cad/expr';
 import { addNode, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
 import { MeshProps, MeshTree } from './MeshPanel';
-import { PostProps, SolveButton, SolveSection } from './PostPanel';
+import { PlotProps, ResultsProps, ResultsTree, SolveButton, SolveSection } from './PostPanel';
 import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type TreeNode } from '../cad/types';
 import { deleteVariable, nextVarName, renameVariable, setVariable } from '../cad/vars';
 import { groupOf } from '../cad/ops';
@@ -563,6 +563,7 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
   // Nó ou variável que sumiu (removido/desfeito): volta para a Geometria.
   useEffect(() => {
     if ((sel.kind === 'node' && !current) || (sel.kind === 'var' && !ed.sketch.variables.some((v) => v.name === sel.name))) onSelect({ kind: 'geometry' });
+    if (sel.kind === 'results' && !ed.sketch.nodes.some((n) => n.id === sel.id && n.kind === 'physics')) onSelect({ kind: 'geometry' });
     if (sel.kind === 'boundary' && sel.id !== 'outer' && !ed.sketch.boundaries.some((b) => b.id === sel.id)) onSelect({ kind: 'mesh' });
   }, [sel, current, onSelect, ed.sketch.variables, ed.sketch.boundaries]);
 
@@ -625,7 +626,7 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
                 }}
                 extra={
                   // Malha tem um único nó (Elementos), sem (+) na seção.
-                  sec.key !== 'mesh' && <AddMenu
+                  sec.key !== 'mesh' && sec.key !== 'results' && <AddMenu
                     ed={ed}
                     kinds={[...sec.kinds]}
                     label={sec.add}
@@ -641,7 +642,8 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
                 }
               />
               {!closed.has(sec.key) && sec.key === 'mesh' && <MeshTree ed={ed} sel={sel} onSelect={onSelect} />}
-              {!closed.has(sec.key) && sec.key !== 'mesh' && (
+              {!closed.has(sec.key) && sec.key === 'results' && <ResultsTree ed={ed} sel={sel} onSelect={onSelect} />}
+              {!closed.has(sec.key) && sec.key !== 'mesh' && sec.key !== 'results' && (
                 <ul role="group">
                   {nodes.filter(sec.match).map((n) => (
                     <NodeRow key={n.id} ed={ed} node={n} active={isOn(n.id)} onSelect={() => onSelect({ kind: 'node', id: n.id })} onTreeSelect={onSelect} />
@@ -658,7 +660,8 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
         {sel.kind === 'var' && <VariableProps ed={ed} name={sel.name} onRenamed={(n) => onSelect(n ? { kind: 'var', name: n } : { kind: 'geometry' })} />}
         {current?.kind === 'physics' && <PhysicsProps ed={ed} node={current} onSelect={onSelect} />}
         {isMeshSel(sel, ed.sketch) && <MeshProps ed={ed} sel={sel} onSelect={onSelect} />}
-        {current && current.kind === 'post' && <PostProps ed={ed} node={current} />}
+        {current && current.kind === 'post' && <PlotProps ed={ed} node={current} />}
+        {sel.kind === 'results' && <ResultsProps ed={ed} id={sel.id} onSelect={onSelect} />}
       </div>
     </aside>
   );

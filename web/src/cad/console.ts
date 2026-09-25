@@ -24,10 +24,10 @@ import {
   ungroup,
   updateGroup,
 } from './ops';
-import { addNode, removeNode, updateNode } from './tree';
+import { addNode, addPlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { isCurve, isDimension, ORIGIN_ID, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
 import { addBoundaryDef, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
@@ -764,6 +764,7 @@ export class CommandConsole {
         const patch: Partial<Material> = {};
         for (const k of ['mur', 'sigma', 'br'] as const) if (kw[k] !== undefined) patch[k] = Number(kw[k]);
         if (kw.color !== undefined) patch.color = String(kw.color);
+        if (kw.bh !== undefined) patch.bh = kw.bh === null ? undefined : (seq(kw.bh) ?? []).map((p) => (seq(p) ?? []).map(Number) as [number, number]);
         if (kw.name !== undefined) patch.name = String(kw.name);
         const cur = findMaterial(sk, String(a[0]));
         if (cur) {
@@ -844,12 +845,29 @@ export class CommandConsole {
         this.host.solve(id);
         return null;
       }
+      case 'plot': {
+        need(2);
+        const phys = String(a[0]);
+        const kind = String(a[1]) as PlotKind;
+        if (!sk.nodes.some((n) => n.id === phys && n.kind === 'physics')) throw new ConsoleError(t.notFound(phys));
+        if (!PLOT_KINDS.includes(kind)) throw new ConsoleError(t.notFound(kind));
+        const qty = kw.quantity !== undefined ? (String(kw.quantity) as PlotQuantity) : PLOT_QUANTITIES[kind][0];
+        if (!PLOT_QUANTITIES[kind].includes(qty)) throw new ConsoleError(t.notFound(qty));
+        const r = addPlot(sk, phys, kind, kw.name ? String(kw.name) : `${T().post.plots[kind]}: ${T().post.qty[qty].split(' —')[0]}`, qty);
+        this.commit(r.sketch);
+        return r.node.id;
+      }
       case 'post_show': {
         need(1);
         const patch: Record<string, unknown> = {};
-        if (kw.map !== undefined) patch.map = !!kw.map;
-        if (kw.lines !== undefined) patch.lines = !!kw.lines;
+        if (kw.visible !== undefined) patch.hidden = !kw.visible;
         if (kw.n_lines !== undefined) patch.nLines = Number(kw.n_lines);
+        if (kw.range !== undefined) patch.range = kw.range === null ? undefined : (seq(kw.range) as number[]);
+        if (kw.spacing !== undefined) patch.spacing = kw.spacing === null ? undefined : Number(kw.spacing);
+        if (kw.scale !== undefined) patch.scale = Number(kw.scale);
+        if (kw.curve !== undefined) patch.curve = kw.curve === null ? undefined : this.id(kw.curve);
+        if (kw.quantity !== undefined) patch.quantity = String(kw.quantity);
+        if (kw.component !== undefined) patch.component = String(kw.component);
         this.commit(updateNode(sk, String(a[0]), patch));
         return null;
       }
@@ -916,7 +934,12 @@ const NODE_METHODS = {
     remove: 'remove("n2")',
     solve: 'solve("n2")',
   },
-  r: { add: 'add(name="Resultado")', rename: 'rename("n3", "...")', remove: 'remove("n3")', show: 'show("n3", map=True, lines=True, n_lines=20)' },
+  r: {
+    plot: 'plot("n2", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
+    show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn")',
+    rename: 'rename("n5", "...")',
+    remove: 'remove("n5")',
+  },
 };
 
 /** Assinaturas da API de geometria (autocompletar e dicas). */

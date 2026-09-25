@@ -1,6 +1,6 @@
 // Árvore do modelo: Pré-processador (Geometria + físicas), Malha e Pós-processador.
 import { q } from './code';
-import { newPhysics, type Id, type Sketch, type TreeNode } from './types';
+import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type Sketch, type TreeNode } from './types';
 
 export type AddKind = 'physics-magnetic' | 'mesh' | 'post';
 
@@ -11,7 +11,9 @@ export type TreeSel =
   | { kind: 'var'; name: string }
   // Malha: a seção em si (regiões/contornos no canvas), um material ou um contorno ('outer' = borda externa padrão).
   | { kind: 'mesh'; sub?: MeshSub }
-  | { kind: 'boundary'; id: Id };
+  | { kind: 'boundary'; id: Id }
+  // Resultados de uma física (o grupo com o nome dela).
+  | { kind: 'results'; id: Id };
 
 /** Subseções da Malha, na ordem de trabalho. */
 export type MeshSub = 'materials' | 'boundaries' | 'regions';
@@ -34,6 +36,14 @@ export function addNode(sk: Sketch, kind: AddKind, name: string): { sketch: Sket
     code = `${id} = r.add(name=${q(name)})`;
   }
   return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code };
+}
+
+/** Nova camada de visualização para os resultados de uma física. */
+export function addPlot(sk: Sketch, physics: Id, plot: PlotKind, name: string, quantity?: PlotQuantity): { sketch: Sketch; node: TreeNode; code: string } {
+  const id = `n${sk.nextId}`;
+  const qty = quantity ?? PLOT_QUANTITIES[plot][0];
+  const node: TreeNode = { id, kind: 'post', name, physics, plot, quantity: qty };
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.plot(${q(physics)}, ${q(plot)}, quantity=${q(qty)})` };
 }
 
 export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch {

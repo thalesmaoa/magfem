@@ -1,6 +1,6 @@
 // Arquivo de projeto .magfem (JSON) — abrir/salvar direto no disco, estilo draw.io/Excalidraw.
 import { T } from '../i18n';
-import { DEFAULT_MATERIALS, DEFAULT_SETTINGS, emptySketch, newPhysics, ORIGIN_ID, type Sketch } from '../cad/types';
+import { DEFAULT_MATERIALS, DEFAULT_SETTINGS, emptySketch, newPhysics, ORIGIN_ID, type PlotKind, type PlotQuantity, type Sketch } from '../cad/types';
 
 export const FILE_EXT = '.magfem';
 const FORMAT = 'magfem';
@@ -52,6 +52,20 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
     sk.nodes.push(n);
   }
   if (!sk.entities[ORIGIN_ID]) sk.entities[ORIGIN_ID] = base.entities[ORIGIN_ID];
+  // Resultados antigos (um nó com mapa + linhas): viram camadas da primeira física.
+  const phys = sk.nodes.find((n) => n.kind === 'physics');
+  const legacy = sk.nodes.filter((n) => n.kind === 'post' && !n.plot);
+  if (legacy.length) {
+    sk.nodes = sk.nodes.filter((n) => !legacy.includes(n));
+    if (phys) {
+      const old = legacy[0] as { map?: boolean; lines?: boolean; nLines?: number };
+      sk.nodes.push({ id: `n${sk.nextId++}`, kind: 'post', name: 'Mapa 2D: |B|', physics: phys.id, plot: 'surface', quantity: 'b', hidden: old.map === false });
+      sk.nodes.push({ id: `n${sk.nextId++}`, kind: 'post', name: 'Linhas de fluxo', physics: phys.id, plot: 'contour', quantity: 'a', hidden: old.lines === false, nLines: old.nLines });
+    }
+  }
+  // Tipos de gráfico anteriores (grandeza embutida no tipo) → tipo + grandeza.
+  const OLD: Record<string, [PlotKind, PlotQuantity]> = { bmap: ['surface', 'b'], hmap: ['surface', 'h'], amap: ['surface', 'a'], flux: ['contour', 'a'], vectors: ['arrow', 'b'] };
+  sk.nodes = sk.nodes.map((n) => (n.kind === 'post' && n.plot && OLD[n.plot as string] ? { ...n, plot: OLD[n.plot as string][0], quantity: OLD[n.plot as string][1] } : n));
   // Offsets de versões anteriores: a primeira distância do grupo vira a cota visível do offset.
   for (const g of sk.groups) {
     if (!g.offset || sk.constraints.some((c) => c.offsetDim === g.id)) continue;

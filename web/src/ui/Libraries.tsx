@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
-import { addBoundaryDef, addMaterial, removeBoundaryDef, removeMaterial, updateBoundaryDef, updateMaterial } from '../cad/mesh';
+import { addBoundaryDef, addMaterial, assignBoundary, removeBoundaryDef, removeMaterial, updateBoundaryDef, updateMaterial } from '../cad/mesh';
 import { MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type MaterialGroup } from '../cad/types';
 import { useT } from '../i18n';
 import { LazyInput } from './common';
@@ -140,12 +140,7 @@ export function MaterialEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
       {num(t.mesh.mur, 'mur')}
       {num(t.mesh.sigma, 'sigma')}
       {num(t.mesh.br, 'br', true)}
-      {m.bh && (
-        <label className="field">
-          <span>{t.mesh.bh}</span>
-          <span className="cval">{t.mesh.bhPoints(m.bh.length)}</span>
-        </label>
-      )}
+      <BHEditor ed={ed} m={m} />
       <button
         className="btn danger"
         onClick={() => {
@@ -249,6 +244,7 @@ export function newBoundary(ed: SketchEditor, type: BoundaryType = 'dirichlet'):
 /** Aba "Contornos" da gaveta. */
 export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focus: Id | null; onFocus: (id: Id | null) => void }) {
   const t = useT();
+  const outer = ed.defaultOuter();
   return (
     <section>
       <div className="lib-head">
@@ -258,6 +254,29 @@ export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
         </button>
       </div>
       <ul className="lib-list" role="listbox" aria-label={t.mesh.libBoundaries}>
+        {outer.length > 0 && (
+          <li>
+            <button role="option" aria-selected={focus === 'outer'} className={`lib-item${focus === 'outer' ? ' on' : ''}`} onClick={() => onFocus(focus === 'outer' ? null : 'outer')}>
+              <span className="bswatch b-dirichlet" /> <span className="tname">{t.mesh.outerDefault}</span>
+              <span className="crefs">{t.mesh.curvesOf(outer.length)}</span>
+            </button>
+            {focus === 'outer' && (
+              <div className="lib-editor">
+                <p className="help-line">{t.mesh.outerHelp}</p>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    const r = addBoundaryDef(ed.sketch, 'dirichlet', t.mesh.outerName);
+                    const next = assignBoundary(r.sketch, outer, r.boundary.id);
+                    if (ed.commit(next, [`m.boundary_def(${q(r.boundary.name)}, type="dirichlet")`, `m.boundary([${outer.map(q).join(', ')}], ${q(r.boundary.name)})`])) onFocus(r.boundary.id);
+                  }}
+                >
+                  {t.mesh.outerMakeEditable}
+                </button>
+              </div>
+            )}
+          </li>
+        )}
         {ed.sketch.boundaries.map((b) => (
           <li key={b.id}>
             <button role="option" aria-selected={focus === b.id} className={`lib-item${focus === b.id ? ' on' : ''}`} onClick={() => onFocus(focus === b.id ? null : b.id)}>
@@ -270,5 +289,126 @@ export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
       </ul>
       <p className="help-line">{t.mesh.stepBoundaries}</p>
     </section>
+  );
+}
+
+/** Gráfico B(H) com os pontos da curva. */
+function BHChart({ bh }: { bh: [number, number][] }) {
+  const W = 250, H = 150, L = 36, B = 20;
+  const hs = bh.map((p) => p[0]), bs = bh.map((p) => p[1]);
+  const hmax = Math.max(...hs, 1), bmax = Math.max(...bs, 0.1);
+  const X = (h: number) => L + (h / hmax) * (W - L - 8);
+  const Y = (b: number) => 6 + (1 - b / bmax) * (H - B - 6);
+  const tk = (v: number) => (v >= 1e4 ? v.toExponential(1) : v >= 100 ? Math.round(v).toString() : v.toPrecision(2));
+  return (
+    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="B-H">
+      <line x1={L} y1={6} x2={L} y2={H - B} className="axis" />
+      <line x1={L} y1={H - B} x2={W - 8} y2={H - B} className="axis" />
+      <polyline points={bh.map((p) => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' ')} className="curve" />
+      {bh.map((p, i) => (
+        <circle key={i} cx={X(p[0])} cy={Y(p[1])} r={2} className="pt" />
+      ))}
+      <text x={L - 3} y={10} textAnchor="end">{tk(bmax)}</text>
+      <text x={L - 3} y={H - B} textAnchor="end">0</text>
+      <text x={W - 8} y={H - 5} textAnchor="end">{tk(hmax)} A/m</text>
+      <text x={L + 4} y={14} className="unit">B (T)</text>
+    </svg>
+  );
+}
+
+/** Curva B-H do material: gráfico, tabela editável, incluir/remover pontos, criar/remover a curva. */
+function BHEditor({ ed, m }: { ed: SketchEditor; m: Material }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const code = (bh: [number, number][] | undefined) => `m.material(${q(m.name)}, bh=${bh ? `[${bh.map((p) => `(${p[0]}, ${p[1]})`).join(', ')}]` : 'None'})`;
+  const save = (bh: [number, number][] | undefined) => {
+    if (bh) {
+      // Curva válida: H e B crescentes, começando em (0, 0).
+      for (let i = 1; i < bh.length; i++)
+        if (!(bh[i][0] > bh[i - 1][0]) || !(bh[i][1] >= bh[i - 1][1])) return ed.flash(t.mesh.bhMonotonic);
+    }
+    ed.meshOp((s) => updateMaterial(s, m.id, { bh }), code(bh));
+  };
+  if (!m.bh)
+    return (
+      <div className="field">
+        <span>{t.mesh.bh}</span>
+        <button
+          className="btn secondary"
+          onClick={() => {
+            // Curva inicial: reta com o μr atual até 1 T, com um joelho simples.
+            const mu = 4e-7 * Math.PI * m.mur;
+            const pts: [number, number][] = [[0, 0]];
+            for (const b of [0.5, 1.0, 1.4, 1.6, 1.8]) pts.push([Math.round((b / mu) * (b > 1 ? (b - 0.4) ** 3 * 4 : 1)), b]);
+            save(pts);
+            setOpen(true);
+          }}
+        >
+          {t.mesh.bhAdd}
+        </button>
+      </div>
+    );
+  const bh = m.bh;
+  return (
+    <div className="bh">
+      <div className="field">
+        <span>{t.mesh.bh}</span>
+        <button className="btn secondary" onClick={() => setOpen(!open)} aria-expanded={open}>
+          {t.mesh.bhPoints(bh.length)} {open ? '▴' : '▾'}
+        </button>
+      </div>
+      <BHChart bh={bh} />
+      {open && (
+        <>
+          <table className="bh-table">
+            <thead>
+              <tr>
+                <th>H (A/m)</th>
+                <th>B (T)</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {bh.map((p, i) => (
+                <tr key={i}>
+                  {[0, 1].map((k) => (
+                    <td key={k}>
+                      <LazyInput
+                        value={String(p[k])}
+                        ariaLabel={`${k ? 'B' : 'H'} ${i + 1}`}
+                        onCommit={(v) => {
+                          const n = Number(v.replace(',', '.'));
+                          if (!Number.isFinite(n) || n < 0) return ed.flash(t.msg.positive);
+                          save(bh.map((q2, j) => (j === i ? ((k ? [q2[0], n] : [n, q2[1]]) as [number, number]) : q2)));
+                        }}
+                      />
+                    </td>
+                  ))}
+                  <td>
+                    <button className="x" title={t.tree.remove} aria-label={`${t.tree.remove} ${i + 1}`} disabled={bh.length <= 2} onClick={() => save(bh.filter((_, j) => j !== i))}>
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button
+            className="btn secondary"
+            onClick={() => {
+              const [h1, b1] = bh[bh.length - 1];
+              const [h0, b0] = bh[bh.length - 2] ?? [0, 0];
+              save([...bh, [Math.round(h1 + (h1 - h0) * 2), +(b1 + Math.max((b1 - b0) * 0.5, 0.01)).toFixed(3)]]);
+            }}
+          >
+            + {t.mesh.bhAddPoint}
+          </button>
+          <button className="btn danger" onClick={() => save(undefined)}>
+            {t.mesh.bhRemove}
+          </button>
+          <p className="help-line">{t.mesh.bhHelp}</p>
+        </>
+      )}
+    </div>
   );
 }

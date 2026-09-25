@@ -215,8 +215,8 @@ test('idioma EN/PT, citação e abas de etapa', async ({ page }) => {
 });
 
 test('árvore: física com análise, várias físicas, remover e desfazer', async ({ page }) => {
-  await expect(page.getByRole('treeitem', { name: /Campo magnético/ })).toBeVisible();
-  await page.getByRole('treeitem', { name: /Campo magnético/ }).click();
+  await expect(page.getByRole('treeitem', { name: /Campo magnético/ }).first()).toBeVisible();
+  await page.getByRole('treeitem', { name: /Campo magnético/ }).first().click();
   await page.locator('.props label', { hasText: 'Análise' }).locator('select').selectOption('harmonic');
   await expect(page.locator('.props label', { hasText: 'Frequência' })).toBeVisible();
   let sk = await sketch(page);
@@ -225,10 +225,11 @@ test('árvore: física com análise, várias físicas, remover e desfazer', asyn
   await page.getByRole('button', { name: 'Incluir no método de resolução' }).click();
   await expect(page.getByRole('menuitem', { name: /Resultado/ })).toHaveCount(0);
   await page.getByRole('menuitem', { name: /Campo magnético/ }).click();
-  await page.getByRole('button', { name: 'Incluir resultado' }).click();
+  await page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético', exact: true }).last().getByRole('button', { name: 'Incluir visualização' }).click();
+  await page.getByRole('menuitem', { name: /Superfície/ }).click();
   sk = await sketch(page);
   expect(sk.nodes.map((n: any) => n.kind)).toEqual(['mesh', 'physics', 'physics', 'post']);
-  await page.getByRole('button', { name: /Remover Resultado/ }).click();
+  await page.getByRole('button', { name: /Remover Superfície: B/ }).click();
   expect((await sketch(page)).nodes).toHaveLength(3);
   await page.keyboard.press('Control+z');
   expect((await sketch(page)).nodes).toHaveLength(4);

@@ -412,3 +412,22 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .help-line.strong { color: var(--accent); }
 .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn.primary:disabled { opacity: 0.6; }
+
+/* Resultados: ícones das camadas e gráfico sobre curva */
+.plot-ico { display: inline-block; width: 13px; height: 13px; border-radius: 2px; vertical-align: middle; }
+.plot-ico.map { background: linear-gradient(135deg, #30123b, #28bceb, #a4fc3c, #fb8022, #7a0403); }
+.plot-ico.map.h { background: linear-gradient(135deg, #30123b, #fb8022); }
+.plot-ico.map.a { background: linear-gradient(135deg, #28bceb, #7a0403); }
+.plot-ico.vec { width: auto; height: auto; font-size: 13px; line-height: 1; }
+.chart { width: 100%; height: auto; margin: 6px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; }
+.chart .axis { stroke: var(--muted); stroke-width: 1; }
+.chart .zero { stroke: var(--border); stroke-dasharray: 3 3; }
+.chart .curve { fill: none; stroke: #e8408a; stroke-width: 1.6; }
+.chart text { font-size: 9px; fill: var(--muted); }
+.chart .unit { font-size: 9px; }
+.cval.strong { font-weight: 600; }
+.chart .pt { fill: #e8408a; }
+.bh-table { width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 12px; }
+.bh-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 2px 4px; }
+.bh-table td { padding: 1px 2px; }
+.bh-table input { width: 100%; box-sizing: border-box; }

@@ -2,9 +2,9 @@
 import { dimDrawing } from './dimgeom';
 import { add, arcAngles, mid, mul, norm, perp, pt, sub, type Vec } from './geometry';
 import { formatValue } from './measure';
-import { isDimension, ORIGIN_ID, type Constraint, type Entity, type Id, type Sketch } from './types';
+import { isDimension, ORIGIN_ID, type Constraint, type Entity, type Id, PLOT_QUANTITIES, type PostNode, type Sketch } from './types';
 import type { View } from './view';
-import type { Solution } from './solve';
+import { nodeValues, quantityLabel, sampleCurve, triValues, type Solution } from './solve';
 import type { LengthUnit } from './expr';
 
 const LIGHT = {
@@ -100,7 +100,7 @@ export interface RenderState {
     tri?: { xy: Float64Array; triangles: Int32Array; stale: boolean };
   };
   /** Modo resultados: mapa de |B|, linhas de fluxo, sonda. */
-  post?: { sol: Solution | null; map: boolean; lines: boolean; nLines: number; stale: boolean; probe: Vec | null };
+  post?: { sol: Solution | null; layers: PostNode[]; stale: boolean; probe: Vec | null };
 }
 
 /** Mapa de cores "turbo" (aproximação polinomial), t ∈ [0, 1] → rgb. */
@@ -113,18 +113,21 @@ export function turbo(t: number): [number, number, number] {
   return [c(r), c(g), c(b)];
 }
 
-/** Segmentos das linhas de fluxo (curvas de nível de A), em mm; guardados por solução. */
-const contourCache = new WeakMap<Solution, { n: number; segs: Float64Array }>();
-function fluxSegments(sol: Solution, n: number): Float64Array {
-  const hit = contourCache.get(sol);
-  if (hit && hit.n === n) return hit.segs;
+/** Segmentos de curvas de nível de um campo nodal (mm); guardados por solução, grandeza e quantidade. */
+const contourCache = new WeakMap<Solution, Map<string, Float64Array>>();
+function contourSegments(sol: Solution, key: string, A: Float64Array, n: number, range?: [number, number]): Float64Array {
+  let byKey = contourCache.get(sol);
+  if (!byKey) contourCache.set(sol, (byKey = new Map()));
+  const k = `${key}|${n}|${range?.join(',') ?? ''}`;
+  const hit = byKey.get(k);
+  if (hit) return hit;
   const { xy, triangles } = sol.mesh;
-  const A = sol.A;
   let lo = Infinity, hi = -Infinity;
   for (const a of A) {
     if (a < lo) lo = a;
     if (a > hi) hi = a;
   }
+  if (range) [lo, hi] = range;
   const out: number[] = [];
   if (hi - lo > 0) {
     const step = (hi - lo) / n;
@@ -132,9 +135,9 @@ function fluxSegments(sol: Solution, n: number): Float64Array {
       const v = [triangles[t], triangles[t + 1], triangles[t + 2]];
       const a = v.map((i) => A[i]);
       const amin = Math.min(a[0], a[1], a[2]), amax = Math.max(a[0], a[1], a[2]);
-      const k0 = Math.ceil((amin - lo) / step - 0.5), k1 = Math.floor((amax - lo) / step - 0.5);
-      for (let k = k0; k <= k1; k++) {
-        const L = lo + (k + 0.5) * step;
+      const k0 = Math.max(0, Math.ceil((amin - lo) / step - 0.5)), k1 = Math.min(n - 1, Math.floor((amax - lo) / step - 0.5));
+      for (let kk = k0; kk <= k1; kk++) {
+        const L = lo + (kk + 0.5) * step;
         const pts: number[] = [];
         for (let e = 0; e < 3; e++) {
           const i = e, j = (e + 1) % 3;
@@ -148,11 +151,38 @@ function fluxSegments(sol: Solution, n: number): Float64Array {
     }
   }
   const segs = new Float64Array(out);
-  contourCache.set(sol, { n, segs });
+  byKey.set(k, segs);
   return segs;
 }
 
-function drawPost(ctx: CanvasRenderingContext2D, v: View, p: NonNullable<RenderState['post']>) {
+/** Vetores de B: um triângulo por célula de uma grade (mm), guardado por solução/espaçamento. */
+const vectorCache = new WeakMap<Solution, { h: number; q: string; v: Float64Array; max: number }>();
+function vectorSamples(sol: Solution, h: number, q: 'b' | 'h'): { v: Float64Array; max: number } {
+  const hit = vectorCache.get(sol);
+  if (hit && hit.h === h && hit.q === q) return hit;
+  const hx = q === 'h' ? triValues(sol, 'h', 'x') : sol.bx;
+  const hy = q === 'h' ? triValues(sol, 'h', 'y') : sol.by;
+  const { xy, triangles } = sol.mesh;
+  const best = new Map<string, { d: number; t: number; x: number; y: number }>();
+  for (let t = 0; t < triangles.length / 3; t++) {
+    const a = triangles[3 * t], b = triangles[3 * t + 1], c = triangles[3 * t + 2];
+    const x = (xy[2 * a] + xy[2 * b] + xy[2 * c]) / 3, y = (xy[2 * a + 1] + xy[2 * b + 1] + xy[2 * c + 1]) / 3;
+    const i = Math.floor(x / h), j = Math.floor(y / h);
+    const d = Math.hypot(x - (i + 0.5) * h, y - (j + 0.5) * h);
+    const k = `${i},${j}`;
+    const cur = best.get(k);
+    if (!cur || d < cur.d) best.set(k, { d, t, x, y });
+  }
+  const out: number[] = [];
+  let max = 0;
+  for (let t = 0; t < hx.length; t++) max = Math.max(max, Math.hypot(hx[t], hy[t]));
+  for (const { t, x, y } of best.values()) out.push(x, y, hx[t], hy[t]);
+  const res = { h, q, v: new Float64Array(out), max };
+  vectorCache.set(sol, res);
+  return res;
+}
+
+function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNullable<RenderState['post']>) {
   const sol = p.sol;
   if (!sol) return;
   const { xy, triangles } = sol.mesh;
@@ -163,41 +193,104 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, p: NonNullable<RenderS
     sx[i] = q.x;
     sy[i] = q.y;
   }
-  if (p.map && sol.bmax > 0) {
-    // Um caminho por faixa de cor (64 faixas): muito mais rápido que um fill por triângulo.
-    const BUCKETS = 64;
-    const paths: Path2D[] = Array.from({ length: BUCKETS }, () => new Path2D());
-    for (let t = 0; t < triangles.length; t += 3) {
-      const k = Math.min(BUCKETS - 1, Math.floor((sol.bmag[t / 3] / sol.bmax) * BUCKETS));
-      const a = triangles[t], b = triangles[t + 1], c = triangles[t + 2];
-      const P = paths[k];
-      P.moveTo(sx[a], sy[a]);
-      P.lineTo(sx[b], sy[b]);
-      P.lineTo(sx[c], sy[c]);
-      P.closePath();
-    }
-    for (let k = 0; k < BUCKETS; k++) {
-      const [r, g, b] = turbo((k + 0.5) / BUCKETS);
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.strokeStyle = ctx.fillStyle; // cobre as frestas entre triângulos
-      ctx.lineWidth = 0.5;
-      ctx.fill(paths[k]);
-      ctx.stroke(paths[k]);
+  const legends: { lo: number; hi: number; label: string }[] = [];
+  for (const layer of p.layers) {
+    const plot = layer.plot ?? 'surface';
+    const qty = (layer.quantity ?? PLOT_QUANTITIES[plot][0]) as 'b' | 'h' | 'a' | 'j';
+    const comp = layer.component ?? 'mag';
+    if (plot === 'surface') {
+      const mv = { v: triValues(sol, qty, comp), label: quantityLabel(qty, comp, sol.axisymmetric) };
+      let lo = Infinity, hi = -Infinity;
+      for (const x of mv.v) {
+        if (x < lo) lo = x;
+        if (x > hi) hi = x;
+      }
+      if ((qty === 'b' || qty === 'h') && comp === 'mag') lo = 0;
+      if (layer.range) [lo, hi] = layer.range;
+      if (!(hi > lo)) hi = lo + 1e-12;
+      // Um caminho por faixa de cor (64 faixas): muito mais rápido que um fill por triângulo.
+      const BUCKETS = 64;
+      const paths: Path2D[] = Array.from({ length: BUCKETS }, () => new Path2D());
+      for (let t = 0; t < triangles.length; t += 3) {
+        const k = Math.min(BUCKETS - 1, Math.max(0, Math.floor(((mv.v[t / 3] - lo) / (hi - lo)) * BUCKETS)));
+        const a = triangles[t], b = triangles[t + 1], c = triangles[t + 2];
+        const P = paths[k];
+        P.moveTo(sx[a], sy[a]);
+        P.lineTo(sx[b], sy[b]);
+        P.lineTo(sx[c], sy[c]);
+        P.closePath();
+      }
+      for (let k = 0; k < BUCKETS; k++) {
+        const [r, g, b] = turbo((k + 0.5) / BUCKETS);
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.strokeStyle = ctx.fillStyle; // cobre as frestas entre triângulos
+        ctx.lineWidth = 0.5;
+        ctx.fill(paths[k]);
+        ctx.stroke(paths[k]);
+      }
+      legends.push({ lo, hi, label: mv.label });
+    } else if (plot === 'contour') {
+      const segs = contourSegments(sol, `${qty}${comp}`, nodeValues(sol, qty, comp), layer.nLines ?? 20, layer.range);
+      ctx.beginPath();
+      for (let i = 0; i < segs.length; i += 4) {
+        const a = v.toScreen({ x: segs[i], y: segs[i + 1] });
+        const b = v.toScreen({ x: segs[i + 2], y: segs[i + 3] });
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+      ctx.strokeStyle = legends.length ? 'rgba(10,14,20,0.8)' : COLORS.dim;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else if (plot === 'arrow') {
+      const h = layer.spacing && layer.spacing > 0 ? layer.spacing : Math.max(sol.meshSize, 1e-6) * 1.5;
+      const { v: vs, max: vmax } = vectorSamples(sol, h, qty === 'h' ? 'h' : 'b');
+      const scale = (layer.scale ?? 1) * 0.9 * h;
+      ctx.strokeStyle = legends.length ? '#0d1319' : COLORS.dim;
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < vs.length; i += 4) {
+        const bm = Math.hypot(vs[i + 2], vs[i + 3]);
+        if (!(bm > 0) || !(vmax > 0)) continue;
+        const L = (scale * bm) / vmax;
+        const ux = vs[i + 2] / bm, uy = vs[i + 3] / bm;
+        const a = v.toScreen({ x: vs[i] - (ux * L) / 2, y: vs[i + 1] - (uy * L) / 2 });
+        const b = v.toScreen({ x: vs[i] + (ux * L) / 2, y: vs[i + 1] + (uy * L) / 2 });
+        if (Math.hypot(b.x - a.x, b.y - a.y) < 2) continue;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        arrow(ctx, b, { x: b.x - a.x, y: b.y - a.y });
+      }
+    } else if (plot === 'line' && layer.curve) {
+      const smp = sampleCurve(sk, layer.curve, 64);
+      if (!smp) continue;
+      ctx.beginPath();
+      smp.pts.forEach((pt, i) => {
+        const q = v.toScreen(pt);
+        if (i === 0) ctx.moveTo(q.x, q.y);
+        else ctx.lineTo(q.x, q.y);
+      });
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.strokeStyle = '#e8408a';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      // Seta da normal positiva (à esquerda do percurso), no meio da curva.
+      const m = Math.floor(smp.pts.length / 2);
+      const q = v.toScreen(smp.pts[m]);
+      const n = { x: -smp.tan[m].y, y: smp.tan[m].x };
+      const tip = { x: q.x + n.x * 22, y: q.y - n.y * 22 };
+      ctx.beginPath();
+      ctx.moveTo(q.x, q.y);
+      ctx.lineTo(tip.x, tip.y);
+      ctx.stroke();
+      ctx.fillStyle = '#e8408a';
+      arrow(ctx, tip, { x: tip.x - q.x, y: tip.y - q.y });
     }
   }
-  if (p.lines) {
-    const segs = fluxSegments(sol, p.nLines);
-    ctx.beginPath();
-    for (let i = 0; i < segs.length; i += 4) {
-      const a = v.toScreen({ x: segs[i], y: segs[i + 1] });
-      const b = v.toScreen({ x: segs[i + 2], y: segs[i + 3] });
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-    }
-    ctx.strokeStyle = p.map ? 'rgba(10,14,20,0.8)' : COLORS.dim;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
+  legends.forEach((lg, i) => drawLegend(ctx, v, lg, i));
   if (p.probe) {
     const q = v.toScreen(p.probe);
     ctx.strokeStyle = '#ffffff';
@@ -211,9 +304,14 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, p: NonNullable<RenderS
   }
 }
 
-/** Barra de cores de |B| (canto superior direito). */
-function drawLegend(ctx: CanvasRenderingContext2D, v: View, bmax: number) {
-  const x = v.w - 64, y = 16, w = 14, h = 180;
+const tick = (val: number) => {
+  const a = Math.abs(val);
+  return a === 0 ? '0' : a >= 1e4 || a < 1e-2 ? val.toExponential(1) : val.toFixed(a >= 10 ? 1 : a >= 1 ? 2 : 3);
+};
+
+/** Barra de cores (canto superior direito; várias legendas lado a lado). */
+function drawLegend(ctx: CanvasRenderingContext2D, v: View, lg: { lo: number; hi: number; label: string }, index: number) {
+  const x = v.w - 72 - index * 84, y = 16, w = 14, h = 180;
   for (let i = 0; i < h; i++) {
     const [r, g, b] = turbo(1 - i / h);
     ctx.fillStyle = `rgb(${r},${g},${b})`;
@@ -226,12 +324,9 @@ function drawLegend(ctx: CanvasRenderingContext2D, v: View, bmax: number) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = COLORS.dim;
-  for (let k = 0; k <= 4; k++) {
-    const val = bmax * (1 - k / 4);
-    ctx.fillText(val >= 0.01 ? val.toFixed(val >= 1 ? 2 : 3) : val.toExponential(1), x + w + 4, y + (h * k) / 4);
-  }
+  for (let k = 0; k <= 4; k++) ctx.fillText(tick(lg.hi - ((lg.hi - lg.lo) * k) / 4), x + w + 4, y + (h * k) / 4);
   ctx.textAlign = 'center';
-  ctx.fillText('|B| (T)', x + w / 2 + 8, y + h + 14);
+  ctx.fillText(lg.label, x + w / 2 + 10, y + h + 14);
 }
 
 const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
@@ -633,12 +728,17 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
   const ents = Object.values(sk.entities).filter((e) => !st.hidden.has(e.id) && !(e.type !== 'circle' && e.type !== 'arc' && e.aux));
   if (st.post) {
     // Modo resultados: campo por baixo, contorno das peças por cima.
-    drawPost(ctx, v, st.post);
+    const hasMap = !!st.post.sol && st.post.layers.some((l) => l.plot === 'surface');
+    // Superfícies primeiro; o contorno das peças fica entre elas e as linhas/vetores/curvas.
+    const maps = st.post.layers.filter((l) => l.plot === 'surface');
+    const rest = st.post.layers.filter((l) => !maps.includes(l));
+    drawPost(ctx, v, sk, { ...st.post, layers: maps, probe: null });
     for (const e of ents) {
-      if (e.type === 'point' || e.construction) continue;
-      drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: null, related: new Set(), defined: new Set(), colorOverride: st.post.sol && st.post.map ? 'rgba(10,14,20,0.9)' : COLORS.defined, widthOverride: 1.4 } as RenderState);
+      if (e.type === 'point') continue;
+      const color = e.construction ? COLORS.construction : hasMap ? 'rgba(10,14,20,0.9)' : COLORS.defined;
+      drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: st.hover, related: new Set(), defined: new Set(), colorOverride: st.hover === e.id ? COLORS.hover : color, widthOverride: st.hover === e.id ? 3 : 1.4 } as RenderState);
     }
-    if (st.post.sol && st.post.map) drawLegend(ctx, v, st.post.sol.bmax);
+    drawPost(ctx, v, sk, { ...st.post, layers: rest });
     return hits;
   }
   if (st.mesh) {

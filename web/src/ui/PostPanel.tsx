@@ -1,23 +1,37 @@
-// Resolver (Método de resolução) e Resultados: mapa de |B|, linhas de fluxo, energia e sonda.
+// Resolver (Método de resolução) e Resultados: um grupo por física (mesmo nome) com camadas de visualização.
+import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
-import type { SketchEditor } from '../cad/editor';
-import { probe } from '../cad/solve';
-import { addNode, updateNode, type TreeSel } from '../cad/tree';
-import type { Id, PhysicsNode, PostNode } from '../cad/types';
+import { entityLabel, type SketchEditor } from '../cad/editor';
+import { lineProfile, probe, quantityLabel, type Solution } from '../cad/solve';
+import { addPlot, removeNode, updateNode, type TreeSel } from '../cad/tree';
+import { PLOT_KINDS, PLOT_QUANTITIES, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
+import { Icons } from './icons';
 import { useEditor } from './useStore';
 
-/** Resolve e, se deu certo, abre o primeiro nó de Resultados (cria um se não houver). */
+const PLOT_ICON: Record<PlotKind, JSX.Element> = {
+  surface: <span className="plot-ico map" />,
+  contour: <span className="plot-ico iso">≋</span>,
+  arrow: <span className="plot-ico vec">➚</span>,
+  line: Icons.line,
+};
+
+/** Nome padrão da camada: tipo + grandeza (ex.: "Superfície: B"). */
+export const plotName = (plot: PlotKind, qty: PlotQuantity) => {
+  const t = T();
+  return `${t.post.plots[plot]}: ${t.post.qty[qty].split(' —')[0]}`;
+};
+
+/** Resolve; se deu certo, garante as camadas padrão (|B| + linhas) e abre os resultados da física. */
 export async function solveAndShow(ed: SketchEditor, id: Id, onSelect: (s: TreeSel) => void) {
   if (!(await ed.solve(id))) return;
-  let postId = ed.sketch.nodes.find((n) => n.kind === 'post')?.id;
-  if (!postId) {
-    const r = addNode(ed.sketch, 'post', T().tree.addPost);
-    if (!ed.commit(r.sketch, [r.code])) return;
-    postId = r.node.id;
+  if (!ed.sketch.nodes.some((n) => n.kind === 'post' && n.physics === id)) {
+    const a = addPlot(ed.sketch, id, 'surface', plotName('surface', 'b'), 'b');
+    const b = addPlot(a.sketch, id, 'contour', plotName('contour', 'a'), 'a');
+    ed.commit(b.sketch, [a.code, b.code]);
   }
-  onSelect({ kind: 'node', id: postId });
+  onSelect({ kind: 'results', id });
 }
 
 /** Botão ▶ de uma física (linha da árvore). */
@@ -57,14 +71,7 @@ export function SolveSection({ ed, node, onSelect }: { ed: SketchEditor; node: P
       {sol ? (
         <>
           <p className={stale ? 'err-text' : 'muted'}>{stale ? t.solve.stale : t.solve.stats(sol.mesh.elements, sol.ms)}</p>
-          <button
-            className="btn secondary"
-            onClick={() => {
-              const post = ed.sketch.nodes.find((n) => n.kind === 'post');
-              if (post) onSelect({ kind: 'node', id: post.id });
-              else void solveAndShow(ed, node.id, onSelect);
-            }}
-          >
+          <button className="btn secondary" onClick={() => onSelect({ kind: 'results', id: node.id })}>
             {t.solve.goResults}
           </button>
         </>
@@ -76,36 +83,264 @@ export function SolveSection({ ed, node, onSelect }: { ed: SketchEditor; node: P
   );
 }
 
+/** (+) do grupo de resultados: escolhe o tipo de visualização. */
+function PlotAddMenu({ ed, physics, onAdded }: { ed: SketchEditor; physics: Id; onAdded: (id: Id) => void }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, [open]);
+  return (
+    <div className="add-menu" ref={ref} onClick={(e) => e.stopPropagation()}>
+      <button className="icon-btn tadd" title={t.post.add} aria-label={t.post.add} aria-expanded={open} onClick={() => setOpen(!open)}>
+        +
+      </button>
+      {open && (
+        <div className="menu" role="menu">
+          {PLOT_KINDS.map((k) => (
+            <button
+              key={k}
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                const r = addPlot(ed.sketch, physics, k, plotName(k, PLOT_QUANTITIES[k][0]));
+                if (ed.commit(r.sketch, [r.code])) onAdded(r.node.id);
+              }}
+            >
+              <span className="ticon">{PLOT_ICON[k]}</span> {t.post.plots[k]}
+              <span className="menu-note-inline">{t.post.plotHelp[k]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Row(p: {
+  icon: JSX.Element;
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+  extra?: React.ReactNode;
+  toggle?: { open: boolean; onToggle: () => void };
+  onRename?: (n: string) => void;
+  muted?: boolean;
+}) {
+  const t = useT();
+  const [renaming, setRenaming] = useState(false);
+  return (
+    <div className={`tnode${p.selected ? ' on' : ''}${p.muted ? ' dim' : ''}`} role="treeitem" aria-selected={p.selected} aria-label={p.label} onClick={p.onClick}>
+      {p.toggle ? (
+        <button
+          className="twisty"
+          aria-label={p.toggle.open ? '−' : '+'}
+          onClick={(e) => {
+            e.stopPropagation();
+            p.toggle!.onToggle();
+          }}
+        >
+          {p.toggle.open ? '▾' : '▸'}
+        </button>
+      ) : (
+        <span className="twisty-space" />
+      )}
+      <span className="ticon">{p.icon}</span>
+      {renaming && p.onRename ? (
+        <LazyInput autoFocus value={p.label} ariaLabel={t.tree.rename} onCommit={(n) => p.onRename!(n)} onDone={() => setRenaming(false)} />
+      ) : (
+        <span
+          className="tname"
+          title={p.onRename ? t.tree.rename : undefined}
+          onDoubleClick={(e) => {
+            if (!p.onRename) return;
+            e.stopPropagation();
+            setRenaming(true);
+          }}
+        >
+          {p.label}
+        </span>
+      )}
+      {p.extra}
+    </div>
+  );
+}
+
+/** Resultados na árvore: um grupo por física (mesmo nome) com as camadas. */
+export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel; onSelect: (s: TreeSel) => void }) {
+  const t = useT();
+  useEditor(ed);
+  const [closed, setClosed] = useState<Set<Id>>(new Set());
+  const sk = ed.sketch;
+  const physics = sk.nodes.filter((n): n is PhysicsNode => n.kind === 'physics');
+  return (
+    <ul role="group">
+      {physics.map((ph) => {
+        const plots = sk.nodes.filter((n): n is PostNode => n.kind === 'post' && n.physics === ph.id);
+        const sol = ed.solutions.get(ph.id);
+        const open = !closed.has(ph.id);
+        return (
+          <li key={ph.id}>
+            <Row
+              icon={Icons.treePhysics}
+              label={ph.name}
+              selected={sel.kind === 'results' && sel.id === ph.id}
+              toggle={{ open, onToggle: () => setClosed((c) => (c.has(ph.id) ? new Set([...c].filter((x) => x !== ph.id)) : new Set(c).add(ph.id))) }}
+              onClick={() => onSelect({ kind: 'results', id: ph.id })}
+              extra={
+                <>
+                  <span className={`crefs${sol && ed.solutionStale(ph.id) ? ' bad' : ''}`}>{sol ? `${sol.bmax.toPrecision(3)} T` : '—'}</span>
+                  <PlotAddMenu
+                    ed={ed}
+                    physics={ph.id}
+                    onAdded={(id) => {
+                      setClosed((c) => new Set([...c].filter((x) => x !== ph.id)));
+                      onSelect({ kind: 'node', id });
+                    }}
+                  />
+                </>
+              }
+            />
+            {open && (
+              <ul role="group">
+                {plots.map((p) => (
+                  <li key={p.id}>
+                    <Row
+                      icon={PLOT_ICON[p.plot ?? 'surface']}
+                      label={p.name}
+                      muted={p.hidden}
+                      selected={sel.kind === 'node' && sel.id === p.id}
+                      onClick={() => onSelect({ kind: 'node', id: p.id })}
+                      onRename={(n) => n.trim() && ed.commit(updateNode(sk, p.id, { name: n.trim() }), [`r.rename(${q(p.id)}, ${q(n.trim())})`])}
+                      extra={
+                        <>
+                          <button
+                            className="icon-btn"
+                            title={p.hidden ? t.post.show : t.post.hide}
+                            aria-label={`${p.hidden ? t.post.show : t.post.hide} ${p.name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              ed.commit(updateNode(sk, p.id, { hidden: !p.hidden }), [`r.show(${q(p.id)}, visible=${p.hidden ? 'True' : 'False'})`]);
+                            }}
+                          >
+                            {p.hidden ? Icons.eyeOff : Icons.eye}
+                          </button>
+                          <button
+                            className="x"
+                            title={t.tree.remove}
+                            aria-label={`${t.tree.remove} ${p.name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              ed.commit(removeNode(sk, p.id), [`r.remove(${q(p.id)})`]);
+                            }}
+                          >
+                            ×
+                          </button>
+                        </>
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 const fmt = (v: number, unit: string) => {
   const a = Math.abs(v);
   const s = a === 0 ? '0' : a >= 1e4 || a < 1e-3 ? v.toExponential(3) : v.toPrecision(4);
   return `${s} ${unit}`;
 };
 
-/** Propriedades de um nó de Resultados. */
-export function PostProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
+/** Sonda: valores no ponto clicado. */
+function ProbeSection({ ed, sol }: { ed: SketchEditor; sol: Solution }) {
   const t = useT();
-  useEditor(ed);
-  const physics = ed.sketch.nodes.find((n) => n.kind === 'physics');
-  const sol = physics ? ed.solutions.get(physics.id) : undefined;
-  const set = (patch: Partial<PostNode>, code: string) => ed.commit(updateNode(ed.sketch, node.id, patch), [code]);
-  const pr = sol && ed.probeAt ? probe(sol, ed.probeAt) : null;
+  const pr = ed.probeAt ? probe(sol, ed.probeAt) : null;
   const regionName = (i: number) => {
     const r = ed.arrangement().regions[i];
     const a = r ? ed.assignOf({ curves: r.curves, seed: r.label }) : undefined;
     return a?.name ?? t.mesh.region(i + 1);
   };
   return (
+    <section>
+      <h3>{t.solve.probeHint}</h3>
+      {ed.probeAt && !pr && <p className="muted">{t.solve.probeOut}</p>}
+      {pr && (
+        <>
+          <label className="field">
+            <span>x, y</span>
+            <span className="cval">
+              {ed.probeAt!.x.toFixed(3)}, {ed.probeAt!.y.toFixed(3)} mm
+            </span>
+          </label>
+          <label className="field">
+            <span>{t.solve.probeRegion}</span>
+            <span className="cval">{pr.region >= 0 ? regionName(pr.region) : '—'}</span>
+          </label>
+          <label className="field">
+            <span>|B|</span>
+            <span className="cval">{fmt(pr.b, 'T')}</span>
+          </label>
+          <label className="field">
+            <span>{sol.axisymmetric ? 'B_r, B_z' : 'B_x, B_y'}</span>
+            <span className="cval">
+              {pr.bx.toPrecision(4)}, {pr.by.toPrecision(4)} T
+            </span>
+          </label>
+          <label className="field">
+            <span>|H|</span>
+            <span className="cval">{fmt(pr.h, 'A/m')}</span>
+          </label>
+          <label className="field">
+            <span>μr</span>
+            <span className="cval">{pr.mur.toPrecision(4)}</span>
+          </label>
+          <label className="field">
+            <span>{sol.axisymmetric ? 'ψ = r·A_φ' : 'A_z'}</span>
+            <span className="cval">{fmt(pr.A, sol.axisymmetric ? 'Wb/rad' : 'Wb/m')}</span>
+          </label>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Propriedades do grupo de resultados de uma física. */
+export function ResultsProps({ ed, id, onSelect }: { ed: SketchEditor; id: Id; onSelect: (s: TreeSel) => void }) {
+  const t = useT();
+  useEditor(ed);
+  const ph = ed.sketch.nodes.find((n): n is PhysicsNode => n.id === id && n.kind === 'physics');
+  const sol = ed.solutions.get(id);
+  if (!ph) return null;
+  return (
     <div className="props-body">
       <section>
-        <h3>
-          {t.tree.postProps}: {node.name}
-        </h3>
+        <h3>{ph.name}</h3>
         {!sol ? (
-          <p className="muted">{t.solve.noSolution}</p>
+          <>
+            <p className="muted">{t.solve.notSolved}</p>
+            <button className="btn primary" disabled={ed.solveBusy !== null} onClick={() => void solveAndShow(ed, id, onSelect)}>
+              ▶ {t.solve.run}
+            </button>
+          </>
         ) : (
           <>
-            {physics && ed.solutionStale(physics.id) && <p className="err-text">{t.solve.stale}</p>}
+            {ed.solutionStale(id) && (
+              <>
+                <p className="err-text">{t.solve.stale}</p>
+                <button className="btn primary" disabled={ed.solveBusy !== null} onClick={() => void solveAndShow(ed, id, onSelect)}>
+                  ▶ {t.solve.run}
+                </button>
+              </>
+            )}
             <label className="field">
               <span>{t.solve.bmax}</span>
               <span className="cval">{fmt(sol.bmax, 'T')}</span>
@@ -114,73 +349,203 @@ export function PostProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
               <span>{t.solve.energy}</span>
               <span className="cval">{fmt(sol.energy, 'J')}</span>
             </label>
-            <label className="field check">
-              <input type="checkbox" checked={node.map ?? true} onChange={(e) => set({ map: e.target.checked }, `r.show(${q(node.id)}, map=${e.target.checked ? 'True' : 'False'})`)} />
-              <span>{t.solve.map}</span>
+            <p className="help-line">{t.post.add}: +</p>
+          </>
+        )}
+      </section>
+      {sol && <ProbeSection ed={ed} sol={sol} />}
+    </div>
+  );
+}
+
+/** Gráfico simples (SVG) de y(s). */
+function Chart({ s, y, unit }: { s: number[]; y: number[]; unit: string }) {
+  const W = 250, H = 130, L = 40, B = 18;
+  const x0 = s[0], x1 = s[s.length - 1];
+  let lo = Math.min(...y), hi = Math.max(...y);
+  if (lo > 0 && lo < hi * 0.5) lo = 0;
+  if (!(hi > lo)) hi = lo + 1;
+  const X = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * (W - L - 6);
+  const Y = (v: number) => 6 + (1 - (v - lo) / (hi - lo)) * (H - B - 6);
+  const pts = s.map((v, i) => `${X(v).toFixed(1)},${Y(y[i]).toFixed(1)}`).join(' ');
+  const tk = (v: number) => (Math.abs(v) >= 1e3 || (Math.abs(v) < 1e-2 && v !== 0) ? v.toExponential(1) : v.toPrecision(3));
+  return (
+    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="chart">
+      <line x1={L} y1={6} x2={L} y2={H - B} className="axis" />
+      <line x1={L} y1={H - B} x2={W - 6} y2={H - B} className="axis" />
+      {lo < 0 && hi > 0 && <line x1={L} y1={Y(0)} x2={W - 6} y2={Y(0)} className="zero" />}
+      <polyline points={pts} className="curve" />
+      <text x={L - 3} y={10} textAnchor="end">{tk(hi)}</text>
+      <text x={L - 3} y={H - B} textAnchor="end">{tk(lo)}</text>
+      <text x={L} y={H - 4}>0</text>
+      <text x={W - 6} y={H - 4} textAnchor="end">
+        {tk(x1)} mm
+      </text>
+      <text x={L + 4} y={H - B - 4} className="unit">
+        {unit}
+      </text>
+    </svg>
+  );
+}
+
+/** Propriedades de uma camada de visualização. */
+export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
+  const t = useT();
+  useEditor(ed);
+  const sk = ed.sketch;
+  const sol = node.physics ? ed.solutions.get(node.physics) : undefined;
+  const set = (patch: Partial<PostNode>, code: string) => ed.commit(updateNode(sk, node.id, patch), [code]);
+  const plot = node.plot ?? 'surface';
+  const [picking, setPicking] = useState(false);
+  useEffect(() => () => ed.pickLine(null), [ed]);
+  const prof = plot === 'line' && sol && node.curve ? lineProfile(sol, sk, node.curve) : null;
+  const quantity = node.quantity ?? PLOT_QUANTITIES[plot][0];
+  const comp = node.component ?? 'mag';
+  const vectorQty = quantity === 'b' || quantity === 'h';
+  // Trocar a grandeza renomeia a camada se o nome ainda é o padrão.
+  const setQuantity = (qq: PlotQuantity) => {
+    const patch: Partial<PostNode> = { quantity: qq };
+    if (node.name === plotName(plot, quantity)) patch.name = plotName(plot, qq);
+    set(patch, `r.show(${q(node.id)}, quantity=${q(qq)})`);
+  };
+  return (
+    <div className="props-body">
+      <section>
+        <h3>
+          {t.post.plots[plot]} <span className="muted">— {t.post.plotHelp[plot]}</span>
+        </h3>
+        {!sol && <p className="muted">{t.solve.noSolution}</p>}
+        <label className="field">
+          <span>{t.post.by[plot]}</span>
+          <select aria-label={t.post.by[plot]} value={quantity} onChange={(e) => setQuantity(e.target.value as PlotQuantity)}>
+            {PLOT_QUANTITIES[plot].map((k) => (
+              <option key={k} value={k}>
+                {k === 'a' && sol?.axisymmetric ? 'ψ = r·A_φ' : t.post.qty[k]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {vectorQty && (plot === 'surface' || plot === 'contour') && (
+          <label className="field">
+            <span>{t.post.component}</span>
+            <select aria-label={t.post.component} value={comp} onChange={(e) => set({ component: e.target.value as PostNode['component'] }, `r.show(${q(node.id)}, component=${q(e.target.value)})`)}>
+              {(['mag', 'x', 'y'] as const).map((k) => (
+                <option key={k} value={k}>
+                  {t.post.comps[k]}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {(plot === 'surface' || plot === 'contour') && (
+          <label className="field">
+            <span>{t.post.range}</span>
+            <LazyInput
+              value={node.range ? `${node.range[0]}; ${node.range[1]}` : ''}
+              placeholder={t.post.rangeAuto}
+              ariaLabel={t.post.range}
+              onCommit={(v) => {
+                if (!v.trim()) return set({ range: undefined }, `r.show(${q(node.id)}, range=None)`);
+                const [a, b] = v.split(/[;\s]+/).map((x) => Number(x.replace(',', '.')));
+                if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) return ed.flash(t.post.rangeAuto);
+                set({ range: [a, b] }, `r.show(${q(node.id)}, range=(${a}, ${b}))`);
+              }}
+            />
+          </label>
+        )}
+        {plot === 'contour' && (
+          <label className="field">
+            <span>{t.solve.nLines}</span>
+            <LazyInput
+              value={String(node.nLines ?? 20)}
+              ariaLabel={t.solve.nLines}
+              onCommit={(v) => {
+                const n = Math.round(Number(v));
+                if (!(n >= 2 && n <= 200)) return ed.flash('2 – 200');
+                set({ nLines: n }, `r.show(${q(node.id)}, n_lines=${n})`);
+              }}
+            />
+          </label>
+        )}
+        {plot === 'arrow' && (
+          <>
+            <label className="field">
+              <span>{t.post.spacing}</span>
+              <LazyInput
+                value={node.spacing ? String(node.spacing) : ''}
+                placeholder={sol ? `auto (${(sol.meshSize * 1.5).toPrecision(3)})` : 'auto'}
+                ariaLabel={t.post.spacing}
+                onCommit={(v) => {
+                  const n = Number(v.replace(',', '.'));
+                  set({ spacing: v.trim() && n > 0 ? n : undefined }, `r.show(${q(node.id)}, spacing=${v.trim() && n > 0 ? n : 'None'})`);
+                }}
+              />
             </label>
-            <label className="field check">
-              <input type="checkbox" checked={node.lines ?? true} onChange={(e) => set({ lines: e.target.checked }, `r.show(${q(node.id)}, lines=${e.target.checked ? 'True' : 'False'})`)} />
-              <span>{t.solve.lines}</span>
+            <label className="field">
+              <span>{t.post.scale}</span>
+              <LazyInput
+                value={String(node.scale ?? 1)}
+                ariaLabel={t.post.scale}
+                onCommit={(v) => {
+                  const n = Number(v.replace(',', '.'));
+                  if (!(n > 0)) return ed.flash(t.msg.positive);
+                  set({ scale: n }, `r.show(${q(node.id)}, scale=${n})`);
+                }}
+              />
             </label>
-            {(node.lines ?? true) && (
-              <label className="field">
-                <span>{t.solve.nLines}</span>
-                <LazyInput
-                  value={String(node.nLines ?? 20)}
-                  ariaLabel={t.solve.nLines}
-                  onCommit={(v) => {
-                    const n = Math.round(Number(v));
-                    if (!(n >= 2 && n <= 200)) return ed.flash('2 – 200');
-                    set({ nLines: n }, `r.show(${q(node.id)}, n_lines=${n})`);
-                  }}
-                />
-              </label>
+          </>
+        )}
+        {plot === 'line' && (
+          <>
+            <label className="field">
+              <span>{t.post.curve}</span>
+              <span className="cval">{node.curve && sk.entities[node.curve] ? entityLabel(sk, node.curve) : '—'}</span>
+            </label>
+            <button
+              className={`btn${picking ? ' secondary' : ''}`}
+              onClick={() => {
+                if (picking) {
+                  ed.pickLine(null);
+                  setPicking(false);
+                  return;
+                }
+                setPicking(true);
+                ed.pickLine((id) => {
+                  setPicking(false);
+                  set({ curve: id }, `r.show(${q(node.id)}, curve=${q(id)})`);
+                });
+              }}
+            >
+              {picking ? t.post.picking : t.post.pickCurve}
+            </button>
+            {!node.curve && <p className="help-line">{t.post.noCurve}</p>}
+            {node.curve && sol && !prof && <p className="muted">{t.post.outside}</p>}
+            {prof && (
+              <>
+                <Chart s={prof.s} y={prof[quantity as 'b' | 'bn' | 'bt' | 'h' | 'a']} unit={quantityLabel(quantity, 'mag', sol!.axisymmetric).replace(/^.*\(/, '').replace(')', '')} />
+                <label className="field">
+                  <span>{t.post.flux}</span>
+                  <span className="cval strong">{fmt(prof.flux, 'Wb')}</span>
+                </label>
+                <label className="field">
+                  <span>{t.post.bAvg}</span>
+                  <span className="cval">{fmt(prof.bAvg, 'T')}</span>
+                </label>
+                <label className="field">
+                  <span>{t.post.bMax}</span>
+                  <span className="cval">{fmt(prof.bMax, 'T')}</span>
+                </label>
+                <label className="field">
+                  <span>{t.post.length}</span>
+                  <span className="cval">{prof.length.toPrecision(4)} mm</span>
+                </label>
+                <p className="help-line">{t.post.fluxHint}</p>
+              </>
             )}
           </>
         )}
       </section>
-      {sol && (
-        <section>
-          <h3>{t.solve.probeHint}</h3>
-          {ed.probeAt && !pr && <p className="muted">{t.solve.probeOut}</p>}
-          {pr && (
-            <>
-              <label className="field">
-                <span>x, y</span>
-                <span className="cval">
-                  {ed.probeAt!.x.toFixed(3)}, {ed.probeAt!.y.toFixed(3)} mm
-                </span>
-              </label>
-              <label className="field">
-                <span>{t.solve.probeRegion}</span>
-                <span className="cval">{pr.region >= 0 ? regionName(pr.region) : '—'}</span>
-              </label>
-              <label className="field">
-                <span>|B|</span>
-                <span className="cval">{fmt(pr.b, 'T')}</span>
-              </label>
-              <label className="field">
-                <span>{sol.axisymmetric ? 'B_r, B_z' : 'B_x, B_y'}</span>
-                <span className="cval">
-                  {pr.bx.toPrecision(4)}, {pr.by.toPrecision(4)} T
-                </span>
-              </label>
-              <label className="field">
-                <span>|H|</span>
-                <span className="cval">{fmt(pr.h, 'A/m')}</span>
-              </label>
-              <label className="field">
-                <span>μr</span>
-                <span className="cval">{pr.mur.toPrecision(4)}</span>
-              </label>
-              <label className="field">
-                <span>{sol.axisymmetric ? 'ψ = r·A_φ' : 'A_z'}</span>
-                <span className="cval">{fmt(pr.A, sol.axisymmetric ? 'Wb/rad' : 'Wb/m')}</span>
-              </label>
-            </>
-          )}
-        </section>
-      )}
+      {sol && plot !== 'line' && <ProbeSection ed={ed} sol={sol} />}
     </div>
   );
 }

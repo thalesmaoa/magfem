@@ -345,6 +345,14 @@ export interface Translations {
     elements: (n: number) => string;
     elementsNode: string;
     regionName: string;
+    outerHelp: string;
+    bhAdd: string;
+    bhAddPoint: string;
+    bhRemove: string;
+    bhMonotonic: string;
+    bhHelp: string;
+    outerName: string;
+    outerMakeEditable: string;
     minAngleHelp: string;
     nameTaken: (n: string) => string;
   };
@@ -371,6 +379,32 @@ export interface Translations {
     noSolution: string;
     linearNote: string;
     goResults: string;
+  };
+  post: {
+    plots: Record<'surface' | 'contour' | 'arrow' | 'line', string>;
+    plotHelp: Record<'surface' | 'contour' | 'arrow' | 'line', string>;
+    by: Record<'surface' | 'contour' | 'arrow' | 'line', string>;
+    qty: Record<'b' | 'h' | 'a' | 'j' | 'bn' | 'bt', string>;
+    component: string;
+    comps: Record<'mag' | 'x' | 'y', string>;
+    add: string;
+    range: string;
+    rangeAuto: string;
+    spacing: string;
+    scale: string;
+    pickCurve: string;
+    picking: string;
+    curve: string;
+    noCurve: string;
+    quantity: string;
+    flux: string;
+    fluxHint: string;
+    bAvg: string;
+    bMax: string;
+    length: string;
+    outside: string;
+    hide: string;
+    show: string;
   };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
   expr: {
@@ -801,6 +835,14 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     elements: (n) => `${n} el.`,
     elementsNode: 'Elementos',
     regionName: 'Nome da região',
+    bhAdd: 'Incluir curva B-H (não linear)',
+    bhAddPoint: 'Ponto',
+    bhRemove: 'Remover curva (usar μr linear)',
+    bhMonotonic: 'A curva precisa ter H e B crescentes.',
+    bhHelp: 'Pares (H, B) crescentes a partir de (0, 0). O solver ainda usa o μr linear; a curva entra na próxima etapa (não linear).',
+    outerHelp: 'Curvas da borda externa que não têm contorno recebem A = 0 automaticamente.',
+    outerName: 'Borda externa',
+    outerMakeEditable: 'Tornar editável (virar um contorno)',
     minAngleHelp: 'Nenhum triângulo terá ângulo interno menor que este. Triângulos achatados pioram a precisão do campo; valores maiores dão elementos mais regulares, porém mais elementos. 30° é um bom padrão; o máximo aceito é 34°.',
   },
   solve: {
@@ -826,6 +868,32 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     noSolution: 'Resolva o problema em Método de resolução (▶).',
     linearNote: 'Materiais com curva B-H usam o μr linear por enquanto (não linear na próxima etapa).',
     goResults: 'Ver resultados',
+  },
+  post: {
+    plots: { surface: 'Superfície', contour: 'Contorno', arrow: 'Glifos', line: 'Gráfico sobre linha' },
+    plotHelp: { surface: 'mapa de cores 2D', contour: 'isolinhas (A = linhas de fluxo)', arrow: 'vetores', line: 'valores e fluxo ao longo de uma curva' },
+    by: { surface: 'Colorir por', contour: 'Contorno por', arrow: 'Orientação', line: 'Grandeza' },
+    qty: { b: 'B — densidade de fluxo', h: 'H — intensidade de campo', a: 'A — potencial vetor', j: 'J — densidade de corrente', bn: 'B normal', bt: 'B tangencial' },
+    component: 'Componente',
+    comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
+    add: 'Incluir visualização',
+    range: 'Faixa de cores',
+    rangeAuto: 'automática (ex.: 0; 1,5)',
+    spacing: 'Espaçamento (mm)',
+    scale: 'Escala',
+    pickCurve: 'Escolher curva no desenho',
+    picking: 'Clique numa linha, arco ou círculo do desenho…',
+    curve: 'Curva',
+    noCurve: 'Escolha uma curva (pode ser uma linha de construção desenhada só para isso).',
+    quantity: 'Grandeza',
+    flux: 'Fluxo através da curva',
+    fluxHint: 'Sentido positivo: normal à esquerda do percurso (seta rosa). No plano, por metro × profundidade do problema.',
+    bAvg: '|B| médio',
+    bMax: '|B| máximo',
+    length: 'Comprimento',
+    outside: 'A curva está fora da malha.',
+    hide: 'Ocultar',
+    show: 'Mostrar',
   },
   hist: {
     title: 'Histórico',
@@ -1262,6 +1330,14 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     elements: (n) => `${n} el.`,
     elementsNode: 'Triangle',
     regionName: 'Region name',
+    bhAdd: 'Add B-H curve (nonlinear)',
+    bhAddPoint: 'Point',
+    bhRemove: 'Remove curve (use linear μr)',
+    bhMonotonic: 'The curve needs increasing H and B.',
+    bhHelp: 'Increasing (H, B) pairs starting at (0, 0). The solver still uses the linear μr; the curve comes in the next step (nonlinear).',
+    outerHelp: 'Outer border curves without a boundary get A = 0 automatically.',
+    outerName: 'Outer border',
+    outerMakeEditable: 'Make editable (turn into a boundary)',
     minAngleHelp: 'No triangle will have an interior angle smaller than this. Flat triangles hurt field accuracy; larger values give more regular elements but more of them. 30° is a good default; the maximum accepted is 34°.',
   },
   solve: {
@@ -1287,6 +1363,32 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     noSolution: 'Solve the problem under Solver (▶).',
     linearNote: 'Materials with a B-H curve use their linear μr for now (nonlinear in the next step).',
     goResults: 'See results',
+  },
+  post: {
+    plots: { surface: 'Surface', contour: 'Contour', arrow: 'Glyphs', line: 'Plot over line' },
+    plotHelp: { surface: '2D color map', contour: 'isolines (A = flux lines)', arrow: 'vectors', line: 'values and flux along a curve' },
+    by: { surface: 'Color by', contour: 'Contour by', arrow: 'Orientation', line: 'Quantity' },
+    qty: { b: 'B — flux density', h: 'H — field intensity', a: 'A — vector potential', j: 'J — current density', bn: 'Normal B', bt: 'Tangential B' },
+    component: 'Component',
+    comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
+    add: 'Add visualization',
+    range: 'Color range',
+    rangeAuto: 'automatic (e.g. 0; 1.5)',
+    spacing: 'Spacing (mm)',
+    scale: 'Scale',
+    pickCurve: 'Pick a curve in the drawing',
+    picking: 'Click a line, arc or circle in the drawing…',
+    curve: 'Curve',
+    noCurve: 'Pick a curve (it can be a construction line drawn just for this).',
+    quantity: 'Quantity',
+    flux: 'Flux through the curve',
+    fluxHint: 'Positive direction: normal to the left of the path (pink arrow). Planar: per meter × problem depth.',
+    bAvg: 'Mean |B|',
+    bMax: 'Max |B|',
+    length: 'Length',
+    outside: 'The curve is outside the mesh.',
+    hide: 'Hide',
+    show: 'Show',
   },
   hist: {
     title: 'History',

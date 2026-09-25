@@ -7,6 +7,7 @@ import { SketchEditor } from './cad/editor';
 import { formatLength } from './cad/expr';
 import { initSolver } from './cad/solver';
 import { isMeshSel, type TreeSel } from './cad/tree';
+import type { PostNode } from './cad/types';
 import { emptySketch } from './cad/types';
 import { setLang, T, useLang, useT, type Lang } from './i18n';
 import { hasFsAccess, loadDraft, openProject, parse, saveDraft, saveProject, serialize } from './io/project';
@@ -62,16 +63,18 @@ export default function App() {
 
   // Malha (seção, material, contorno ou nó de malha) troca o canvas para o modo malha.
   const meshMode = ed ? isMeshSel(treeSel, ed.sketch) : false;
-  // Nó de Resultados: canvas no modo resultados, com as opções do nó.
-  const postNode = ed && treeSel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === treeSel.id && n.kind === 'post') : undefined;
+  // Resultados (grupo da física ou uma camada): canvas no modo resultados com as camadas visíveis.
+  const selNode = ed && treeSel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === treeSel.id) : undefined;
+  const resultsOf = treeSel.kind === 'results' ? treeSel.id : selNode?.kind === 'post' ? (selNode.physics ?? null) : null;
+  const layersKey = ed && resultsOf ? JSON.stringify(ed.sketch.nodes.filter((n) => n.kind === 'post' && n.physics === resultsOf)) : '';
   useEffect(() => {
-    ed?.setMode(postNode ? 'post' : meshMode ? 'mesh' : 'sketch');
-  }, [ed, meshMode, postNode]);
+    ed?.setMode(resultsOf ? 'post' : meshMode ? 'mesh' : 'sketch');
+  }, [ed, meshMode, resultsOf]);
   useEffect(() => {
-    if (!ed || !postNode || postNode.kind !== 'post') return;
-    const physics = ed.sketch.nodes.find((n) => n.kind === 'physics');
-    ed.showSolution(physics?.id ?? null, { map: postNode.map ?? true, lines: postNode.lines ?? true, nLines: postNode.nLines ?? 20 });
-  }, [ed, postNode]);
+    if (!ed || !resultsOf) return;
+    const layers = ed.sketch.nodes.filter((n): n is PostNode => n.kind === 'post' && n.physics === resultsOf && !n.hidden);
+    ed.showSolution(resultsOf, layers);
+  }, [ed, resultsOf, layersKey]);
   // Nó de malha selecionado: mostra os triângulos dele.
   const shownMesh = ed && treeSel.kind === 'node' && ed.sketch.nodes.some((n) => n.id === treeSel.id && n.kind === 'mesh') ? treeSel.id : null;
   useEffect(() => {
@@ -329,9 +332,9 @@ function ExportMenu({ ed, name }: { ed: SketchEditor; name: string }) {
 function StageOverlay({ ed, sel }: { ed: SketchEditor; sel: TreeSel }) {
   const t = useT();
   useDocVersion(ed.doc);
-  if (sel.kind !== 'node') return null;
-  const n = ed.sketch.nodes.find((x) => x.id === sel.id);
-  if (!n || n.kind !== 'post' || ed.solutions.size) return null;
+  const n = sel.kind === 'node' ? ed.sketch.nodes.find((x) => x.id === sel.id) : undefined;
+  const phys = sel.kind === 'results' ? sel.id : n?.kind === 'post' ? n.physics : undefined;
+  if (!phys || ed.solutions.has(phys)) return null;
   return <div className="overlay soon">{t.solve.noSolution}</div>;
 }
 

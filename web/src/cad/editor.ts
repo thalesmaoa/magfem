@@ -37,7 +37,8 @@ import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './
 import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
-import { buildMagInput, depthOf, type Solution } from './solve';
+import { buildMagInput, depthOf, typicalSize, type Solution } from './solve';
+import type { PostNode } from './types';
 import { addNode } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
@@ -251,15 +252,15 @@ export class SketchEditor {
   solutions = new Map<Id, Solution & { key: string }>();
   solveBusy: Id | null = null;
   solveErrors = new Map<Id, string>();
-  /** Solução mostrada no modo resultados e opções de desenho. */
+  /** Solução mostrada no modo resultados e as camadas visíveis (na ordem da árvore). */
   shownSolution: Id | null = null;
-  postOpts = { map: true, lines: true, nLines: 20 };
+  postLayers: PostNode[] = [];
   /** Ponto da sonda (clique no modo resultados). */
   probeAt: Vec | null = null;
 
-  showSolution(id: Id | null, opts?: Partial<SketchEditor['postOpts']>) {
+  showSolution(id: Id | null, layers: PostNode[] = []) {
     this.shownSolution = id;
-    if (opts) this.postOpts = { ...this.postOpts, ...opts };
+    this.postLayers = layers;
     this.changed();
   }
 
@@ -345,6 +346,8 @@ export class SketchEditor {
         nu: input.nu,
         brx: input.brx,
         bry: input.bry,
+        J: input.J,
+        meshSize: typicalSize(mesh),
         ms: performance.now() - t0,
         key,
       });
@@ -360,8 +363,7 @@ export class SketchEditor {
   /** Dados do modo resultados. */
   private postView(): RenderState['post'] {
     const sol = this.shownSolution ? this.solutions.get(this.shownSolution) : undefined;
-    if (!sol) return { sol: null, ...this.postOpts, stale: false, probe: null };
-    return { sol, ...this.postOpts, stale: this.solutionStale(this.shownSolution!), probe: this.probeAt };
+    return { sol: sol ?? null, layers: this.postLayers, stale: sol ? this.solutionStale(this.shownSolution!) : false, probe: this.probeAt };
   }
 
   /** Régua (ferramenta de medir): não altera o desenho. */
@@ -1276,6 +1278,16 @@ export class SketchEditor {
     }
     if (e.button !== 0) return;
     if (this.mode === 'post') {
+      if (this.picking) {
+        // Escolher a curva de um gráfico sobre curva.
+        const h = this.hitTest(s, { entitiesOnly: true });
+        if (h?.kind === 'curve') {
+          const cb = this.picking;
+          cb(h.id);
+          setTimeout(() => this.pickLine(null), 0);
+        }
+        return;
+      }
       this.probeAt = w;
       this.changed();
       return;
@@ -1338,7 +1350,9 @@ export class SketchEditor {
       return;
     }
     if (this.mode === 'post') {
-      this.canvas.style.cursor = 'crosshair';
+      const h = this.picking ? this.hitTest(s, { entitiesOnly: true }) : null;
+      this.hover = h?.kind === 'curve' ? h : null;
+      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : 'crosshair';
       this.changed();
       return;
     }
