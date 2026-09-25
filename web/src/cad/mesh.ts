@@ -155,3 +155,13 @@ export function removeCircuit(sk: Sketch, id: Id): Sketch {
 export function findCircuit(sk: Sketch, ref: string): Circuit | undefined {
   return sk.circuits.find((c) => c.id === ref) ?? sk.circuits.find((c) => c.name.toLowerCase() === ref.toLowerCase());
 }
+
+/** Cópia de um material (nome "X (cópia)", mesmo grupo e propriedades). */
+export function duplicateMaterial(sk: Sketch, id: Id): { sketch: Sketch; material: Material } | null {
+  const m = sk.materials.find((x) => x.id === id);
+  if (!m) return null;
+  let name = `${m.name} (${T().post.copy})`;
+  for (let k = 2; sk.materials.some((x) => x.name === name); k++) name = `${m.name} (${T().post.copy} ${k})`;
+  const material: Material = { ...m, id: `mat${sk.nextId}`, name, bh: m.bh ? m.bh.map((p) => [...p] as [number, number]) : undefined };
+  return { sketch: { ...sk, materials: [...sk.materials, material], nextId: sk.nextId + 1 }, material };
+}

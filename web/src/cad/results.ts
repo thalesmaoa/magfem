@@ -22,6 +22,33 @@ export function defaultVarName(sk: Sketch, it: PostNode): string {
 }
 export const varNameOf = (sk: Sketch, it: PostNode) => (it.varName?.trim() ? safeName(it.varName.trim()) : defaultVarName(sk, it));
 
+/** Grandezas de cada tipo de integral: chave, rótulo e unidade (SI). */
+export const SURF_Q = [
+  { q: 'area', unit: 'm²' },
+  { q: 'volume', unit: 'm³' },
+  { q: 'intA', unit: 'Wb·m' },
+  { q: 'current', unit: 'A' },
+  { q: 'energy', unit: 'J' },
+  { q: 'bavg', unit: 'T' },
+  { q: 'b2', unit: 'T²·m³' },
+] as const;
+export const LINE_Q = [
+  { q: 'length', unit: 'm' },
+  { q: 'flux', unit: 'Wb' },
+  { q: 'mmf', unit: 'A' },
+  { q: 'intB', unit: 'T·m' },
+  { q: 'intBn', unit: 'T·m' },
+  { q: 'bavg', unit: 'T' },
+] as const;
+
+/** Saídas escolhidas de um item (padrão: todas, com nome prefixo_grandeza). */
+export function outputsOf(sk: Sketch, it: PostNode): { q: string; name: string }[] {
+  if (it.outputs) return it.outputs;
+  const p = varNameOf(sk, it);
+  const list = it.item === 'surfint' ? SURF_Q : it.item === 'lineint' ? LINE_Q : [];
+  return list.map((x) => ({ q: x.q, name: `${p}_${x.q}` }));
+}
+
 export interface ResultVars {
   /** Variáveis de resultado (SI, sem dimensão) + as do projeto. */
   env: Map<string, Q>;
@@ -54,27 +81,24 @@ export function resultVars(sk: Sketch, arr: Arrangement, sol: Solution, physics:
   for (const it of sk.nodes) {
     if (it.kind !== 'post' || !it.item || !it.view || !tables.has(it.view)) continue;
     const p = varNameOf(sk, it);
-    if (it.item === 'surfint') {
-      const set = new Set<number>();
-      for (const k of it.regions ?? []) {
-        const r = findRegion(arr, k);
-        if (r) set.add(r.index);
+    if (it.item === 'surfint' || it.item === 'lineint') {
+      let vals: Record<string, number> | null = null;
+      if (it.item === 'surfint') {
+        const set = new Set<number>();
+        for (const k of it.regions ?? []) {
+          const r = findRegion(arr, k);
+          if (r) set.add(r.index);
+        }
+        if (!set.size) continue;
+        const si = surfaceIntegrals(sol, sk, set);
+        vals = { area: si.area, volume: si.volume, intA: si.intA, current: si.current, energy: si.energy, bavg: si.bAvg, b2: si.b2 };
+      } else if (it.curve) {
+        const li = lineIntegrals(sol, sk, it.curve);
+        if (li) vals = { length: li.length * 1e-3, flux: li.flux, mmf: li.mmf, intB: li.intB, intBn: li.intBn, bavg: li.bAvg };
       }
-      if (!set.size) continue;
-      const si = surfaceIntegrals(sol, sk, set);
-      add(`${p}_area`, si.area, 'm²');
-      add(`${p}_volume`, si.volume, 'm³');
-      add(`${p}_intA`, si.intA, sol.axisymmetric ? 'Wb·m/rad' : 'Wb·m');
-      add(`${p}_current`, si.current, 'A');
-      add(`${p}_energy`, si.energy, 'J');
-      add(`${p}_bavg`, si.bAvg, 'T');
-    } else if (it.item === 'lineint' && it.curve) {
-      const li = lineIntegrals(sol, sk, it.curve);
-      if (!li) continue;
-      add(`${p}_length`, li.length * 1e-3, 'm');
-      add(`${p}_flux`, li.flux, 'Wb');
-      add(`${p}_mmf`, li.mmf, 'A');
-      add(`${p}_intB`, li.intB, 'T·m');
+      if (!vals) continue;
+      const units = new Map<string, string>([...SURF_Q, ...LINE_Q].map((x) => [x.q, x.unit]));
+      for (const o of outputsOf(sk, it)) if (vals[o.q] !== undefined && o.name) add(safeName(o.name), vals[o.q], units.get(o.q) ?? '');
     } else if (it.item === 'formula') {
       if (!it.expr?.trim()) {
         formulas.set(it.id, { error: T().table.noExpr });

@@ -2,12 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
-import { addBoundaryDef, addMaterial, assignBoundary, removeBoundaryDef, removeMaterial, updateBoundaryDef, updateMaterial } from '../cad/mesh';
-import { MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type MaterialGroup } from '../cad/types';
+import { addBoundaryDef, addMaterial, assignBoundary, duplicateMaterial, removeBoundaryDef, removeMaterial, updateBoundaryDef, updateMaterial } from '../cad/mesh';
+import { DEFAULT_MATERIALS, MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type MaterialGroup } from '../cad/types';
 import { useT } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
 import { openTab } from './tabsStore';
+import { Icons } from './icons';
 
 export const BOUNDARY_TYPES: BoundaryType[] = ['dirichlet', 'neumann', 'periodic', 'antiperiodic'];
 
@@ -102,6 +103,8 @@ export function MaterialEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
   const m = sk.materials.find((x) => x.id === id);
   if (!m) return null;
   const set = (patch: Partial<Material>, code: string) => ed.meshOp((s) => updateMaterial(s, id, patch), `m.material(${q(m.name)}, ${code})`);
+  // Material da biblioteca original: pode voltar ao padrão.
+  const orig = DEFAULT_MATERIALS.find((d) => d.id === id);
   const num = (label: string, key: 'mur' | 'sigma' | 'br', allowEmpty = false) => (
     <label className="field">
       <span>{label}</span>
@@ -142,14 +145,34 @@ export function MaterialEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
       {num(t.mesh.sigma, 'sigma')}
       {num(t.mesh.br, 'br', true)}
       <BHEditor ed={ed} m={m} />
-      <button
-        className="btn danger"
-        onClick={() => {
-          if (ed.meshOp((s) => removeMaterial(s, id), `m.del_material(${q(m.name)})`)) onRemoved?.();
-        }}
-      >
-        {t.mesh.removeMaterial}
-      </button>
+      <div className="lib-actions">
+        <button
+          className="btn secondary"
+          onClick={() => {
+            const r = duplicateMaterial(ed.sketch, id);
+            if (r && ed.commit(r.sketch, [`m.duplicate_material(${q(m.name)})`])) openDrawer('materials', r.material.id);
+          }}
+        >
+          {Icons.copy} {t.mesh.duplicate}
+        </button>
+        {orig && (
+          <button
+            className="btn secondary"
+            title={t.mesh.restoreHint}
+            onClick={() => ed.meshOp((s) => updateMaterial(s, id, { ...orig, bh: orig.bh?.map((p) => [...p] as [number, number]) }), `m.restore_material(${q(m.name)})`)}
+          >
+            {t.mesh.restore}
+          </button>
+        )}
+        <button
+          className="btn danger"
+          onClick={() => {
+            if (ed.meshOp((s) => removeMaterial(s, id), `m.del_material(${q(m.name)})`)) onRemoved?.();
+          }}
+        >
+          {t.mesh.removeMaterial}
+        </button>
+      </div>
     </div>
   );
 }

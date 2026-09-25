@@ -10,10 +10,10 @@ import { LazyInput } from './common';
 import { Icons } from './icons';
 import { useEditor } from './useStore';
 import { openTab } from './tabsStore';
-import { CircuitTable, tableItemRows } from './CanvasTabs';
+import { CircuitTable, qLabel, tableItemRows } from './CanvasTabs';
 import { findRegion as findRegionP } from '../cad/regions';
 import { pointCode } from '../cad/mesh';
-import { defaultVarName, resultVars, safeName } from '../cad/results';
+import { defaultVarName, LINE_Q, outputsOf, resultVars, safeName, SURF_Q, varNameOf } from '../cad/results';
 
 const PLOT_ICON: Record<PlotKind, JSX.Element> = {
   surface: <span className="plot-ico map" />,
@@ -1036,6 +1036,42 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
                   />
                   <span>{label}</span>
                 </label>
+              );
+            })}
+          </fieldset>
+        )}
+        {(node.item === 'surfint' || node.item === 'lineint') && (
+          <fieldset className="region-pick outputs">
+            <legend>{t.table.outputs}</legend>
+            {(node.item === 'surfint' ? SURF_Q : LINE_Q).map(({ q: qk }) => {
+              const outs = outputsOf(sk, node);
+              const o = outs.find((x) => x.q === qk);
+              const setOuts = (next: { q: string; name: string }[], code: string) => set({ outputs: next }, code);
+              return (
+                <div key={qk} className="out-row">
+                  <label className="field check">
+                    <input
+                      type="checkbox"
+                      checked={!!o}
+                      onChange={(e) => {
+                        const next = e.target.checked ? [...outs, { q: qk, name: `${varNameOf(sk, node)}_${qk}` }] : outs.filter((x) => x.q !== qk);
+                        setOuts(next, `r.show(${q(node.id)}, outputs=[${next.map((x) => `(${q(x.q)}, ${q(x.name)})`).join(', ')}])`);
+                      }}
+                    />
+                    <span>{qLabel(qk)}</span>
+                  </label>
+                  {o && (
+                    <LazyInput
+                      value={o.name}
+                      ariaLabel={`${qLabel(qk)}: ${t.table.varName}`}
+                      onCommit={(v) => {
+                        const name = safeName(v.trim() || o.name);
+                        const next = outs.map((x) => (x.q === qk ? { ...x, name } : x));
+                        setOuts(next, `r.show(${q(node.id)}, outputs=[${next.map((x) => `(${q(x.q)}, ${q(x.name)})`).join(', ')}])`);
+                      }}
+                    />
+                  )}
+                </div>
               );
             })}
           </fieldset>

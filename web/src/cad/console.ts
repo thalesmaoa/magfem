@@ -27,9 +27,9 @@ import {
 import { addNode, addPlot, addSchematic, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
-import { addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
+import { duplicateMaterial, addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
 
 export type Value = number | string | boolean | null | Value[] | { tuple: Value[] } | { print: string };
@@ -909,6 +909,22 @@ export class CommandConsole {
         this.commit(removeCircuit(sk, c.id));
         return null;
       }
+      case 'duplicate_material': {
+        need(1);
+        const m = findMaterial(sk, String(a[0]));
+        const r = m ? duplicateMaterial(sk, m.id) : null;
+        if (!r) throw new ConsoleError(t.notFound(String(a[0])));
+        this.commit(r.sketch);
+        return r.material.id;
+      }
+      case 'restore_material': {
+        need(1);
+        const m = findMaterial(sk, String(a[0]));
+        const orig = m ? DEFAULT_MATERIALS.find((d) => d.id === m.id) : undefined;
+        if (!m || !orig) throw new ConsoleError(t.notFound(String(a[0])));
+        this.commit(updateMaterial(sk, m.id, { ...orig, bh: orig.bh?.map((p) => [...p] as [number, number]) }));
+        return null;
+      }
       case 'del_material': {
         need(1);
         const m = findMaterial(sk, String(a[0]));
@@ -1119,6 +1135,7 @@ export class CommandConsole {
         if (kw.color !== undefined) patch.color = kw.color === null ? undefined : String(kw.color);
         if (kw.color_by_value !== undefined) patch.colorByValue = !!kw.color_by_value;
         if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
+        if (kw.outputs !== undefined) patch.outputs = kw.outputs === null ? undefined : (seq(kw.outputs) ?? []).map((o) => { const t2 = seq(o) ?? []; return { q: String(t2[0]), name: String(t2[1]) }; });
         if (kw.var_name !== undefined) patch.varName = kw.var_name === null ? undefined : String(kw.var_name);
         if (kw.expr !== undefined) patch.expr = kw.expr === null ? undefined : String(kw.expr);
         if (kw.unit_label !== undefined) patch.unitLabel = kw.unit_label === null ? undefined : String(kw.unit_label);

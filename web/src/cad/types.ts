@@ -214,6 +214,8 @@ export interface PostNode {
   item?: TableItem;
   /** Nome das variáveis de resultado deste item (ex.: "S1" → S1_area, S1_intA…); fórmula: nome do resultado. */
   varName?: string;
+  /** Integrais: grandezas escolhidas e o nome da variável de cada uma (ausente = todas, nomes padrão). */
+  outputs?: { q: string; name: string }[];
   /** Fórmula (item 'formula'): expressão com variáveis do projeto e de resultado; unidade só para exibir. */
   expr?: string;
   unitLabel?: string;

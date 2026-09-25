@@ -544,3 +544,5 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .sig-opt { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; }
 .xychart.multi .cursor { stroke: var(--muted); stroke-dasharray: 3 3; }
 .sch-pane { position: relative; }
+.lib-actions { display: flex; flex-wrap: wrap; gap: 6px; } .lib-actions .btn { display: inline-flex; align-items: center; gap: 4px; } .lib-actions svg { width: 14px; height: 14px; }
+.out-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-items: center; } .out-row .field.check { margin: 2px 0; }

@@ -3,9 +3,9 @@ import { useRef, useState, useSyncExternalStore } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { updateMaterial } from '../cad/mesh';
-import { circuitResults, lineIntegrals, lineProfile, quantityLabel, surfaceIntegrals } from '../cad/solve';
+import { circuitResults, lineProfile, quantityLabel } from '../cad/solve';
 import { findRegion } from '../cad/regions';
-import { resultVars, varNameOf } from '../cad/results';
+import { outputsOf, resultVars, safeName, varNameOf } from '../cad/results';
 import type { TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT } from '../i18n';
@@ -520,44 +520,18 @@ export function tableItemRows(ed: SketchEditor, it: PostNode): { rows: [string, 
   const sol = it.physics ? ed.shownSol(it.physics) : undefined;
   if (!sol) return { rows: [], msg: t.solve.noSolution };
   const sk = ed.sketch;
-  if (it.item === 'lineint') {
-    if (!it.curve) return { rows: [], msg: t.post.noCurve };
-    const li = lineIntegrals(sol, sk, it.curve);
-    if (!li) return { rows: [], msg: t.post.outside };
-    const L = t.table.line;
-    return {
-      rows: [
-        [L.length, `${li.length.toPrecision(5)} mm`],
-        [L.flux, eng(li.flux, 'Wb')],
-        [L.intBn, eng(li.intBn, 'T·m')],
-        [L.intB, eng(li.intB, 'T·m')],
-        [L.mmf, eng(li.mmf, 'A')],
-        [L.bAvg, eng(li.bAvg, 'T')],
-      ],
-    };
-  }
-  if (it.item === 'surfint') {
-    const arr = ed.arrangement();
-    const set = new Set<number>();
-    for (const k of it.regions ?? []) {
-      const r = findRegion(arr, k);
-      if (r) set.add(r.index);
+  if (it.item === 'lineint' || it.item === 'surfint') {
+    if (it.item === 'lineint' && !it.curve) return { rows: [], msg: t.post.noCurve };
+    if (it.item === 'surfint' && !(it.regions ?? []).some((k) => findRegion(ed.arrangement(), k))) return { rows: [], msg: t.table.noRegions };
+    const rv = resultVars(sk, ed.arrangement(), sol, it.physics!);
+    const outs = outputsOf(sk, it);
+    const rows: [string, string][] = [];
+    for (const o of outs) {
+      const v = rv.list.find((x) => x.name === safeName(o.name));
+      if (v) rows.push([`${qLabel(o.q)} → ${v.name}`, fmtUnit(v.value, v.unit)]);
     }
-    if (!set.size) return { rows: [], msg: t.table.noRegions };
-    const si = surfaceIntegrals(sol, sk, set);
-    const S = t.table.surf;
-    return {
-      rows: [
-        [S.area, `${Number((si.area * 1e6).toPrecision(5))} mm²`],
-        [S.intA, eng(si.intA, sol.axisymmetric ? 'Wb·m/rad' : 'Wb·m')],
-        [S.volume, `${Number((si.volume * 1e9).toPrecision(5))} mm³`],
-        [S.current, eng(si.current, 'A')],
-        [S.energy, eng(si.energy, 'J')],
-        [S.bAvg, eng(si.bAvg, 'T')],
-        [S.b2, eng(si.b2, 'T²·m³')],
-        [S.bmean, `${si.bx.toPrecision(4)}, ${si.by.toPrecision(4)} T`],
-      ],
-    };
+    if (!rows.length) return { rows: [], msg: it.item === 'lineint' ? t.post.outside : t.table.noOutputs };
+    return { rows };
   }
   if (it.item === 'formula') {
     const phys = it.physics!;
@@ -568,6 +542,31 @@ export function tableItemRows(ed: SketchEditor, it: PostNode): { rows: [string, 
     return { rows: [[`${varNameOf(sk, it)} = ${it.expr}`, `${Number(f.value!.toPrecision(6))} ${unit}`]] };
   }
   return { rows: [] };
+}
+
+/** Rótulo de uma grandeza de integral. */
+export function qLabel(q: string): string {
+  const t = T();
+  const m: Record<string, string> = {
+    area: t.table.surf.area,
+    volume: t.table.surf.volume,
+    intA: t.table.surf.intA,
+    current: t.table.surf.current,
+    energy: t.table.surf.energy,
+    b2: t.table.surf.b2,
+    bavg: t.table.surf.bAvg,
+    length: t.table.line.length,
+    flux: t.table.line.flux,
+    mmf: t.table.line.mmf,
+    intB: t.table.line.intB,
+    intBn: t.table.line.intBn,
+  };
+  return m[q] ?? q;
+}
+/** Valor com unidade: prefixo SI em unidades simples; notação científica nas compostas. */
+function fmtUnit(v: number, u: string) {
+  if (!u || /[²³·]/.test(u)) return `${Number(v.toPrecision(4)).toExponential(3)} ${u}`;
+  return eng(v, u);
 }
 
 /** Aba de uma tabela de resultados: um bloco por item. */

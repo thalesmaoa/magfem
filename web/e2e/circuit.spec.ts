@@ -63,12 +63,22 @@ test('circuito: λ, L = λ/I (½LI² = energia), R e perdas; tabela nos resultad
   await expect(page.locator('.props .circ-table')).toContainText('1.000 kA');
   await expect(page.locator('.chart-pane .table-item')).toContainText('Energia');
 
+  // Grandezas escolhidas com nomes próprios: só ∫A dS (fluxoA) e área (areaBob).
+  const outs = page.locator('.outputs .out-row');
+  for (const q of ['Volume', 'Corrente ∫J dA', 'Energia ½∫B·H dV', '|B| médio', '∫|B|² dV']) await outs.filter({ hasText: q }).locator('input[type=checkbox]').uncheck();
+  await outs.filter({ hasText: '∫A dS' }).getByRole('textbox').fill('fluxoA');
+  await outs.filter({ hasText: '∫A dS' }).getByRole('textbox').press('Enter');
+  await outs.filter({ hasText: 'Área' }).getByRole('textbox').fill('areaBob');
+  await outs.filter({ hasText: 'Área' }).getByRole('textbox').press('Enter');
+  await expect(page.locator('.chart-pane .table-item').last()).toContainText('fluxoA');
+  await expect(page.locator('.chart-pane .table-item').last()).not.toContainText('Energia');
+
   // Fórmula com variáveis de resultado: fluxo concatenado = N ∫A dS / área × profundidade (N = 1) = λ do circuito.
   await tbl.getByRole('button', { name: 'Incluir na tabela' }).click();
   await page.getByRole('menuitem', { name: /Fórmula/ }).click();
-  await page.getByLabel('Expressão').fill('S1_intA / S1_area * depth_m');
+  await page.getByLabel('Expressão').fill('fluxoA / areaBob * depth_m');
   await page.getByLabel('Expressão').press('Enter');
-  await expect(page.locator('.var-list')).toContainText('S1_intA');
+  await expect(page.locator('.var-list')).toContainText('fluxoA');
   const f = await page.evaluate(async () => {
     const ed = (window as any).__magfem;
     const { resultVars } = await import('/tools/magfem-web/src/cad/results.ts');

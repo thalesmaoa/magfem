@@ -140,6 +140,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       add(`r.item(${q(p.view)}, ${q(p.item)}, name=${q(p.name)}, id=${q(p.id)})`);
       const kw: string[] = [];
       if (p.varName) kw.push(`var_name=${q(p.varName)}`);
+      if (p.outputs) kw.push(`outputs=[${p.outputs.map((o) => `(${q(o.q)}, ${q(o.name)})`).join(', ')}]`);
       if (p.expr) kw.push(`expr=${q(p.expr)}`);
       if (p.unitLabel) kw.push(`unit_label=${q(p.unitLabel)}`);
       if (p.curve) kw.push(`curve=${q(p.curve)}`);

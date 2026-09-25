@@ -315,6 +315,9 @@ export interface Translations {
     bh: string;
     bhPoints: (n: number) => string;
     removeMaterial: string;
+    duplicate: string;
+    restore: string;
+    restoreHint: string;
     materialInUse: string;
     removeBoundary: string;
     noRegions: string;
@@ -504,6 +507,8 @@ export interface Translations {
     items: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
     varName: string;
+    outputs: string;
+    noOutputs: string;
     expr: string;
     unitLabel: string;
     noExpr: string;
@@ -947,6 +952,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     bh: 'Curva B-H',
     bhPoints: (n) => `não linear, ${n} pontos`,
     removeMaterial: 'Remover material',
+    duplicate: 'Duplicar',
+    restore: 'Restaurar padrão',
+    restoreHint: 'Volta aos valores originais da biblioteca (inclui a curva B-H).',
     materialInUse: 'Material em uso por uma região.',
     removeBoundary: 'Remover contorno',
     noRegions: 'Nenhuma região fechada no desenho.',
@@ -1145,6 +1153,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     items: { circuits: 'Circuitos', lineint: 'Integral sobre linha', surfint: 'Integral de superfície', formula: 'Fórmula' },
     itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'área, ∫A dS, corrente, energia', formula: 'expressão com variáveis de resultado' },
     varName: 'Nome (variáveis)',
+    outputs: 'Grandezas e nomes das variáveis',
+    noOutputs: 'Marque ao menos uma grandeza.',
     expr: 'Expressão',
     unitLabel: 'Unidade (exibição)',
     noExpr: 'Escreva uma expressão.',
@@ -1176,7 +1186,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     floating: (n) => `${n}: terminal solto (ligue os dois terminais).`,
     coilMissing: 'Bobina sem circuito do FEM.',
     addCoil: (n) => `Bobina: ${n}`,
-    selectHint: 'Clique num componente para editar; depois de resolver (transitório), mostra i(t) e v(t).',
+    selectHint: 'Clique num componente para editar. Depois de resolver, i e v aparecem no esquemático e os sinais podem ser marcados embaixo.',
     signals: 'Sinais',
     components: 'Componentes',
     wire: 'Fio (W)',
@@ -1188,7 +1198,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     current: 'Corrente (A)',
     voltage: 'Tensão (V)',
     coupledNote: 'No transitório, as bobinas do esquemático recebem a corrente do circuito (acoplamento campo–circuito).',
-    help: 'Componentes: fontes senoidais A·sen(2πft + φ) + CC, R, L, C, Terra e as bobinas do FEM (uma por circuito da Malha).',
+    help: 'Fontes: v(t)/i(t) como expressão em t (ex.: 150*sin(2*pi*60*t)). As bobinas do FEM são os circuitos da Malha. R gira, M espelha, W liga fios, roda do mouse dá zoom.',
   },
   hist: {
     title: 'Histórico',
@@ -1594,6 +1604,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     bh: 'B-H curve',
     bhPoints: (n) => `nonlinear, ${n} points`,
     removeMaterial: 'Remove material',
+    duplicate: 'Duplicate',
+    restore: 'Restore default',
+    restoreHint: 'Back to the original library values (including the B-H curve).',
     materialInUse: 'Material is used by a region.',
     removeBoundary: 'Remove boundary',
     noRegions: 'No closed region in the drawing.',
@@ -1792,6 +1805,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     items: { circuits: 'Circuits', lineint: 'Line integral', surfint: 'Surface integral', formula: 'Formula' },
     itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'area, ∫A dS, current, energy', formula: 'expression with result variables' },
     varName: 'Name (variables)',
+    outputs: 'Quantities and variable names',
+    noOutputs: 'Check at least one quantity.',
     expr: 'Expression',
     unitLabel: 'Unit (display)',
     noExpr: 'Write an expression.',
@@ -1835,7 +1850,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     current: 'Current (A)',
     voltage: 'Voltage (V)',
     coupledNote: 'In transient analysis, schematic coils take the circuit current (field–circuit coupling).',
-    help: 'Parts: sinusoidal sources A·sin(2πft + φ) + DC, R, L, C, Ground and the FEM coils (one per Mesh circuit).',
+    help: 'Sources: v(t)/i(t) as an expression in t (e.g. 150*sin(2*pi*60*t)). FEM coils are the Mesh circuits. R rotates, M mirrors, W wires, mouse wheel zooms.',
   },
   hist: {
     title: 'History',

@@ -344,7 +344,8 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
               </text>
               {valueLabel(p) && (
                 <text x={p.x + (vert ? 30 : 0)} y={p.y + (vert ? 9 : 36)} textAnchor={vert ? 'start' : 'middle'} className="sch-value">
-                  {valueLabel(p)}
+                  <title>{valueLabel(p)}</title>
+                  {valueLabel(p).length > 24 ? `${valueLabel(p).slice(0, 23)}…` : valueLabel(p)}
                 </text>
               )}
               {sig && p.kind !== 'gnd' && (
