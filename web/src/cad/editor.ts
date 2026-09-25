@@ -242,7 +242,7 @@ export class SketchEditor {
         ms: performance.now() - t0,
       };
       this.meshes.set(id, res);
-      this.shownMesh = id;
+      // Os triângulos só aparecem com o nó da malha selecionado (a seleção decide, ver App).
       return res;
     } catch (e) {
       const msg = T().mesh.failed((e as Error).message);

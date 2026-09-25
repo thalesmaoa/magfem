@@ -101,6 +101,12 @@ test('malha: materiais por região, contornos, tamanho por região e geração c
   // Disco com elementos de 0,5 mm é bem mais denso que o anel.
   expect(m.disk / (Math.PI * 25)).toBeGreaterThan((3 * m.ring) / (800 - Math.PI * 25));
 
+  // Voltar para Materiais: vista de materiais com as etiquetas, sem os triângulos.
+  await page.getByRole('treeitem', { name: 'Materiais', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.shownMesh)).toBeNull();
+  await page.getByRole('treeitem', { name: 'Elementos', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.shownMesh)).not.toBeNull();
+
   // Mudar o desenho deixa a malha desatualizada.
   await run('g.set_radius(c, 6)');
   await expect(page.locator('.props')).toContainText('gere a malha de novo');

@@ -98,7 +98,7 @@ export default function App() {
   const shownMesh = ed && treeSel.kind === 'node' && ed.sketch.nodes.some((n) => n.id === treeSel.id && n.kind === 'mesh') ? treeSel.id : null;
   useEffect(() => {
     ed?.showMesh(shownMesh);
-  }, [ed, shownMesh]);
+  }, [ed, shownMesh, treeSel]);
 
   // Solver de restrições + rascunho salvo.
   useEffect(() => {
