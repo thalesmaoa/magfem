@@ -192,6 +192,8 @@ export interface PostNode {
   physics?: Id;
   /** Vista (aba do canvas) onde a camada aparece. */
   view?: Id;
+  /** Fonte dos dados: a solução (ausente) ou um filtro de interpolação. */
+  source?: Id;
   plot?: PlotKind;
   hidden?: boolean;
   /** Grandeza mostrada (padrão: a primeira do tipo). */
@@ -223,8 +225,18 @@ export interface ViewNode {
   physics: Id;
 }
 
+/** Filtro de dados de uma física (como no ParaView): interpolação de alta ordem (suavizar). */
+export interface FilterNode {
+  id: Id;
+  kind: 'filter';
+  name: string;
+  physics: Id;
+  /** Subdivisões por aresta de cada triângulo (1–6). */
+  level: number;
+}
+
 /** Nós que o usuário inclui na árvore (o Pré-processador/Geometria é fixo). */
-export type TreeNode = PhysicsNode | MeshNode | PostNode | ViewNode;
+export type TreeNode = PhysicsNode | MeshNode | PostNode | ViewNode | FilterNode;
 
 export const newPhysics = (id: Id, name: string): PhysicsNode => ({
   id,

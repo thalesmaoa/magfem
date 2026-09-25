@@ -49,6 +49,14 @@ export function addPlot(sk: Sketch, view: Id, plot: PlotKind, name: string, quan
   return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.plot(${q(view)}, ${q(plot)}, quantity=${q(qty)})` };
 }
 
+/** Novo filtro de interpolação (suavizar) para os resultados de uma física. */
+export function addFilter(sk: Sketch, physics: Id, level = 3): { sketch: Sketch; node: TreeNode; code: string } {
+  const id = `n${sk.nextId}`;
+  const name = `${T().post.interp} ${sk.nodes.filter((x) => x.kind === 'filter' && x.physics === physics).length + 1}`;
+  const node: TreeNode = { id, kind: 'filter', name, physics, level };
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.interpolate(${q(physics)}, level=${level})` };
+}
+
 /** Nova vista (aba) de resultados de uma física. */
 export function addView(sk: Sketch, physics: Id, name?: string): { sketch: Sketch; node: TreeNode; code: string } {
   const id = `n${sk.nextId}`;
@@ -64,10 +72,10 @@ export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch
 export function removeNode(sk: Sketch, id: Id): Sketch {
   // Remover uma vista leva junto as camadas dela; remover uma física leva vistas e camadas.
   const gone = new Set([id]);
-  for (const n of sk.nodes) if ((n.kind === 'view' && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
+  for (const n of sk.nodes) if (((n.kind === 'view' || n.kind === 'filter') && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
   for (const n of sk.nodes) if (n.kind === 'post' && n.view && gone.has(n.view)) gone.add(n.id);
   return { ...sk, nodes: sk.nodes.filter((n) => !gone.has(n.id)) };
 }
 
 /** Objeto da API de cada seção da árvore: g (geometria), m (malha), s (solucionador), r (resultados). */
-export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r' };
+export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r', filter: 'r' };

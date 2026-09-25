@@ -168,7 +168,8 @@ function LinePane({ ed, id, lx, ly, setLog }: { ed: SketchEditor; id: string; lx
   const node = ed.sketch.nodes.find((n): n is PostNode => n.id === id && n.kind === 'post');
   const sol = node?.physics ? ed.solutions.get(node.physics) : undefined;
   if (!node) return null;
-  const prof = sol && node.curve ? lineProfile(sol, ed.sketch, node.curve, 400) : null;
+  const smooth = !!node.source && ed.sketch.nodes.some((n) => n.id === node.source && n.kind === 'filter');
+  const prof = sol && node.curve ? lineProfile(sol, ed.sketch, node.curve, 400, smooth) : null;
   const qty = (node.quantity ?? 'b') as 'b' | 'bn' | 'bt' | 'h' | 'a';
   return (
     <div className="chart-pane">

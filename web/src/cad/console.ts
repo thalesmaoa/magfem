@@ -24,7 +24,7 @@ import {
   ungroup,
   updateGroup,
 } from './ops';
-import { addNode, addPlot, removeNode, updateNode } from './tree';
+import { addFilter, addNode, addPlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
 import { isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
@@ -857,6 +857,12 @@ export class CommandConsole {
         this.commit(r.sketch);
         return r.node.id;
       }
+      case 'interpolate': {
+        need(1);
+        const r = addFilter(sk, String(a[0]), kw.level !== undefined ? Number(kw.level) : 3);
+        this.commit(r.sketch);
+        return r.node.id;
+      }
       case 'post_show': {
         need(1);
         const patch: Record<string, unknown> = {};
@@ -871,6 +877,8 @@ export class CommandConsole {
         if (kw.color !== undefined) patch.color = kw.color === null ? undefined : String(kw.color);
         if (kw.color_by_value !== undefined) patch.colorByValue = !!kw.color_by_value;
         if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
+        if (kw.source !== undefined) patch.source = kw.source === null ? undefined : String(kw.source);
+        if (kw.level !== undefined) patch.level = Math.max(1, Math.min(6, Math.round(Number(kw.level))));
         this.commit(updateNode(sk, String(a[0]), patch));
         return null;
       }
@@ -940,6 +948,7 @@ const NODE_METHODS = {
   r: {
     plot: 'plot("n2", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
     show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn", color="#1f6fd1", color_by_value=False, colormap="viridis")',
+    interpolate: 'interpolate("n2", level=3)',
     rename: 'rename("n5", "...")',
     remove: 'remove("n5")',
   },

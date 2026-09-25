@@ -100,7 +100,7 @@ export interface RenderState {
     tri?: { xy: Float64Array; triangles: Int32Array; stale: boolean };
   };
   /** Modo resultados: mapa de |B|, linhas de fluxo, sonda. */
-  post?: { sol: Solution | null; layers: PostNode[]; stale: boolean; probe: Vec | null };
+  post?: { sol: Solution | null; layers: PostNode[]; layerSols?: Map<Id, Solution>; stale: boolean; probe: Vec | null };
 }
 
 /** Mapa de cores "turbo" (aproximação polinomial), t ∈ [0, 1] → rgb. */
@@ -223,18 +223,20 @@ function vectorSamples(sol: Solution, h: number, q: 'b' | 'h'): { v: Float64Arra
 }
 
 function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNullable<RenderState['post']>, slot = 0): number {
-  const sol = p.sol;
-  if (!sol) return 0;
-  const { xy, triangles } = sol.mesh;
-  const nn = xy.length / 2;
-  const sx = new Float64Array(nn), sy = new Float64Array(nn);
-  for (let i = 0; i < nn; i++) {
-    const q = v.toScreen({ x: xy[2 * i], y: xy[2 * i + 1] });
-    sx[i] = q.x;
-    sy[i] = q.y;
-  }
+  const base = p.sol;
+  if (!base) return 0;
   const legends: { lo: number; hi: number; label: string; map?: Colormap }[] = [];
   for (const layer of p.layers) {
+    const sol = p.layerSols?.get(layer.id) ?? base;
+    const { xy, triangles } = sol.mesh;
+    const nn = xy.length / 2;
+    const sx = new Float64Array(nn), sy = new Float64Array(nn);
+    if (layer.plot === 'surface')
+      for (let i = 0; i < nn; i++) {
+        const q = v.toScreen({ x: xy[2 * i], y: xy[2 * i + 1] });
+        sx[i] = q.x;
+        sy[i] = q.y;
+      }
     const plot = layer.plot ?? 'surface';
     const qty = (layer.quantity ?? PLOT_QUANTITIES[plot][0]) as 'b' | 'h' | 'a' | 'j';
     const comp = layer.component ?? 'mag';

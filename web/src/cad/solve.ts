@@ -295,12 +295,12 @@ export interface LineProfile {
  * Grandezas ao longo da curva. Normal n = tangente girada 90° (à esquerda do sentido da curva).
  * Fluxo: plano Φ = −(A_fim − A_início)·profundidade; axissimétrico Φ = 2π (ψ_fim − ψ_início).
  */
-export function lineProfile(sol: Solution, sk: Sketch, id: Id, n = 200): LineProfile | null {
+export function lineProfile(sol: Solution, sk: Sketch, id: Id, n = 200, smooth = false): LineProfile | null {
   const smp = sampleCurve(sk, id, n);
   if (!smp) return null;
   const out: LineProfile = { s: [], b: [], bn: [], bt: [], h: [], a: [], flux: 0, bAvg: 0, bMax: 0, length: smp.s[smp.s.length - 1] };
   for (let i = 0; i < smp.pts.length; i++) {
-    const pr = probe(sol, smp.pts[i]);
+    const pr = smooth ? probeSmooth(sol, smp.pts[i]) : probe(sol, smp.pts[i]);
     if (!pr) continue;
     const t = smp.tan[i];
     out.s.push(smp.s[i]);
@@ -385,4 +385,178 @@ export function quantityLabel(q: string, comp: Component, axisymmetric: boolean)
   if (q === 'bn') return 'B normal (T)';
   if (q === 'bt') return 'B tang. (T)';
   return q;
+}
+
+// ---------- Interpolação de alta ordem (filtro "suavizar") ----------
+
+/**
+ * Gradiente de A recuperado nos nós, por região (média dos triângulos da mesma região, ponderada
+ * pela área) — não mistura materiais diferentes, onde a derivada normal salta.
+ */
+function recoveredGradients(sol: Solution): (t: number, k: number) => [number, number] {
+  const { xy, triangles, triRegion } = sol.mesh;
+  const nt = triangles.length / 3;
+  const gx = new Float64Array(nt), gy = new Float64Array(nt), ar = new Float64Array(nt);
+  for (let t = 0; t < nt; t++) {
+    const v = [triangles[3 * t], triangles[3 * t + 1], triangles[3 * t + 2]];
+    const x = v.map((i) => xy[2 * i]), y = v.map((i) => xy[2 * i + 1]);
+    const a2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
+    let dx = 0, dy = 0;
+    for (let k = 0; k < 3; k++) {
+      const j = (k + 1) % 3, l = (k + 2) % 3;
+      dx += ((y[j] - y[l]) * sol.A[v[k]]) / a2;
+      dy += ((x[l] - x[j]) * sol.A[v[k]]) / a2;
+    }
+    gx[t] = dx;
+    gy[t] = dy;
+    ar[t] = Math.abs(a2);
+  }
+  const acc = new Map<number, [number, number, number]>();
+  const key = (node: number, reg: number) => node * 4096 + (reg + 1);
+  for (let t = 0; t < nt; t++)
+    for (let k = 0; k < 3; k++) {
+      const kk = key(triangles[3 * t + k], triRegion[t]);
+      const a = acc.get(kk) ?? [0, 0, 0];
+      a[0] += gx[t] * ar[t];
+      a[1] += gy[t] * ar[t];
+      a[2] += ar[t];
+      acc.set(kk, a);
+    }
+  return (t, k) => {
+    const a = acc.get(key(triangles[3 * t + k], triRegion[t]))!;
+    return [a[0] / a[2], a[1] / a[2]];
+  };
+}
+
+const quadCache = new WeakMap<Solution, ReturnType<typeof buildQuadratic>>();
+function quadratic(sol: Solution) {
+  let q = quadCache.get(sol);
+  if (!q) quadCache.set(sol, (q = buildQuadratic(sol)));
+  return q;
+}
+
+/** Interpolante quadrático por triângulo: valores nos vértices e nos meios das arestas (Hermite). */
+function buildQuadratic(sol: Solution) {
+  const { xy, triangles } = sol.mesh;
+  const g = recoveredGradients(sol);
+  const nt = triangles.length / 3;
+  // mids[t*3 + e]: meio da aresta e = (k, k+1)
+  const mids = new Float64Array(nt * 3);
+  for (let t = 0; t < nt; t++)
+    for (let e = 0; e < 3; e++) {
+      const i = triangles[3 * t + e], j = triangles[3 * t + ((e + 1) % 3)];
+      const gi = g(t, e), gj = g(t, (e + 1) % 3);
+      const dx = xy[2 * j] - xy[2 * i], dy = xy[2 * j + 1] - xy[2 * i + 1];
+      mids[3 * t + e] = (sol.A[i] + sol.A[j]) / 2 + ((gi[0] - gj[0]) * dx + (gi[1] - gj[1]) * dy) / 8;
+    }
+  /** Valor e gradiente no triângulo t, coordenadas baricêntricas l. */
+  const evalAt = (t: number, l: [number, number, number]) => {
+    const v = [triangles[3 * t], triangles[3 * t + 1], triangles[3 * t + 2]];
+    const A = v.map((i) => sol.A[i]);
+    const m = [mids[3 * t], mids[3 * t + 1], mids[3 * t + 2]]; // m01, m12, m20
+    const val =
+      A[0] * l[0] * (2 * l[0] - 1) + A[1] * l[1] * (2 * l[1] - 1) + A[2] * l[2] * (2 * l[2] - 1) + 4 * m[0] * l[0] * l[1] + 4 * m[1] * l[1] * l[2] + 4 * m[2] * l[2] * l[0];
+    const dl = [A[0] * (4 * l[0] - 1) + 4 * m[0] * l[1] + 4 * m[2] * l[2], A[1] * (4 * l[1] - 1) + 4 * m[0] * l[0] + 4 * m[1] * l[2], A[2] * (4 * l[2] - 1) + 4 * m[1] * l[1] + 4 * m[2] * l[0]];
+    const x = v.map((i) => xy[2 * i]), y = v.map((i) => xy[2 * i + 1]);
+    const a2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
+    let dx = 0, dy = 0;
+    for (let k = 0; k < 3; k++) {
+      const j = (k + 1) % 3, q = (k + 2) % 3;
+      dx += (dl[k] * (y[j] - y[q])) / a2;
+      dy += (dl[k] * (x[q] - x[j])) / a2;
+    }
+    return { val, dx, dy };
+  };
+  return evalAt;
+}
+
+/** B a partir do gradiente de A (mm → m) no ponto (x em mm para o raio axissimétrico). */
+function bFromGrad(sol: Solution, dx: number, dy: number, xmm: number): [number, number] {
+  const k = 1e3; // dA/dx em Wb/m por mm → por m
+  if (sol.axisymmetric) {
+    const r = Math.max(xmm * 1e-3, 1e-12);
+    return [(-dy * k) / r, (dx * k) / r];
+  }
+  return [dy * k, -dx * k];
+}
+
+const smoothCache = new WeakMap<Solution, Map<number, Solution>>();
+
+/** Solução refinada: cada triângulo em level² subtriângulos com valores do interpolante quadrático. */
+export function smoothSolution(sol: Solution, level: number): Solution {
+  const n = Math.max(1, Math.min(6, Math.round(level)));
+  let byLevel = smoothCache.get(sol);
+  if (!byLevel) smoothCache.set(sol, (byLevel = new Map()));
+  const hit = byLevel.get(n);
+  if (hit) return hit;
+  const evalAt = quadratic(sol);
+  const { xy, triangles, triRegion } = sol.mesh;
+  const nt = triangles.length / 3;
+  const per = ((n + 1) * (n + 2)) / 2;
+  const nxy = new Float64Array(nt * per * 2);
+  const nA = new Float64Array(nt * per);
+  const ntri: number[] = [];
+  const nreg: number[] = [];
+  const bx: number[] = [];
+  const by: number[] = [];
+  for (let t = 0; t < nt; t++) {
+    const v = [triangles[3 * t], triangles[3 * t + 1], triangles[3 * t + 2]];
+    const base = t * per;
+    const idx = (i: number, j: number) => base + (i * (2 * n + 3 - i)) / 2 + j; // i: linha (l0 = 1 − i/n), j: coluna
+    for (let i = 0; i <= n; i++)
+      for (let j = 0; j <= n - i; j++) {
+        const l: [number, number, number] = [1 - (i + j) / n, i / n, j / n];
+        const p = idx(i, j);
+        nxy[2 * p] = l[0] * xy[2 * v[0]] + l[1] * xy[2 * v[1]] + l[2] * xy[2 * v[2]];
+        nxy[2 * p + 1] = l[0] * xy[2 * v[0] + 1] + l[1] * xy[2 * v[1] + 1] + l[2] * xy[2 * v[2] + 1];
+        nA[p] = evalAt(t, l).val;
+      }
+    const addTri = (a: number, b: number, c: number, lc: [number, number, number]) => {
+      ntri.push(a, b, c);
+      nreg.push(triRegion[t]);
+      const e = evalAt(t, lc);
+      const xc = (nxy[2 * a] + nxy[2 * b] + nxy[2 * c]) / 3;
+      const [Bx, By] = bFromGrad(sol, e.dx, e.dy, xc);
+      bx.push(Bx);
+      by.push(By);
+    };
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < n - i; j++) {
+        addTri(idx(i, j), idx(i + 1, j), idx(i, j + 1), [1 - (i + j + 2 / 3) / n, (i + 1 / 3) / n, (j + 1 / 3) / n]);
+        if (j < n - i - 1) addTri(idx(i + 1, j), idx(i + 1, j + 1), idx(i, j + 1), [1 - (i + j + 4 / 3) / n, (i + 2 / 3) / n, (j + 2 / 3) / n]);
+      }
+  }
+  const BX = new Float64Array(bx), BY = new Float64Array(by);
+  const bmag = new Float64Array(BX.length);
+  let bmax = 0;
+  for (let i = 0; i < bmag.length; i++) {
+    bmag[i] = Math.hypot(BX[i], BY[i]);
+    if (bmag[i] > bmax) bmax = bmag[i];
+  }
+  const tris = new Int32Array(ntri);
+  const out: Solution = {
+    ...sol,
+    A: nA,
+    bx: BX,
+    by: BY,
+    bmag,
+    bmax,
+    mesh: { ...sol.mesh, xy: nxy, triangles: tris, triRegion: new Int32Array(nreg), nodes: nA.length, elements: tris.length / 3 },
+    meshSize: sol.meshSize / n,
+  };
+  byLevel.set(n, out);
+  return out;
+}
+
+/** Sonda com o interpolante quadrático (usada por gráficos sobre linha com fonte interpolada). */
+export function probeSmooth(sol: Solution, p: { x: number; y: number }) {
+  const hit = locate(sol.mesh, p);
+  if (!hit) return null;
+  const evalAt = quadratic(sol);
+  const e = evalAt(hit.tri, hit.w);
+  const [bx, by] = bFromGrad(sol, e.dx, e.dy, p.x);
+  const r = sol.mesh.triRegion[hit.tri];
+  const nu = r >= 0 ? sol.nu[r] : 1 / MU0;
+  const hx = nu * (bx - (r >= 0 ? sol.brx[r] : 0)), hy = nu * (by - (r >= 0 ? sol.bry[r] : 0));
+  return { region: r, A: e.val, bx, by, b: Math.hypot(bx, by), hx, hy, h: Math.hypot(hx, hy), mur: 1 / (nu * MU0) };
 }

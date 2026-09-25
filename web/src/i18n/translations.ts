@@ -392,6 +392,13 @@ export interface Translations {
     component: string;
     comps: Record<'mag' | 'x' | 'y', string>;
     view: string;
+    interp: string;
+    interpMenu: string;
+    interpHelp: string;
+    level: string;
+    source: string;
+    sourceSolution: string;
+    filterStats: (tri: number) => string;
     colors: string;
     color: string;
     colormap: string;
@@ -900,6 +907,13 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     component: 'Componente',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'Vista',
+    interp: 'Interpolação',
+    interpMenu: 'Filtro: interpolação (suavizar)',
+    interpHelp: 'Interpolante de 2º grau por triângulo (gradiente recuperado nos nós, sem misturar materiais) e subdivisão: contornos curvos e transições suaves. Nos gráficos, escolha esta fonte em "Dados".',
+    level: 'Subdivisões por aresta',
+    source: 'Dados',
+    sourceSolution: 'Solução (malha)',
+    filterStats: (n) => `${n} triângulos refinados`,
     colors: 'Cores',
     color: 'Cor',
     colormap: 'Mapa de cores',
@@ -1414,6 +1428,13 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     component: 'Component',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'View',
+    interp: 'Interpolation',
+    interpMenu: 'Filter: interpolation (smooth)',
+    interpHelp: 'Second-order interpolant per triangle (gradient recovered at nodes, without mixing materials) plus subdivision: curved contours and smooth transitions. In plots, pick this source under "Data".',
+    level: 'Subdivisions per edge',
+    source: 'Data',
+    sourceSolution: 'Solution (mesh)',
+    filterStats: (n) => `${n} refined triangles`,
     colors: 'Colors',
     color: 'Color',
     colormap: 'Color map',

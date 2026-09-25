@@ -37,7 +37,7 @@ import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './
 import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
-import { buildMagInput, depthOf, typicalSize, type Solution } from './solve';
+import { buildMagInput, depthOf, smoothSolution, typicalSize, type Solution } from './solve';
 import type { PostNode } from './types';
 import { addNode } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
@@ -363,7 +363,14 @@ export class SketchEditor {
   /** Dados do modo resultados. */
   private postView(): RenderState['post'] {
     const sol = this.shownSolution ? this.solutions.get(this.shownSolution) : undefined;
-    return { sol: sol ?? null, layers: this.postLayers, stale: sol ? this.solutionStale(this.shownSolution!) : false, probe: this.probeAt };
+    // Camadas com fonte interpolada usam a solução refinada do filtro.
+    const layerSols = new Map<Id, Solution>();
+    if (sol)
+      for (const l of this.postLayers) {
+        const f = l.source ? this.sketch.nodes.find((n) => n.id === l.source && n.kind === 'filter') : undefined;
+        if (f?.kind === 'filter') layerSols.set(l.id, smoothSolution(sol, f.level));
+      }
+    return { sol: sol ?? null, layers: this.postLayers, layerSols, stale: sol ? this.solutionStale(this.shownSolution!) : false, probe: this.probeAt };
   }
 
   /** Régua (ferramenta de medir): não altera o desenho. */
