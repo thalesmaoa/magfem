@@ -560,3 +560,52 @@ describe('alinhar ponto e linha', () => {
     expect(pt(r3.sketch, q2).y).toBeCloseTo(pt(r3.sketch, a).y, 6);
   });
 });
+
+describe('offset com peças presas (salto grande)', () => {
+  test('bobina presa ao offset continua por fora quando a distância salta 5 → 40 mm (em passos)', async () => {
+    const { offsetCurves, setOffsetDistance } = await import('./offset');
+    // Janela 50×100 centrada; offset do núcleo; bobina à esquerda presa ao lado esquerdo do offset.
+    const d = new Draft(emptySketch());
+    const p = [d.addPoint(-25, -50), d.addPoint(25, -50), d.addPoint(25, 50), d.addPoint(-25, 50)];
+    const rect = [d.addLine(p[0], p[1]), d.addLine(p[1], p[2]), d.addLine(p[2], p[3]), d.addLine(p[3], p[0])];
+    d.addConstraint('horizontal', [rect[0]]);
+    d.addConstraint('vertical', [rect[1]]);
+    d.addConstraint('horizontal', [rect[2]]);
+    d.addConstraint('vertical', [rect[3]]);
+    d.addConstraint('symmetricPoint', [p[0], p[2], ORIGIN_ID]);
+    d.addConstraint('distance', [rect[0]], { value: 50 });
+    d.addConstraint('distance', [rect[1]], { value: 100 });
+    let sk = solve(d.sk).sketch;
+    const off = offsetCurves(sk, rect, 5);
+    sk = solve(off.sketch).sketch;
+    const og = sk.groups.find((g) => g.offset)!;
+    const left = og.members.find((id) => {
+      const e = sk.entities[id];
+      return e?.type === 'line' && !e.aux && Math.abs(pt(sk, e.p1).x - pt(sk, e.p2).x) < 1e-9 && pt(sk, e.p1).x < 0;
+    })!;
+    const L = sk.entities[left] as { p1: string; p2: string };
+    const bottom = pt(sk, L.p1).y < pt(sk, L.p2).y ? L.p1 : L.p2;
+    const d2 = new Draft(sk);
+    const a = d2.addPoint(-30, 50), b = d2.addPoint(-55, 50), c = d2.addPoint(-55, -50), e = d2.addPoint(-30, -50);
+    const top = d2.addLine(a, b), side = d2.addLine(b, c), bot = d2.addLine(c, e);
+    d2.addConstraint('pointOn', [a, left]);
+    d2.addConstraint('pointOn', [e, left]);
+    d2.addConstraint('horizontal', [top]);
+    d2.addConstraint('vertical', [side]);
+    d2.addConstraint('horizontal', [bot]);
+    d2.addConstraint('horizontal', [p[3], a]);
+    d2.addConstraint('horizontal', [p[0], e]);
+    d2.addConstraint('distance', [bottom, side], { value: 25 });
+    const start = solve(d2.sk).sketch;
+    const sideX = (s: Sketch) => pt(s, (s.entities[side] as { p1: string }).p1).x;
+    const leftX = (s: Sketch) => pt(s, (s.entities[left] as { p1: string }).p1).x;
+    expect(sideX(start)).toBeCloseTo(leftX(start) - 25, 6);
+    // Em passos (como o editor faz): a bobina acompanha por fora.
+    const doc = new SketchDoc();
+    doc.reset(start);
+    const r = doc.commitStepped((cur, t) => setOffsetDistance(cur, og.id, 5 + 35 * t), 40, ['t']);
+    expect(r.ok).toBe(true);
+    expect(leftX(doc.sketch)).toBeCloseTo(-65, 6);
+    expect(sideX(doc.sketch)).toBeCloseTo(-90, 6);
+  });
+});

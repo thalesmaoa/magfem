@@ -124,6 +124,13 @@ export interface EditorSnapshot {
   version: number;
 }
 
+/** Passos para ir de a até b sem saltos grandes (≤ 20 % do menor valor por passo, no máximo 40). */
+function stepsFor(a: number, b: number): number {
+  const d = Math.abs(b - a);
+  const ref = Math.max(Math.min(Math.abs(a), Math.abs(b)), 1e-9);
+  return Math.max(1, Math.min(40, Math.ceil(d / (0.2 * ref))));
+}
+
 export class SketchEditor {
   readonly view = new View();
   tool: Tool = 'select';
@@ -503,6 +510,14 @@ export class SketchEditor {
     return r.ok;
   }
 
+  /** Commit em passos (ver SketchDoc.commitStepped). */
+  commitStepped(build: (cur: Sketch, t: number) => Sketch, steps: number, code: string[]) {
+    const r = this.doc.commitStepped(build, steps, code);
+    if (!r.ok) this.flash(r.message!);
+    else this.clearMessage();
+    return r.ok;
+  }
+
   /** Um aviso antigo não deve continuar na tela depois que a ação seguinte deu certo. */
   clearMessage() {
     if (!this.message) return;
@@ -677,7 +692,12 @@ export class SketchEditor {
   /** Nova distância do offset (sinal = lado). */
   setOffset(groupId: Id, d: number, text: string) {
     try {
-      return this.commit(setOffsetDistance(this.sketch, groupId, d), [`g.set_offset(${q(groupId)}, ${q(text)})`]);
+      const g = this.sketch.groups.find((x) => x.id === groupId);
+      const d0 = g?.offset ? g.offset.side * g.offset.distance : d;
+      const code = [`g.set_offset(${q(groupId)}, ${q(text)})`];
+      // Mesmo lado: anda em passos para as peças presas ao offset não "virarem" (cotas sem sinal).
+      if (Math.sign(d0) === Math.sign(d)) return this.commitStepped((cur, t) => setOffsetDistance(cur, groupId, d0 + (d - d0) * t), stepsFor(d0, d), code);
+      return this.commit(setOffsetDistance(this.sketch, groupId, d), code);
     } catch (e) {
       this.flash((e as Error).message);
       return false;
@@ -893,7 +913,19 @@ export class SketchEditor {
     if (!parsed.expr) delete next.expr;
     const constraints = sk.constraints.map((k) => (k.id === id ? next : k));
     const arg = parsed.expr ?? (c.type === 'angle' ? `${Number(parsed.value.toFixed(6))} deg` : formatLength(parsed.value, this.unit).replace(',', '.'));
-    this.commit({ ...sk, constraints }, [`g.set_dimension(${q(id)}, ${q(arg)})`]);
+    const v0 = c.value ?? parsed.value;
+    const n = stepsFor(v0, parsed.value);
+    if (n > 1)
+      // Mudança grande: passos intermediários (numéricos); o último leva a expressão, se houver.
+      this.commitStepped(
+        (cur, t) => ({
+          ...cur,
+          constraints: cur.constraints.map((k) => (k.id !== id ? k : t < 1 ? { ...k, value: v0 + (parsed.value - v0) * t, expr: undefined } : next)),
+        }),
+        n,
+        [`g.set_dimension(${q(id)}, ${q(arg)})`],
+      );
+    else this.commit({ ...sk, constraints }, [`g.set_dimension(${q(id)}, ${q(arg)})`]);
     this.changed();
   }
 

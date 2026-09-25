@@ -699,7 +699,17 @@ export class CommandConsole {
       }
       case 'set_offset': {
         need(2);
-        this.commit(setOffsetDistance(sk, this.id(a[0]), this.signedLength(a[1])));
+        {
+          const gid = this.id(a[0]);
+          const d = this.signedLength(a[1]);
+          const g = sk.groups.find((x) => x.id === gid);
+          const d0 = g?.offset ? g.offset.side * g.offset.distance : d;
+          if (Math.sign(d0) === Math.sign(d)) {
+            const n = Math.max(1, Math.min(40, Math.ceil(Math.abs(d - d0) / (0.2 * Math.max(Math.min(Math.abs(d0), Math.abs(d)), 1e-9)))));
+            const r = this.host.doc.commitStepped((cur, t) => setOffsetDistance(cur, gid, d0 + (d - d0) * t), n, [this.code]);
+            if (!r.ok) throw new ConsoleError(r.message!);
+          } else this.commit(setOffsetDistance(sk, gid, d));
+        }
         return null;
       }
       case 'mirror': {

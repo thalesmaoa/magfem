@@ -89,6 +89,24 @@ export class SketchDoc {
   }
 
   /**
+   * Commit em passos (continuação): `build(atual, t)` com t = 1/n … 1, cada passo resolvido a partir
+   * da solução do anterior. Evita que uma mudança grande (ex.: offset 20 → 40 mm) caia na solução
+   * espelhada de uma cota sem sinal. Entra no histórico como um único passo.
+   */
+  commitStepped(build: (cur: Sketch, t: number) => Sketch, steps: number, code: string[]): CommitResult {
+    let cur = this.sketch;
+    let dof = this.dof;
+    for (let k = 1; k <= steps; k++) {
+      const r = this.evaluate(build(cur, k / steps));
+      if (typeof r === 'string') return { ok: false, message: r };
+      cur = r.sketch;
+      dof = r.dof;
+    }
+    this.push(cur, dof, code);
+    return { ok: true };
+  }
+
+  /**
    * Aplica `base` e depois tenta acrescentar cada restrição de `extra` (inferências automáticas),
    * mantendo só as que não geram conflito nem redundância. O código das aceitas vai junto.
    */
