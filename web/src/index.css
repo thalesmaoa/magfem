@@ -509,3 +509,4 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .sch-wire.pending { stroke: var(--accent); stroke-dasharray: 5 4; pointer-events: none; }
 .sch-side { border-left: 1px solid var(--border); padding: 10px 12px; overflow-y: auto; background: var(--panel); }
 .sch-signals .xychart { max-height: 200px; }
+.sch-side p, .sch-side .muted { font-size: 12px; line-height: 1.4; }
