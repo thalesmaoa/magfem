@@ -539,7 +539,7 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .tab-hint { font-size: 12px; }
 .sch-canvas { cursor: grab; }
 .sch-canvas.wiring, .sch-canvas.wiring .sch-part { cursor: crosshair; }
-.sch-wire-hit { fill: none; stroke: transparent; stroke-width: 12; cursor: ew-resize; }
+.sch-wire-hit { fill: none; stroke: transparent; stroke-width: 12; cursor: move; }
 .sch-value { font-size: 11px; fill: var(--muted); pointer-events: none; font-family: ui-monospace, monospace; }
 .sch-live { font-size: 11px; fill: var(--accent); pointer-events: none; font-variant-numeric: tabular-nums; }
 .sch-comp.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }

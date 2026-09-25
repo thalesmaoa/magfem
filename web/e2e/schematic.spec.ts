@@ -123,4 +123,18 @@ test('circuito: arrastar um fio move o trecho vertical; duplo clique volta ao au
   });
   await page.mouse.dblclick(p2.x, p2.y);
   expect((await wireOf()).mid).toBeUndefined();
+  // Arrastando para cima: o trecho horizontal sobe (mid_y), como um fio "levantado".
+  const p3 = await page.locator('.sch-wire-hit').first().evaluate((el: SVGPathElement) => {
+    const p = el.getPointAtLength(el.getTotalLength() * 0.3);
+    const m = el.getScreenCTM()!;
+    return { x: p.x * m.a + m.e, y: p.y * m.d + m.f };
+  });
+  await page.mouse.move(p3.x, p3.y);
+  await page.mouse.down();
+  await page.mouse.move(p3.x, p3.y - 60, { steps: 6 });
+  await page.mouse.up();
+  const w2 = await wireOf();
+  expect(w2.midY).toBeDefined();
+  expect(w2.mid).toBeUndefined();
+  await expect(page.locator('.console .code').last()).toContainText('y=');
 });

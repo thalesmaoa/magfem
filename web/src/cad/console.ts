@@ -1082,19 +1082,22 @@ export class CommandConsole {
         const m = /^[a-z]+(\d+)$/.exec(id);
         const wire: SchWire = { id, a: end(a[1]), b: end(a[2]) };
         if (kw.mid !== undefined && kw.mid !== null) wire.mid = Number(kw.mid);
+        if (kw.mid_y !== undefined && kw.mid_y !== null) wire.midY = Number(kw.mid_y);
         this.commit({ ...updateNode(sk, sch.id, { wires: [...sch.wires, wire] }), nextId: Math.max(sk.nextId + 1, m ? Number(m[1]) + 1 : 0) });
         return id;
       }
       case 'sch_route': {
-        // Traçado do fio: x do trecho vertical (None = automático, no meio).
+        // Traçado do fio: x do trecho vertical, ou y= do trecho horizontal (None/nada = automático).
         need(1);
         const wid = String(a[0]);
         const sch = sk.nodes.find((n): n is SchematicNode => n.kind === 'schematic' && n.wires.some((w) => w.id === wid));
         if (!sch) throw new ConsoleError(t.notFound(wid));
         const x = a.length > 1 ? a[1] : kw.x;
+        const y = kw.y;
         const wires = sch.wires.map((w) => {
           if (w.id !== wid) return w;
-          const { mid: _m, ...rest } = w;
+          const { mid: _m, midY: _y, ...rest } = w;
+          if (y !== undefined && y !== null) return { ...rest, midY: Number(y) };
           return x === null || x === undefined ? rest : { ...rest, mid: Number(x) };
         });
         this.commit(updateNode(sk, sch.id, { wires }));
@@ -1245,7 +1248,7 @@ const NODE_METHODS = {
     add: 'add(name="Circuito 1")',
     part: 'part("n5", "V" | "I" | "R" | "L" | "C" | "gnd" | "coil", x=200, y=120, rot=90, value="10", amp="10", freq="50", phase="0", dc="0", circuit="c3")',
     wire: 'wire("n5", ("sp7", 1), ("sp8", 0), mid=240)',
-    route: 'route("sw9", 240)  # x do trecho vertical; None = automático',
+    route: 'route("sw9", 240) ou route("sw9", y=80)  # trecho vertical em x / horizontal em y; None = automático',
     set: 'set("sp7", value="0.5", name="R1")',
     move: 'move("sp7", (240, 120))',
     rotate: 'rotate("sp7")',

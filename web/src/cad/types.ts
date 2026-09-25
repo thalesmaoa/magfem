@@ -278,8 +278,10 @@ export interface SchWire {
   id: Id;
   a: { part: Id; pin: number };
   b: { part: Id; pin: number };
-  /** x do trecho vertical do fio (arrastado pelo usuário); ausente = no meio entre os terminais. */
+  /** x do trecho vertical do fio (arrastado para os lados); ausente = no meio entre os terminais. */
   mid?: number;
+  /** y do trecho horizontal (arrastado para cima/baixo): o fio sobe/desce do terminal, corre nessa altura e volta. */
+  midY?: number;
 }
 export interface SchematicNode {
   id: Id;
