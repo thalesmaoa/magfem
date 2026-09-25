@@ -27,7 +27,7 @@ import {
 import { addNode, addPlot, addSchematic, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { BOUNDARY_TYPES, type Boundary, DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { BOUNDARY_TYPES, type Boundary, DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, type SchWire, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
 import { duplicateMaterial, addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
@@ -1080,8 +1080,25 @@ export class CommandConsole {
         };
         const id = kw.id ? String(kw.id) : `sw${sk.nextId}`;
         const m = /^[a-z]+(\d+)$/.exec(id);
-        this.commit({ ...updateNode(sk, sch.id, { wires: [...sch.wires, { id, a: end(a[1]), b: end(a[2]) }] }), nextId: Math.max(sk.nextId + 1, m ? Number(m[1]) + 1 : 0) });
+        const wire: SchWire = { id, a: end(a[1]), b: end(a[2]) };
+        if (kw.mid !== undefined && kw.mid !== null) wire.mid = Number(kw.mid);
+        this.commit({ ...updateNode(sk, sch.id, { wires: [...sch.wires, wire] }), nextId: Math.max(sk.nextId + 1, m ? Number(m[1]) + 1 : 0) });
         return id;
+      }
+      case 'sch_route': {
+        // Traçado do fio: x do trecho vertical (None = automático, no meio).
+        need(1);
+        const wid = String(a[0]);
+        const sch = sk.nodes.find((n): n is SchematicNode => n.kind === 'schematic' && n.wires.some((w) => w.id === wid));
+        if (!sch) throw new ConsoleError(t.notFound(wid));
+        const x = a.length > 1 ? a[1] : kw.x;
+        const wires = sch.wires.map((w) => {
+          if (w.id !== wid) return w;
+          const { mid: _m, ...rest } = w;
+          return x === null || x === undefined ? rest : { ...rest, mid: Number(x) };
+        });
+        this.commit(updateNode(sk, sch.id, { wires }));
+        return null;
       }
       case 'sch_set':
       case 'sch_move':
@@ -1227,7 +1244,8 @@ const NODE_METHODS = {
   c: {
     add: 'add(name="Circuito 1")',
     part: 'part("n5", "V" | "I" | "R" | "L" | "C" | "gnd" | "coil", x=200, y=120, rot=90, value="10", amp="10", freq="50", phase="0", dc="0", circuit="c3")',
-    wire: 'wire("n5", ("sp7", 1), ("sp8", 0))',
+    wire: 'wire("n5", ("sp7", 1), ("sp8", 0), mid=240)',
+    route: 'route("sw9", 240)  # x do trecho vertical; None = automático',
     set: 'set("sp7", value="0.5", name="R1")',
     move: 'move("sp7", (240, 120))',
     rotate: 'rotate("sp7")',

@@ -177,7 +177,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       for (const k of ['value', 'amp', 'freq', 'phase', 'dc', 'circuit'] as const) if (p[k] !== undefined) kw.push(`${k}=${q(p[k]!)}`);
       add(`c.part(${q(node.id)}, ${q(p.kind)}, ${kw.join(', ')})`);
     }
-    for (const w of node.wires) add(`c.wire(${q(node.id)}, (${q(w.a.part)}, ${w.a.pin}), (${q(w.b.part)}, ${w.b.pin}), id=${q(w.id)})`);
+    for (const w of node.wires) add(`c.wire(${q(node.id)}, (${q(w.a.part)}, ${w.a.pin}), (${q(w.b.part)}, ${w.b.pin}), id=${q(w.id)}${w.mid !== undefined ? `, mid=${n(w.mid)}` : ''})`);
   }
 
   add('\n# Contador de ids (para novos itens seguirem a mesma numeração do original)');

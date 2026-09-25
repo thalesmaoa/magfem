@@ -86,3 +86,41 @@ test('circuito externo: fonte + R + bobina do FEM acoplados no transitório (KVL
   sch = (await sketch(page)).nodes.find((n: any) => n.kind === 'schematic');
   expect(sch.parts.map((p: any) => p.kind).sort()).toEqual(['R', 'V', 'coil', 'gnd']);
 });
+
+test('circuito: arrastar um fio move o trecho vertical; duplo clique volta ao automático', async ({ page }) => {
+  await openApp(page);
+  await page.getByRole('button', { name: 'Incluir no método de resolução' }).click();
+  await page.getByRole('menuitem', { name: /Campo magnético \+ circuito/ }).click();
+  await page.getByRole('button', { name: 'Abrir o circuito' }).click();
+  for (const k of ['Resistor', 'Resistor']) await page.locator('.sch-palette').getByRole('button', { name: k, exact: true }).click();
+  const pin = (n: string) => page.locator(`.sch-canvas circle[aria-label="${n}"]`);
+  await pin('R1:1').click();
+  await pin('R2:0').click();
+  const wireOf = async () => {
+    const sk = await sketch(page);
+    return sk.nodes.find((n: any) => n.kind === 'schematic').wires[0];
+  };
+  expect((await wireOf()).mid).toBeUndefined();
+  const hit = page.locator('.sch-wire-hit').first();
+  // Pega o fio num ponto do traçado e arrasta para a direita.
+  const pts = await hit.evaluate((el: SVGPathElement) => {
+    const L = el.getTotalLength();
+    const p = el.getPointAtLength(L / 2);
+    const m = el.getScreenCTM()!;
+    return { x: p.x * m.a + m.e, y: p.y * m.d + m.f };
+  });
+  await page.mouse.move(pts.x, pts.y);
+  await page.mouse.down();
+  await page.mouse.move(pts.x + 60, pts.y, { steps: 6 });
+  await page.mouse.up();
+  const w = await wireOf();
+  expect(w.mid).toBeDefined();
+  await expect(page.locator('.console .code')).toContainText('c.route(');
+  const p2 = await page.locator('.sch-wire-hit').first().evaluate((el: SVGPathElement) => {
+    const p = el.getPointAtLength(el.getTotalLength() * 0.3);
+    const m = el.getScreenCTM()!;
+    return { x: p.x * m.a + m.e, y: p.y * m.d + m.f };
+  });
+  await page.mouse.dblclick(p2.x, p2.y);
+  expect((await wireOf()).mid).toBeUndefined();
+});

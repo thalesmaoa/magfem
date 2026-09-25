@@ -200,6 +200,9 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
   const [wireFrom, setWireFrom] = useState<{ part: Id; pin: number } | null>(null);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const drag = useRef<{ id: Id; dx: number; dy: number; moved: boolean } | null>(null);
+  // Fio arrastado: move o trecho vertical (mid) enquanto arrasta.
+  const wireDrag = useRef<{ id: Id; moved: boolean } | null>(null);
+  const [liveMid, setLiveMid] = useState<{ id: Id; x: number } | null>(null);
   const pan = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -241,7 +244,7 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
     }
     return null;
   };
-  const wirePath = (a: { x: number; y: number }, b: { x: number; y: number }) => `M${a.x} ${a.y}H${(a.x + b.x) / 2}V${b.y}H${b.x}`;
+  const wirePath = (a: { x: number; y: number }, b: { x: number; y: number }, mid?: number) => `M${a.x} ${a.y}H${mid ?? (a.x + b.x) / 2}V${b.y}H${b.x}`;
   // Resultado no passo mostrado (i e v escritos no esquemático).
   const result = schResult(ed, sch.id);
   const k = result ? Math.min(ui.frame, result.times.length - 1) : 0;
@@ -266,6 +269,12 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
             setSchUi({ px: pan.current.px - ((e.clientX - pan.current.x) * W) / r.width, py: pan.current.py - ((e.clientY - pan.current.y) * H) / r.height });
             return;
           }
+          const wd = wireDrag.current;
+          if (wd) {
+            wd.moved = true;
+            setLiveMid({ id: wd.id, x: snap(p.x) });
+            return;
+          }
           const d = drag.current;
           if (!d) return;
           d.moved = true;
@@ -273,6 +282,10 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
         }}
         onPointerUp={(e) => {
           pan.current = null;
+          const wd = wireDrag.current;
+          wireDrag.current = null;
+          if (wd?.moved && liveMid) commit(ed, sch, { wires: sch.wires.map((w) => (w.id === wd.id ? { ...w, mid: liveMid.x } : w)) }, `c.route(${q(wd.id)}, ${liveMid.x})`);
+          setLiveMid(null);
           // Fio arrastado: soltar sobre outro terminal liga.
           if (wireFrom && !ui.wireMode) {
             const p = toSvg(e);
@@ -313,8 +326,25 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
           if (!a || !b) return null;
           return (
             <g key={w.id} className="sch-wire-g">
-              <path d={wirePath(a, b)} className="sch-wire-hit" onPointerDown={(e) => { e.stopPropagation(); setSel({ type: 'wire', id: w.id }); }} />
-              <path d={wirePath(a, b)} className={`sch-wire${sel?.type === 'wire' && sel.id === w.id ? ' on' : ''}`} pointerEvents="none" />
+              <path
+                d={wirePath(a, b, liveMid?.id === w.id ? liveMid.x : w.mid)}
+                className="sch-wire-hit"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  setSel({ type: 'wire', id: w.id });
+                  if (ui.wireMode) return;
+                  (e.target as Element).setPointerCapture?.(e.pointerId);
+                  wireDrag.current = { id: w.id, moved: false };
+                }}
+                onDoubleClick={(e) => {
+                  // Duplo clique: volta ao traçado automático.
+                  e.stopPropagation();
+                  if (w.mid === undefined) return;
+                  const { mid: _m, ...rest } = w;
+                  commit(ed, sch, { wires: sch.wires.map((x) => (x.id === w.id ? rest : x)) }, `c.route(${q(w.id)}, None)`);
+                }}
+              />
+              <path d={wirePath(a, b, liveMid?.id === w.id ? liveMid.x : w.mid)} className={`sch-wire${sel?.type === 'wire' && sel.id === w.id ? ' on' : ''}`} pointerEvents="none" />
             </g>
           );
         })}
