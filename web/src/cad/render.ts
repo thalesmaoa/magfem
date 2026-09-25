@@ -848,14 +848,14 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
     // Superfícies primeiro; o contorno das peças fica entre elas e as linhas/vetores/curvas.
     const maps = st.post.layers.filter((l) => l.plot === 'surface');
     const rest = st.post.layers.filter((l) => !maps.includes(l));
-    const nLegends = drawPost(ctx, v, sk, { ...st.post, layers: maps, probe: null }, 0, hits, st.uiScale ?? 1);
-    for (const e of ents) {
+      const nLegends = drawPost(ctx, v, sk, { ...st.post, layers: maps, probe: null }, 0, hits, st.uiScale ?? 1);
+      for (const e of ents) {
       if (e.type === 'point') continue;
       const color = e.construction ? COLORS.construction : hasMap ? 'rgba(10,14,20,0.9)' : COLORS.defined;
       drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: st.hover, related: new Set(), defined: new Set(), colorOverride: st.hover === e.id ? COLORS.hover : color, widthOverride: st.hover === e.id ? 3 : 1.4 } as RenderState);
     }
-    drawPost(ctx, v, sk, { ...st.post, layers: rest }, nLegends, hits, st.uiScale ?? 1);
-    return hits;
+      drawPost(ctx, v, sk, { ...st.post, layers: rest }, nLegends, hits, st.uiScale ?? 1);
+      return hits;
   }
   if (st.mesh) {
     // Modo malha: regiões, contornos coloridos e nada de cotas/símbolos.
