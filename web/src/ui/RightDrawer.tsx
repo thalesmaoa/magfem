@@ -88,13 +88,16 @@ export function RightDrawer({ ed, open, onToggle }: { ed: SketchEditor; open: bo
       {open && <PanelResizer side="right" />}
       {open && (
         <div className="drawer-body side">
-          <div className="drawer-tabs" role="tablist">
-            {tabs.map(([k, label]) => (
-              <button key={k} role="tab" aria-selected={d.tab === k} className={d.tab === k ? 'on' : ''} onClick={() => setDrawer({ tab: k, focus: null })}>
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* As abas são de "Problema e bibliotecas"; o Sobre ocupa o painel sozinho. */}
+          {d.tab !== 'about' && (
+            <div className="drawer-tabs" role="tablist">
+              {tabs.map(([k, label]) => (
+                <button key={k} role="tab" aria-selected={d.tab === k} className={d.tab === k ? 'on' : ''} onClick={() => setDrawer({ tab: k, focus: null })}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           {d.tab === 'problem' && <ProblemPanel ed={ed} />}
           {d.tab === 'materials' && <MaterialLibrary ed={ed} focus={d.focus} onFocus={(id) => setDrawer({ focus: id })} />}
           {d.tab === 'about' && <AboutPanel />}
