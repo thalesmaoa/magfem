@@ -19,7 +19,8 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
   const vert = lines.filter((l) => Math.abs(sk.entities[l.p1].x - sk.entities[l.p2].x) < 1e-9).map((l) => l.id);
   const horiz = lines.filter((l) => !vert.includes(l.id)).map((l) => l.id);
   // Corrente de 1000 A numa espira: J = 1000 / 5000 mm² = 2e5 A/m².
-  await run('m.region((50, 25), material="Ar", current="1000", turns=1)');
+  // Espiras negativas invertem o sentido: −1 espira com −1000 A = +1000 A·espira.
+  await run('m.region((50, 25), material="Ar", current="-1000", turns=-1)');
   await run(`m.boundary([${vert.map((v) => `"${v}"`).join(', ')}], "dirichlet")`);
   await run(`m.boundary([${horiz.map((v) => `"${v}"`).join(', ')}], "neumann")`);
   await run('m.settings("n1", size="2 mm")');
@@ -59,6 +60,15 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
   await expect(page.getByRole('treeitem', { name: 'Superfície: H' })).toBeVisible();
   await page.getByLabel('Componente').selectOption('y');
   expect((await sketch(page)).nodes.find((n: any) => n.plot === 'surface')).toMatchObject({ quantity: 'h', component: 'y' });
+
+  // Cores: mapa Viridis na superfície; contorno com cor sólida e depois pela grandeza.
+  await page.getByLabel('Mapa de cores').selectOption('viridis');
+  await page.getByRole('treeitem', { name: 'Contorno: A' }).click();
+  await page.getByLabel('Cor', { exact: true }).fill('#1f6fd1');
+  await page.getByLabel('Colorir pela grandeza').check();
+  let nodes = (await sketch(page)).nodes;
+  expect(nodes.find((n: any) => n.plot === 'surface')).toMatchObject({ colormap: 'viridis' });
+  expect(nodes.find((n: any) => n.plot === 'contour')).toMatchObject({ color: '#1f6fd1', colorByValue: true });
 
   // Glifos na mesma vista (sobrepostos).
   const view = page.getByRole('treeitem', { name: 'Vista 1', exact: true });

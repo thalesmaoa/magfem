@@ -4,7 +4,7 @@ import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { lineProfile, probe, quantityLabel, type Solution } from '../cad/solve';
 import { addPlot, addView, removeNode, updateNode, type TreeSel } from '../cad/tree';
-import { PLOT_KINDS, PLOT_QUANTITIES, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
+import { COLORMAPS, PLOT_KINDS, PLOT_QUANTITIES, type Colormap, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { Icons } from './icons';
@@ -433,6 +433,45 @@ function Chart({ s, y, unit }: { s: number[]; y: number[]; unit: string }) {
   );
 }
 
+/** Cores da camada: mapa de cores (superfície), cor sólida ou pela grandeza (contorno/glifos), cor da curva. */
+function ColorSection({ node, plot, set }: { node: PostNode; plot: PlotKind; set: (patch: Partial<PostNode>, code: string) => void }) {
+  const t = useT();
+  const mapSelect = (
+    <label className="field">
+      <span>{t.post.colormap}</span>
+      <select aria-label={t.post.colormap} value={node.colormap ?? 'turbo'} onChange={(e) => set({ colormap: e.target.value as Colormap }, `r.show(${q(node.id)}, colormap=${q(e.target.value)})`)}>
+        {COLORMAPS.map((k) => (
+          <option key={k} value={k}>
+            {t.post.colormaps[k]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  const def = plot === 'line' ? '#e8408a' : '#0d1319';
+  const colorInput = (
+    <label className="field">
+      <span>{t.post.color}</span>
+      <input type="color" aria-label={t.post.color} value={node.color ?? def} onChange={(e) => set({ color: e.target.value }, `r.show(${q(node.id)}, color=${q(e.target.value)})`)} />
+    </label>
+  );
+  if (plot === 'surface') return mapSelect;
+  if (plot === 'line') return colorInput;
+  return (
+    <>
+      <label className="field check">
+        <input
+          type="checkbox"
+          checked={!!node.colorByValue}
+          onChange={(e) => set({ colorByValue: e.target.checked }, `r.show(${q(node.id)}, color_by_value=${e.target.checked ? 'True' : 'False'})`)}
+        />
+        <span>{t.post.colorByValue}</span>
+      </label>
+      {node.colorByValue ? mapSelect : colorInput}
+    </>
+  );
+}
+
 /** Propriedades de uma camada de visualização. */
 export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
   const t = useT();
@@ -498,6 +537,7 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
             />
           </label>
         )}
+        <ColorSection node={node} plot={plot} set={set} />
         {plot === 'contour' && (
           <label className="field">
             <span>{t.solve.nLines}</span>

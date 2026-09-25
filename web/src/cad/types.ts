@@ -168,6 +168,9 @@ export interface MeshNode {
   minAngle?: number;
 }
 
+export type Colormap = 'turbo' | 'viridis' | 'coolwarm' | 'gray';
+export const COLORMAPS: Colormap[] = ['turbo', 'viridis', 'coolwarm', 'gray'];
+
 /** Tipos de gráfico dos resultados (a grandeza é escolhida dentro de cada um). */
 export type PlotKind = 'surface' | 'contour' | 'arrow' | 'line';
 export const PLOT_KINDS: PlotKind[] = ['surface', 'contour', 'arrow', 'line'];
@@ -204,6 +207,12 @@ export interface PostNode {
   scale?: number;
   /** Gráfico sobre curva: a curva do desenho. */
   curve?: Id;
+  /** Cor sólida (contorno, glifos, curva). */
+  color?: string;
+  /** Contorno/glifos coloridos pela grandeza (mapa de cores) em vez da cor sólida. */
+  colorByValue?: boolean;
+  /** Mapa de cores (superfície e coloração pela grandeza). */
+  colormap?: Colormap;
 }
 
 /** Vista de resultados: uma aba do canvas com camadas (como uma "view" do ParaView). */

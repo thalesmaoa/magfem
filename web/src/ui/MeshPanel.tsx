@@ -390,8 +390,9 @@ function RegionMaterialProps({ ed }: { ed: SketchEditor }) {
               onCommit={(v) => {
                 const n = Number(v);
                 if (!v.trim()) set({ turns: undefined }, 'turns=None');
-                else if (Number.isFinite(n) && n > 0) set({ turns: n }, `turns=${n}`);
-                else ed.flash(t.msg.positive);
+                // Negativo inverte o sentido (como no FEMM); zero não faz sentido.
+                else if (Number.isFinite(n) && n !== 0) set({ turns: n }, `turns=${n}`);
+                else ed.flash(t.mesh.turnsNonZero);
               }}
             />
           </label>

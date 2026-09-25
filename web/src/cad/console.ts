@@ -868,6 +868,9 @@ export class CommandConsole {
         if (kw.curve !== undefined) patch.curve = kw.curve === null ? undefined : this.id(kw.curve);
         if (kw.quantity !== undefined) patch.quantity = String(kw.quantity);
         if (kw.component !== undefined) patch.component = String(kw.component);
+        if (kw.color !== undefined) patch.color = kw.color === null ? undefined : String(kw.color);
+        if (kw.color_by_value !== undefined) patch.colorByValue = !!kw.color_by_value;
+        if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
         this.commit(updateNode(sk, String(a[0]), patch));
         return null;
       }
@@ -936,7 +939,7 @@ const NODE_METHODS = {
   },
   r: {
     plot: 'plot("n2", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
-    show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn")',
+    show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn", color="#1f6fd1", color_by_value=False, colormap="viridis")',
     rename: 'rename("n5", "...")',
     remove: 'remove("n5")',
   },

@@ -347,6 +347,7 @@ export interface Translations {
     regionName: string;
     outerHelp: string;
     bhAdd: string;
+    turnsNonZero: string;
     bhPoint: string;
     bhClickHint: string;
     bhOpen: string;
@@ -391,6 +392,11 @@ export interface Translations {
     component: string;
     comps: Record<'mag' | 'x' | 'y', string>;
     view: string;
+    colors: string;
+    color: string;
+    colormap: string;
+    colormaps: Record<'turbo' | 'viridis' | 'coolwarm' | 'gray', string>;
+    colorByValue: string;
     newView: string;
     addToView: string;
     drawing: string;
@@ -849,6 +855,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     elementsNode: 'Elementos',
     regionName: 'Nome da região',
     bhAdd: 'Incluir curva B-H (não linear)',
+    turnsNonZero: 'Espiras: qualquer número diferente de zero (negativo inverte o sentido).',
     bhPoint: 'Ponto',
     bhClickHint: 'Clique num ponto para editar.',
     bhOpen: 'Ver curva B-H (aba)',
@@ -893,6 +900,11 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     component: 'Componente',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'Vista',
+    colors: 'Cores',
+    color: 'Cor',
+    colormap: 'Mapa de cores',
+    colormaps: { turbo: 'Turbo (arco-íris)', viridis: 'Viridis', coolwarm: 'Frio-quente (divergente)', gray: 'Cinza' },
+    colorByValue: 'Colorir pela grandeza',
     newView: 'Nova vista (aba) com…',
     addToView: 'Incluir nesta vista',
     drawing: 'Desenho',
@@ -1357,6 +1369,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     elementsNode: 'Triangle',
     regionName: 'Region name',
     bhAdd: 'Add B-H curve (nonlinear)',
+    turnsNonZero: 'Turns: any nonzero number (negative reverses the direction).',
     bhPoint: 'Point',
     bhClickHint: 'Click a point to edit.',
     bhOpen: 'View B-H curve (tab)',
@@ -1401,6 +1414,11 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     component: 'Component',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'View',
+    colors: 'Colors',
+    color: 'Color',
+    colormap: 'Color map',
+    colormaps: { turbo: 'Turbo (rainbow)', viridis: 'Viridis', coolwarm: 'Cool to warm (diverging)', gray: 'Gray' },
+    colorByValue: 'Color by value',
     newView: 'New view (tab) with…',
     addToView: 'Add to this view',
     drawing: 'Drawing',
