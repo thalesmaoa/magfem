@@ -45,6 +45,7 @@ export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s:
     }
     if (tab.kind === 'chart') return `${t.post.chart}: ${sk.nodes.find((n) => n.id === tab.plot)?.name ?? '?'}`;
     if (tab.kind === 'table') return sk.nodes.find((n) => n.id === tab.id)?.name ?? '?';
+    if (tab.kind === 'sch') return sk.nodes.find((n) => n.id === tab.id)?.name ?? '?';
     if (tab.kind === 'circuits') return `${t.circuit.title}: ${sk.nodes.find((n) => n.id === tab.physics)?.name ?? '?'}`;
     return `${t.post.bhTab}: ${sk.materials.find((m) => m.id === tab.material)?.name ?? '?'}`;
   };
@@ -56,7 +57,7 @@ export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s:
         return (
           <div key={k} role="tab" aria-selected={active === k} className={`ctab${active === k ? ' on' : ''}`} onClick={() => {
             activateTab(k);
-            if (tab.kind === 'view') onSelect({ kind: 'node', id: tab.id });
+            if (tab.kind === 'view' || tab.kind === 'sch') onSelect({ kind: 'node', id: tab.id });
             else if (tab.kind === 'draw') onSelect({ kind: 'geometry' });
           }}>
             <span>{label(tab)}</span>
@@ -81,7 +82,7 @@ export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s:
 }
 
 /** Gráfico XY em SVG, com eixos lineares ou log e pontos clicáveis. */
-function XYChart(p: {
+export function XYChart(p: {
   x: number[];
   y: number[];
   xLabel: string;

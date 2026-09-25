@@ -8,8 +8,8 @@ import { Draft } from './ops';
 import { computeArrangement } from './regions';
 import { generateScript } from './script';
 import { initSolver, solve } from './solver';
-import { addPlot, addTable, addTableItem, addView } from './tree';
-import { emptySketch, ORIGIN_ID, type Sketch } from './types';
+import { addPlot, addSchematic, addTable, addTableItem, addView } from './tree';
+import { emptySketch, ORIGIN_ID, type SchematicNode, type Sketch } from './types';
 
 beforeAll(async () => {
   setLang('pt');
@@ -53,6 +53,21 @@ function model(): Sketch {
   const li = addTableItem(tb.sketch, tb.node.id, 'lineint', 'Linha');
   const si = addTableItem(li.sketch, tb.node.id, 'surfint', 'Área');
   sk = { ...si.sketch, nodes: si.sketch.nodes.map((n) => (n.id === li.node.id ? { ...n, curve: c } : n.id === si.node.id ? { ...n, regions: [regionKey(hole)] } : n)) };
+  const sc = addSchematic(sk, 'Rede');
+  const coil = (sc.node as SchematicNode).parts[0];
+  sk = {
+    ...sc.sketch,
+    nodes: sc.sketch.nodes.map((n) =>
+      n.id === sc.node.id
+        ? {
+            ...n,
+            parts: [...(n as SchematicNode).parts, { id: 'sp900', kind: 'V', name: 'V1', x: 120, y: 120, rot: 90, amp: '10', freq: '50', phase: '0', dc: '0' }, { id: 'sp901', kind: 'gnd', name: 'GND1', x: 240, y: 240, rot: 0 }],
+            wires: [{ id: 'sw902', a: { part: 'sp900', pin: 1 }, b: { part: coil.id, pin: 0 } }],
+          }
+        : n,
+    ),
+    nextId: 903,
+  } as Sketch;
   return sk;
 }
 

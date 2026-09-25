@@ -15,6 +15,9 @@ export interface MagOut {
   iterations: number;
   At: Float64Array;
   times: Float64Array;
+  nodeV: Float64Array;
+  elI: Float64Array;
+  coilLambda: Float64Array;
 }
 export interface CoreModule {
   solveMagnetostatic(input: import('../cad/solve').MagInput): MagOut;

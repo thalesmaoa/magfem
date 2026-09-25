@@ -65,6 +65,22 @@ val solveMagnetostatic(val in) {
   if (has("dt")) m.dt = in["dt"].as<double>();
   if (has("steps")) m.steps = in["steps"].as<int>();
   if (has("maxIter")) m.maxIter = in["maxIter"].as<int>();
+  if (has("elType")) {
+    m.netNodes = in["netNodes"].as<int>();
+    m.elType = convertJSArrayToNumberVector<int>(in["elType"]);
+    m.elA = convertJSArrayToNumberVector<int>(in["elA"]);
+    m.elB = convertJSArrayToNumberVector<int>(in["elB"]);
+    m.elCoil = convertJSArrayToNumberVector<int>(in["elCoil"]);
+    m.elValue = convertJSArrayToNumberVector<double>(in["elValue"]);
+    m.elFreq = convertJSArrayToNumberVector<double>(in["elFreq"]);
+    m.elPhase = convertJSArrayToNumberVector<double>(in["elPhase"]);
+    m.elDC = convertJSArrayToNumberVector<double>(in["elDC"]);
+    m.coilStart = convertJSArrayToNumberVector<int>(in["coilStart"]);
+    m.coilRegion = convertJSArrayToNumberVector<int>(in["coilRegion"]);
+    m.coilTurns = convertJSArrayToNumberVector<double>(in["coilTurns"]);
+    m.coilR = convertJSArrayToNumberVector<double>(in["coilR"]);
+    m.depth = in["depth"].as<double>();
+  }
   magfem::MagOutput o = magfem::solve_magnetostatic(m);
   val r = val::object();
   r.set("error", o.error);
@@ -75,6 +91,9 @@ val solveMagnetostatic(val in) {
   r.set("iterations", o.iterations);
   r.set("At", toTyped(o.At, "Float64Array"));
   r.set("times", toTyped(o.times, "Float64Array"));
+  r.set("nodeV", toTyped(o.nodeV, "Float64Array"));
+  r.set("elI", toTyped(o.elI, "Float64Array"));
+  r.set("coilLambda", toTyped(o.coilLambda, "Float64Array"));
   return r;
 }
 }  // namespace

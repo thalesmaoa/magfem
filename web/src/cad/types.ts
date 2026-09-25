@@ -244,6 +244,38 @@ export interface ViewNode {
   legend?: LegendLayout;
 }
 
+/** Circuito externo (esquemático): componentes ligados por fios; bobinas = circuitos do FEM. */
+export type PartKind = 'V' | 'I' | 'R' | 'L' | 'C' | 'coil' | 'gnd';
+export interface SchPart {
+  id: Id;
+  kind: PartKind;
+  name: string;
+  x: number;
+  y: number;
+  rot: 0 | 90 | 180 | 270;
+  /** R (Ω), L (H), C (F): valor (expressão). */
+  value?: string;
+  /** Fontes: amplitude (V ou A), frequência (Hz), fase (graus) e nível CC. */
+  amp?: string;
+  freq?: string;
+  phase?: string;
+  dc?: string;
+  /** Bobina: circuito do FEM representado. */
+  circuit?: Id;
+}
+export interface SchWire {
+  id: Id;
+  a: { part: Id; pin: number };
+  b: { part: Id; pin: number };
+}
+export interface SchematicNode {
+  id: Id;
+  kind: 'schematic';
+  name: string;
+  parts: SchPart[];
+  wires: SchWire[];
+}
+
 /** Itens de uma tabela de resultados. */
 export type TableItem = 'circuits' | 'lineint' | 'surfint' | 'formula';
 export const TABLE_ITEMS: TableItem[] = ['circuits', 'lineint', 'surfint', 'formula'];
@@ -257,7 +289,7 @@ export interface TableNode {
 }
 
 /** Nós que o usuário inclui na árvore (o Pré-processador/Geometria é fixo). */
-export type TreeNode = PhysicsNode | MeshNode | PostNode | ViewNode | TableNode;
+export type TreeNode = PhysicsNode | MeshNode | PostNode | ViewNode | TableNode | SchematicNode;
 
 export const newPhysics = (id: Id, name: string): PhysicsNode => ({
   id,

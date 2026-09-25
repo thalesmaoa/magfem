@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { evaluate, evaluateVariables, formatLength, formatQ } from '../cad/expr';
-import { addNode, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
+import { addNode, addSchematic, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
 import { MeshProps, MeshTree } from './MeshPanel';
 import { InterpSection, PlotProps, TableItemProps, ResultsProps, ResultsTree, SolveButton, SolveSection } from './PostPanel';
 import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type TreeNode } from '../cad/types';
@@ -16,7 +16,7 @@ import { GeometryProps } from './GeometryProps';
 import { useDocVersion, useEditor } from './useStore';
 import { ScriptExportButton } from './ScriptExport';
 
-const ICON: Record<string, JSX.Element> = { pre: Icons.treePre, geometry: Icons.treeGeom, physics: Icons.treePhysics, mesh: Icons.treeMesh, post: Icons.treePost };
+const ICON: Record<string, JSX.Element> = { pre: Icons.treePre, geometry: Icons.treeGeom, physics: Icons.treePhysics, mesh: Icons.treeMesh, post: Icons.treePost, schematic: Icons.circuit };
 /** Ícone de cada tipo de restrição na árvore (reaproveita os da barra). */
 const CONSTRAINT_ICON: Record<ConstraintType, keyof typeof Icons> = {
   coincident: 'coincident',
@@ -43,6 +43,40 @@ const CONSTRAINT_ICON: Record<ConstraintType, keyof typeof Icons> = {
 };
 const isAux = (e: Entity) => (e.type === 'point' || e.type === 'line') && !!e.aux;
 const ENT_ICON: Record<Entity['type'], JSX.Element> = { point: Icons.point, line: Icons.line, circle: Icons.circle, arc: Icons.arc3 };
+
+/** (+) de Modelo: inclui peças de nível do modelo (por enquanto, o circuito externo). */
+function ModelAddMenu({ ed, onAdded }: { ed: SketchEditor; onAdded: (id: string) => void }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, [open]);
+  return (
+    <div className="add-menu" ref={ref}>
+      <button className="icon-btn tadd" title={t.sch.add} aria-label={t.sch.add} aria-expanded={open} onClick={() => setOpen(!open)}>
+        +
+      </button>
+      {open && (
+        <div className="menu" role="menu">
+          <button
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              const r = addSchematic(ed.sketch);
+              if (ed.commit(r.sketch, [r.code])) onAdded(r.node.id);
+            }}
+          >
+            <span className="ticon">{Icons.circuit}</span> {t.sch.name}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** (+) de uma seção da árvore: inclui os tipos de nó daquela seção. */
 function AddMenu({ ed, kinds, label, onAdded }: { ed: SketchEditor; kinds: AddKind[]; label: string; onAdded: (id: string) => void }) {
@@ -573,7 +607,10 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
       <section className="tree">
         <h3 className="tree-title">
           {t.tree.title}
-          <ScriptExportButton ed={ed} name={name} />
+          <span className="tree-actions">
+            <ModelAddMenu ed={ed} onAdded={(id) => onSelect({ kind: 'node', id })} />
+            <ScriptExportButton ed={ed} name={name} />
+          </span>
         </h3>
         <ul role="tree">
           <li>
@@ -602,6 +639,18 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
             />
             {geoOpen && <GeometryTree ed={ed} sel={sel} onSelect={onSelect} />}
           </li>
+          {nodes.some((n) => n.kind === 'schematic') && (
+            <li>
+              <Row icon={Icons.circuit} label={t.sch.section} selected={false} onClick={() => undefined} />
+              <ul role="group">
+                {nodes
+                  .filter((n) => n.kind === 'schematic')
+                  .map((n) => (
+                    <NodeRow key={n.id} ed={ed} node={n} active={isOn(n.id)} onSelect={() => onSelect({ kind: 'node', id: n.id })} onTreeSelect={onSelect} />
+                  ))}
+              </ul>
+            </li>
+          )}
           {(
             [
               { key: 'mesh', icon: ICON.mesh, label: t.tree.addMesh, kinds: ['mesh'], add: t.tree.addToMesh, match: (n: TreeNode) => n.kind === 'mesh' },
@@ -664,6 +713,15 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
         {isMeshSel(sel, ed.sketch) && <MeshProps ed={ed} sel={sel} onSelect={onSelect} />}
         {current && current.kind === 'post' && !current.item && <PlotProps ed={ed} node={current} />}
         {current && current.kind === 'post' && current.item && <TableItemProps ed={ed} node={current} />}
+        {current?.kind === 'schematic' && (
+          <div className="props-body">
+            <section>
+              <h3>{current.name}</h3>
+              <p className="help-line">{t.sch.help}</p>
+              <p className="help-line">{t.sch.coupledNote}</p>
+            </section>
+          </div>
+        )}
         {current?.kind === 'table' && <ResultsProps ed={ed} id={current.physics} onSelect={onSelect} />}
         {sel.kind === 'results' && <ResultsProps ed={ed} id={sel.id} onSelect={onSelect} />}
         {current?.kind === 'view' && <InterpSection ed={ed} view={current} />}

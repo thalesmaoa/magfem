@@ -24,10 +24,10 @@ import {
   ungroup,
   updateGroup,
 } from './ops';
-import { addNode, addPlot, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
+import { addNode, addPlot, addSchematic, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { TABLE_ITEMS, type TableItem, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
 import { addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
@@ -1028,6 +1028,66 @@ export class CommandConsole {
         const r = addTableItem(sk, String(a[0]), kind, kw.name ? String(kw.name) : T().table.items[kind]);
         return this.commitWithId(r.sketch, r.node.id, kw.id);
       }
+      // ----- circuito externo (esquemático) -----
+      case 'sch_add': {
+        const r = addSchematic(sk, kw.name ? String(kw.name) : undefined);
+        // Script exportado: sem blocos automáticos (eles vêm pelos c.part com id).
+        const node = r.node as SchematicNode;
+        const base = kw.empty === true ? { ...r.sketch, nodes: r.sketch.nodes.map((n) => (n.id === node.id ? { ...node, parts: [] } : n)) } : r.sketch;
+        return this.commitWithId(base, node.id, kw.id);
+      }
+      case 'sch_part': {
+        need(2);
+        const sch = sk.nodes.find((n): n is SchematicNode => n.id === String(a[0]) && n.kind === 'schematic');
+        if (!sch) throw new ConsoleError(t.notFound(String(a[0])));
+        const kind = String(a[1]) as SchPart['kind'];
+        const id = kw.id ? String(kw.id) : `sp${sk.nextId}`;
+        const part: SchPart = { id, kind, name: kw.name ? String(kw.name) : id, x: Number(kw.x ?? 200), y: Number(kw.y ?? 200), rot: (Number(kw.rot ?? 0) % 360) as SchPart['rot'] };
+        for (const k of ['value', 'amp', 'freq', 'phase', 'dc', 'circuit'] as const) if (kw[k] !== undefined && kw[k] !== null) part[k] = String(kw[k]);
+        const m = /^[a-z]+(\d+)$/.exec(id);
+        this.commit({ ...updateNode(sk, sch.id, { parts: [...sch.parts.filter((p) => p.id !== id), part] }), nextId: Math.max(sk.nextId + 1, m ? Number(m[1]) + 1 : 0) });
+        return id;
+      }
+      case 'sch_wire': {
+        need(3);
+        const sch = sk.nodes.find((n): n is SchematicNode => n.id === String(a[0]) && n.kind === 'schematic');
+        if (!sch) throw new ConsoleError(t.notFound(String(a[0])));
+        const end = (v: Value) => {
+          const s2 = seq(v) ?? [];
+          return { part: String(s2[0]), pin: Number(s2[1] ?? 0) };
+        };
+        const id = kw.id ? String(kw.id) : `sw${sk.nextId}`;
+        const m = /^[a-z]+(\d+)$/.exec(id);
+        this.commit({ ...updateNode(sk, sch.id, { wires: [...sch.wires, { id, a: end(a[1]), b: end(a[2]) }] }), nextId: Math.max(sk.nextId + 1, m ? Number(m[1]) + 1 : 0) });
+        return id;
+      }
+      case 'sch_set':
+      case 'sch_move':
+      case 'sch_rotate':
+      case 'sch_remove': {
+        need(1);
+        const pid = String(a[0]);
+        const sch = sk.nodes.find((n): n is SchematicNode => n.kind === 'schematic' && (n.parts.some((p) => p.id === pid) || n.wires.some((w) => w.id === pid)));
+        if (!sch) throw new ConsoleError(t.notFound(pid));
+        let parts = sch.parts, wires = sch.wires;
+        if (fn === 'sch_remove') {
+          parts = parts.filter((p) => p.id !== pid);
+          wires = wires.filter((w) => w.id !== pid && w.a.part !== pid && w.b.part !== pid);
+        } else
+          parts = parts.map((p) => {
+            if (p.id !== pid) return p;
+            if (fn === 'sch_rotate') return { ...p, rot: ((p.rot + 90) % 360) as SchPart['rot'] };
+            if (fn === 'sch_move') {
+              const xy2 = this.xy(a[1]);
+              return { ...p, x: xy2.x, y: xy2.y };
+            }
+            const q2: SchPart = { ...p };
+            for (const k of ['value', 'amp', 'freq', 'phase', 'dc', 'circuit', 'name'] as const) if (kw[k] !== undefined && kw[k] !== null) q2[k] = String(kw[k]);
+            return q2;
+          });
+        this.commit(updateNode(sk, sch.id, { parts, wires }));
+        return null;
+      }
       case 'duplicate': {
         need(1);
         const r = duplicateNode(sk, String(a[0]));
@@ -1122,7 +1182,7 @@ export class CommandConsole {
  * Objetos da API (também aparecem na árvore): g = Geometria (d é apelido), m = Malha,
  * s = Solucionador, r = Resultados. Sem objeto, vale como geometria (atalho do console).
  */
-export const NAMESPACES = ['g', 'd', 'm', 's', 'r'] as const;
+export const NAMESPACES = ['g', 'd', 'm', 's', 'r', 'c'] as const;
 
 /** Método do objeto → comando interno. */
 function resolveMethod(obj: string | null, fn: string): string {
@@ -1130,10 +1190,20 @@ function resolveMethod(obj: string | null, fn: string): string {
   if (obj === 'm') return fn === 'add' ? 'add_mesh' : fn;
   if (obj === 'r') return fn === 'add' ? 'add_post' : fn === 'show' ? 'post_show' : fn;
   if (obj === 's') return fn === 'add' ? 'add_physics' : fn; // e comandos de geometria antigos com s. (compatibilidade)
+  if (obj === 'c') return `sch_${fn}`;
   throw new ConsoleError(T().consoleCmd.unknownObject(obj));
 }
 
 const NODE_METHODS = {
+  c: {
+    add: 'add(name="Circuito 1")',
+    part: 'part("n5", "V" | "I" | "R" | "L" | "C" | "gnd" | "coil", x=200, y=120, rot=90, value="10", amp="10", freq="50", phase="0", dc="0", circuit="c3")',
+    wire: 'wire("n5", ("sp7", 1), ("sp8", 0))',
+    set: 'set("sp7", value="0.5", name="R1")',
+    move: 'move("sp7", (240, 120))',
+    rotate: 'rotate("sp7")',
+    remove: 'remove("sp7")',
+  },
   m: {
     add: 'add(name="Malha")',
     rename: 'rename("n1", "fina")',
@@ -1261,12 +1331,12 @@ export function completions(sk: Sketch, env: Map<string, Value>, before: string)
     for (const n of sk.nodes) push(n.id, `${n.kind} · ${n.name}`);
     return { start: qi + 1, items: items.slice(0, 60) };
   }
-  const m = /(?:\b([gdmsr])\.)?([A-Za-z_][A-Za-z0-9_]*)?$/.exec(before)!;
+  const m = /(?:\b([gdmsrc])\.)?([A-Za-z_][A-Za-z0-9_]*)?$/.exec(before)!;
   const word = m[2] ?? '';
   const start = before.length - word.length;
   if (m[1]) {
     const ns = m[1];
-    const table: Record<string, string> = ns === 'g' || ns === 'd' ? API_SIGNATURES : NODE_METHODS[ns as 'm' | 's' | 'r'];
+    const table: Record<string, string> = ns === 'g' || ns === 'd' ? API_SIGNATURES : NODE_METHODS[ns as 'm' | 's' | 'r' | 'c'];
     const items = Object.entries(table)
       .filter(([k]) => k.startsWith(word))
       .map(([k, sig]) => ({ insert: `${k}(`, label: k, detail: `${ns}.${sig}` }));
@@ -1274,7 +1344,7 @@ export function completions(sk: Sketch, env: Map<string, Value>, before: string)
   }
   if (!word) return { start, items: [] };
   const items: Completion[] = [];
-  const nsInfo: Record<string, string> = { g: T().tree.geometry, m: T().tree.addMesh, s: T().tree.solver, r: T().tree.results };
+  const nsInfo: Record<string, string> = { g: T().tree.geometry, m: T().tree.addMesh, s: T().tree.solver, r: T().tree.results, c: T().sch.section };
   for (const [k, info] of Object.entries(nsInfo)) if (k.startsWith(word) && word.length <= 1) items.push({ insert: `${k}.`, label: k, detail: info });
   for (const [k, sig] of Object.entries(GLOBAL_FUNCS)) if (k.startsWith(word)) items.push({ insert: `${k}(`, label: k, detail: sig });
   // Os comandos também funcionam sem o "s." (atalho do console).

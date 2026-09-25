@@ -5,11 +5,13 @@ import { download } from '../io/export';
 import { useT } from '../i18n';
 import { LogToggles, setChartLog, useChartLog } from './CanvasTabs';
 import { Icons } from './icons';
+import { addPart } from './SchematicPane';
 import { useEditor } from './useStore';
 
 export function TabToolbar({ ed, tab, name }: { ed: SketchEditor; tab: string; name: string }) {
   if (tab.startsWith('view:')) return <ViewToolbar ed={ed} name={name} />;
   if (tab.startsWith('chart:') || tab.startsWith('bh:')) return <ChartToolbar tab={tab} />;
+  if (tab.startsWith('sch:')) return <SchToolbar ed={ed} id={tab.slice(4)} />;
   return <div className="toolbar" />;
 }
 
@@ -85,6 +87,32 @@ function ViewToolbar({ ed, name }: { ed: SketchEditor; name: string }) {
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+/** Paleta do esquemático: fontes, R, L, C, terra e as bobinas do FEM ainda não colocadas. */
+function SchToolbar({ ed, id }: { ed: SketchEditor; id: string }) {
+  const t = useT();
+  useEditor(ed);
+  const sch = ed.sketch.nodes.find((n) => n.id === id && n.kind === 'schematic');
+  const placed = new Set(sch?.kind === 'schematic' ? sch.parts.filter((p) => p.kind === 'coil').map((p) => p.circuit) : []);
+  const kinds = ['V', 'I', 'R', 'L', 'C', 'gnd'] as const;
+  return (
+    <div className="toolbar tab-toolbar">
+      {kinds.map((k) => (
+        <button key={k} className="btn secondary" title={t.sch.parts[k]} onClick={() => addPart(ed, id, k)}>
+          {t.sch.parts[k]}
+        </button>
+      ))}
+      <span className="sep" />
+      {ed.sketch.circuits
+        .filter((c) => !placed.has(c.id))
+        .map((c) => (
+          <button key={c.id} className="btn secondary" onClick={() => addPart(ed, id, 'coil', c.id)}>
+            {t.sch.addCoil(c.name)}
+          </button>
+        ))}
     </div>
   );
 }

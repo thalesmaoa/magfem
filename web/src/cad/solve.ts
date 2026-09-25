@@ -33,6 +33,21 @@ export interface MagInput {
   freq?: number;
   dt?: number;
   steps?: number;
+  /** Circuito externo acoplado (ver core/src/magstatic.h). */
+  netNodes?: number;
+  elType?: number[];
+  elA?: number[];
+  elB?: number[];
+  elCoil?: number[];
+  elValue?: number[];
+  elFreq?: number[];
+  elPhase?: number[];
+  elDC?: number[];
+  coilStart?: number[];
+  coilRegion?: number[];
+  coilTurns?: number[];
+  coilR?: number[];
+  depth?: number;
 }
 
 export interface Solution {
@@ -64,6 +79,8 @@ export interface Solution {
   times?: Float64Array;
   freq?: number;
   jPhase?: number[];
+  /** Circuito externo acoplado: tensões de nó e correntes de elemento por passo. */
+  circuit?: { schematic: Id; nodeV: Float64Array; elI: Float64Array; netNodes: number; partOf: Id[]; nodeOf: Map<string, number> };
   /** Quadro derivado: a solução transitória de origem e o índice do passo. */
   frameOf?: Solution;
   frame?: number;

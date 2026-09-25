@@ -1,7 +1,7 @@
 // Árvore do modelo: Pré-processador (Geometria + físicas), Malha e Pós-processador.
 import { T } from '../i18n';
 import { q } from './code';
-import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type Sketch, type TableItem, type TreeNode } from './types';
+import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type SchPart, type Sketch, type TableItem, type TreeNode } from './types';
 
 export type AddKind = 'physics-magnetic' | 'mesh' | 'post';
 
@@ -120,4 +120,14 @@ export function removeNode(sk: Sketch, id: Id): Sketch {
 }
 
 /** Objeto da API de cada seção da árvore: g (geometria), m (malha), s (solucionador), r (resultados). */
-export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r', table: 'r' };
+export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r', table: 'r', schematic: 'c' };
+
+/** Novo circuito externo: já traz um bloco por circuito do FEM (bobinas), lado a lado. */
+export function addSchematic(sk: Sketch, name?: string): { sketch: Sketch; node: TreeNode; code: string } {
+  const id = `n${sk.nextId}`;
+  let next = sk.nextId + 1;
+  const parts: SchPart[] = sk.circuits.map((c, i) => ({ id: `sp${next++}`, kind: 'coil', name: c.name, x: 360, y: 120 + i * 140, rot: 90, circuit: c.id }));
+  const n = name ?? `${T().sch.name} ${sk.nodes.filter((x) => x.kind === 'schematic').length + 1}`;
+  const node: TreeNode = { id, kind: 'schematic', name: n, parts, wires: [] };
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: next }, node, code: `${id} = c.add(name=${q(n)})` };
+}

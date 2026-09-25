@@ -24,6 +24,7 @@ import { setDrawer, useDrawer } from './ui/drawerStore';
 import { activateTab, openTab, pruneTabs, useTabs } from './ui/tabsStore';
 import { CanvasTabBar, ChartPane, LegendModal } from './ui/CanvasTabs';
 import { TabToolbar } from './ui/TabToolbar';
+import { SchematicPane } from './ui/SchematicPane';
 import { chartImage, chartSVG, tabCSV } from './ui/chartExport';
 import { Toolbar } from './ui/Toolbar';
 import { LazyInput } from './ui/common';
@@ -74,6 +75,7 @@ export default function App() {
     const node = treeSel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === treeSel.id) : undefined;
     const view =
       node?.kind === 'view' ? node.id : node?.kind === 'post' && !node.item ? node.view : treeSel.kind === 'results' ? ed.sketch.nodes.find((n) => n.kind === 'view' && n.physics === treeSel.id)?.id : undefined;
+    if (node?.kind === 'schematic') return openTab({ kind: 'sch', id: node.id });
     // Tabela de resultados (ou item dela): aba da tabela.
     const table = node?.kind === 'table' ? node.id : node?.kind === 'post' && node.item ? node.view : undefined;
     if (table) openTab({ kind: 'table', id: table });
@@ -85,7 +87,7 @@ export default function App() {
   useEffect(() => {
     if (!ed) return;
     pruneTabs((t) =>
-      t.kind === 'view' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'view') : t.kind === 'chart' ? ed.sketch.nodes.some((n) => n.id === t.plot) : t.kind === 'bh' ? ed.sketch.materials.some((m) => m.id === t.material && m.bh) : t.kind === 'circuits' ? ed.sketch.nodes.some((n) => n.id === t.physics) : t.kind === 'table' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'table') : true,
+      t.kind === 'view' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'view') : t.kind === 'chart' ? ed.sketch.nodes.some((n) => n.id === t.plot) : t.kind === 'bh' ? ed.sketch.materials.some((m) => m.id === t.material && m.bh) : t.kind === 'circuits' ? ed.sketch.nodes.some((n) => n.id === t.physics) : t.kind === 'table' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'table') : t.kind === 'sch' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'schematic') : true,
     );
   }, [ed, version]);
   const activeView = tabs.active.startsWith('view:') ? tabs.active.slice(5) : null;
@@ -274,6 +276,11 @@ export default function App() {
             <canvas ref={canvasRef} className="sketch" tabIndex={0} />
             {ed && (tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:') || tabs.active.startsWith('circuits:') || tabs.active.startsWith('table:')) && <ChartPane ed={ed} tab={tabs.active} />}
             {ed && <LegendModal ed={ed} />}
+            {ed && tabs.active.startsWith('sch:') && (
+              <div className="chart-pane sch-host">
+                <SchematicPane ed={ed} id={tabs.active.slice(4)} />
+              </div>
+            )}
             {ed && <DimInput ed={ed} />}
             {ready !== 'ok' && <div className="overlay">{ready === 'loading' ? t.app.loading : ready}</div>}
             {ed && <StageOverlay ed={ed} sel={treeSel} />}

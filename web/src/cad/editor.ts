@@ -38,7 +38,8 @@ import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './m
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
 import { buildMagInput, depthOf, frameOf, smoothSolution, typicalSize, type Solution } from './solve';
-import type { LegendLayout, PostNode } from './types';
+import type { LegendLayout, PostNode, SchematicNode } from './types';
+import { buildNetlist } from './schematic';
 import { addNode } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
@@ -350,6 +351,7 @@ export class SketchEditor {
     const key = this.solveKey();
     const { input, problems } = buildMagInput(this.sketch, this.arrangement(), mesh, this.defaultOuter());
     if (problems.length) return fail(problems.join(' · '));
+    let netInfo: { schematic: Id; partOf: Id[]; nodeOf: Map<string, number>; netNodes: number } | null = null;
     // Transitório: fonte senoidal na frequência da física, passo dt até t_final (A(0) = 0).
     if (node.analysis === 'transient') {
       try {
@@ -362,6 +364,21 @@ export class SketchEditor {
         input.steps = Math.min(2000, Math.round(tEnd / dt));
       } catch (e) {
         return fail((e as Error).message);
+      }
+      // Circuito externo: acopla as bobinas do esquemático (a corrente delas vem do circuito).
+      const schem = this.sketch.nodes.find((n): n is SchematicNode => n.kind === 'schematic' && n.parts.length > 0);
+      if (schem) {
+        const arr = this.arrangement();
+        const { net, problems: np } = buildNetlist(this.sketch, schem, arr);
+        if (!net) return fail(np.join(' · '));
+        for (const a of this.sketch.regionAssigns) {
+          if (!a.circuit || !net.coupledCircuits.has(a.circuit)) continue;
+          const r = findRegion(arr, a);
+          if (r) input.J[r.index] = 0;
+        }
+        const { partOf: _p, nodeOf: _n, coupledCircuits: _c, ...fields } = net;
+        Object.assign(input, fields);
+        netInfo = { schematic: schem.id, partOf: net.partOf, nodeOf: net.nodeOf, netNodes: net.netNodes };
       }
     }
     const t0 = performance.now();
@@ -395,6 +412,7 @@ export class SketchEditor {
         times: out.times.length ? out.times : undefined,
         freq: input.freq,
         jPhase: input.jPhase,
+        circuit: netInfo && out.nodeV ? { ...netInfo, nodeV: out.nodeV, elI: out.elI } : undefined,
       });
       this.postFrame = out.times.length ? out.times.length - 1 : 0;
       this.shownSolution = id;

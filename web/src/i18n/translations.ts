@@ -502,6 +502,30 @@ export interface Translations {
     surf: { area: string; volume: string; current: string; energy: string; bAvg: string; b2: string; bmean: string; intA: string };
     empty: string;
   };
+  sch: {
+    name: string;
+    section: string;
+    add: string;
+    parts: Record<'V' | 'I' | 'R' | 'L' | 'C' | 'coil' | 'gnd', string>;
+    value: Record<'R' | 'L' | 'C', string>;
+    amp: Record<'V' | 'I', string>;
+    freq: string;
+    phase: string;
+    dc: string;
+    rotate: string;
+    del: string;
+    wireHint: string;
+    noGround: string;
+    floating: (name: string) => string;
+    coilMissing: string;
+    addCoil: (name: string) => string;
+    selectHint: string;
+    signals: string;
+    current: string;
+    voltage: string;
+    coupledNote: string;
+    help: string;
+  };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
   expr: {
     badNumber: (s: string) => string;
@@ -1095,6 +1119,30 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     line: { length: 'Comprimento', flux: 'Fluxo Φ', intB: '∫|B| dl', intBn: '∫B·n dl', mmf: '∫H·dl (FMM)', bAvg: '|B| médio' },
     surf: { area: 'Área', volume: 'Volume', current: 'Corrente ∫J dA', energy: 'Energia ½∫B·H dV', bAvg: '|B| médio', b2: '∫|B|² dV', bmean: 'B médio (x, y)', intA: '∫A dS' },
     empty: 'Tabela vazia: use o + para incluir circuitos ou integrais.',
+  },
+  sch: {
+    name: 'Circuito',
+    section: 'Circuitos externos',
+    add: 'Incluir no modelo',
+    parts: { V: 'Fonte de tensão', I: 'Fonte de corrente', R: 'Resistor', L: 'Indutor', C: 'Capacitor', coil: 'Bobina (FEM)', gnd: 'Terra' },
+    value: { R: 'Resistência (Ω)', L: 'Indutância (H)', C: 'Capacitância (F)' },
+    amp: { V: 'Amplitude (V)', I: 'Amplitude (A)' },
+    freq: 'Frequência (Hz)',
+    phase: 'Fase (°)',
+    dc: 'Nível CC',
+    rotate: 'Girar (R)',
+    del: 'Apagar (Del)',
+    wireHint: 'Arraste os blocos; clique num terminal e depois em outro para ligar com um fio.',
+    noGround: 'O circuito precisa de um Terra.',
+    floating: (n) => `${n}: terminal solto (ligue os dois terminais).`,
+    coilMissing: 'Bobina sem circuito do FEM.',
+    addCoil: (n) => `Bobina: ${n}`,
+    selectHint: 'Clique num componente para editar; depois de resolver (transitório), mostra i(t) e v(t).',
+    signals: 'Sinais',
+    current: 'Corrente (A)',
+    voltage: 'Tensão (V)',
+    coupledNote: 'No transitório, as bobinas do esquemático recebem a corrente do circuito (acoplamento campo–circuito).',
+    help: 'Componentes: fontes senoidais A·sen(2πft + φ) + CC, R, L, C, Terra e as bobinas do FEM (uma por circuito da Malha).',
   },
   hist: {
     title: 'Histórico',
@@ -1695,6 +1743,30 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     line: { length: 'Length', flux: 'Flux Φ', intB: '∫|B| dl', intBn: '∫B·n dl', mmf: '∫H·dl (MMF)', bAvg: 'Mean |B|' },
     surf: { area: 'Area', volume: 'Volume', current: 'Current ∫J dA', energy: 'Energy ½∫B·H dV', bAvg: 'Mean |B|', b2: '∫|B|² dV', bmean: 'Mean B (x, y)', intA: '∫A dS' },
     empty: 'Empty table: use + to add circuits or integrals.',
+  },
+  sch: {
+    name: 'Circuit',
+    section: 'External circuits',
+    add: 'Add to model',
+    parts: { V: 'Voltage source', I: 'Current source', R: 'Resistor', L: 'Inductor', C: 'Capacitor', coil: 'Coil (FEM)', gnd: 'Ground' },
+    value: { R: 'Resistance (Ω)', L: 'Inductance (H)', C: 'Capacitance (F)' },
+    amp: { V: 'Amplitude (V)', I: 'Amplitude (A)' },
+    freq: 'Frequency (Hz)',
+    phase: 'Phase (°)',
+    dc: 'DC level',
+    rotate: 'Rotate (R)',
+    del: 'Delete (Del)',
+    wireHint: 'Drag the blocks; click a terminal and then another to connect with a wire.',
+    noGround: 'The circuit needs a Ground.',
+    floating: (n) => `${n}: loose terminal (connect both terminals).`,
+    coilMissing: 'Coil without an FEM circuit.',
+    addCoil: (n) => `Coil: ${n}`,
+    selectHint: 'Click a component to edit; after solving (transient) it shows i(t) and v(t).',
+    signals: 'Signals',
+    current: 'Current (A)',
+    voltage: 'Voltage (V)',
+    coupledNote: 'In transient analysis, schematic coils take the circuit current (field–circuit coupling).',
+    help: 'Parts: sinusoidal sources A·sin(2πft + φ) + DC, R, L, C, Ground and the FEM coils (one per Mesh circuit).',
   },
   hist: {
     title: 'History',

@@ -166,6 +166,19 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
     if (kw.length) add(`r.show(${q(p.id)}, ${kw.join(', ')})`);
   }
 
+  // Circuitos externos (esquemáticos): componentes e fios com os mesmos ids.
+  for (const node of sk.nodes) {
+    if (node.kind !== 'schematic') continue;
+    add(`\n# Circuito externo: ${node.name}`);
+    add(`c.add(name=${q(node.name)}, id=${q(node.id)}, empty=True)`);
+    for (const p of node.parts) {
+      const kw = [`id=${q(p.id)}`, `name=${q(p.name)}`, `x=${n(p.x)}`, `y=${n(p.y)}`, `rot=${p.rot}`];
+      for (const k of ['value', 'amp', 'freq', 'phase', 'dc', 'circuit'] as const) if (p[k] !== undefined) kw.push(`${k}=${q(p[k]!)}`);
+      add(`c.part(${q(node.id)}, ${q(p.kind)}, ${kw.join(', ')})`);
+    }
+    for (const w of node.wires) add(`c.wire(${q(node.id)}, (${q(w.a.part)}, ${w.a.pin}), (${q(w.b.part)}, ${w.b.pin}), id=${q(w.id)})`);
+  }
+
   add('\n# Contador de ids (para novos itens seguirem a mesma numeração do original)');
   add(`g.next_id(${sk.nextId})`);
   add('\n# Para calcular: m.generate() e s.solve()');
