@@ -116,7 +116,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       add(`m.settings(${q(node.id)}, size=${node.size?.trim() ? q(node.size) : '"auto"'}, min_angle=${n(node.minAngle ?? 30)})`);
     } else if (node.kind === 'physics') {
       add(`s.add_physics(name=${q(node.name)}, id=${q(node.id)})`);
-      add(`s.physics(${q(node.id)}, analysis=${q(node.analysis)}, frequency=${q(node.frequency)}, dt=${q(node.dt)}, t_end=${q(node.tEnd)})`);
+      add(`s.physics(${q(node.id)}, analysis=${q(node.analysis)}, frequency=${q(node.frequency)}, dt=${q(node.dt)}, t_end=${q(node.tEnd)}${node.schematic ? `, schematic=${q(node.schematic)}` : ''})`);
     }
   }
   // Vistas e gráficos na ordem da árvore.

@@ -3,6 +3,7 @@
 //   Plano XY:        incógnita A_z;   B = (∂A/∂y, −∂A/∂x)
 //   Axissimétrico:   incógnita ψ = r·A_φ (x = r, y = z);  B_r = −(1/r) ∂ψ/∂z,  B_z = (1/r) ∂ψ/∂r
 // Unidades SI (coordenadas em metros). Ímãs pela remanência Br (vetor, T) com H = ν (B − Br).
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,14 @@ struct MagInput {
   std::vector<int> coilStart, coilRegion;
   std::vector<double> coilTurns, coilR;
   double depth = 1;
+
+  // Fontes por passo (definidas por funções do tempo, avaliadas fora do núcleo):
+  //   jSteps: J de cada região em cada passo (steps × regiões; substitui J·sen(ωt));
+  //   elSteps: valor de cada elemento-fonte do circuito em cada passo (steps × elementos).
+  std::vector<double> jSteps;
+  std::vector<double> elSteps;
+  // Progresso (passo feito, total) — chamado a cada passo do transitório e a cada iteração de Newton no estático.
+  std::function<void(int, int)> progress;
 };
 
 struct MagOutput {

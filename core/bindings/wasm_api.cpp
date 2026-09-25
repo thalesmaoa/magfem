@@ -81,6 +81,11 @@ val solveMagnetostatic(val in) {
     m.coilR = convertJSArrayToNumberVector<double>(in["coilR"]);
     m.depth = in["depth"].as<double>();
   }
+  if (has("jSteps")) m.jSteps = convertJSArrayToNumberVector<double>(in["jSteps"]);
+  if (has("elSteps")) m.elSteps = convertJSArrayToNumberVector<double>(in["elSteps"]);
+  // Progresso: chama a função JS (o Worker repassa à interface por postMessage).
+  val cb = in["onProgress"];
+  if (!cb.isUndefined() && !cb.isNull()) m.progress = [cb](int k, int n) mutable { cb(k, n); };
   magfem::MagOutput o = magfem::solve_magnetostatic(m);
   val r = val::object();
   r.set("error", o.error);

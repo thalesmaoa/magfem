@@ -16,7 +16,19 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
         res = { id: req.id, ok: true, result: m.poisson1dMax(req.n) };
         break;
       case 'solveMagnetostatic': {
-        const out = m.solveMagnetostatic(req.input);
+        // Progresso: o núcleo chama a cada passo; a mensagem chega à interface mesmo com o cálculo em andamento.
+        let last = 0;
+        const input = {
+          ...req.input,
+          onProgress: (k: number, n: number) => {
+            const now = performance.now();
+            if (k === n || now - last > 80) {
+              last = now;
+              self.postMessage({ id: req.id, progress: [k, n] });
+            }
+          },
+        };
+        const out = m.solveMagnetostatic(input);
         if (out.error) throw new Error(out.error);
         res = { id: req.id, ok: true, result: out };
         break;

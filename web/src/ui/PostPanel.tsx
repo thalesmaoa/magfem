@@ -113,8 +113,13 @@ export function SolveSection({ ed, node, onSelect }: { ed: SketchEditor; node: P
   return (
     <section>
       <button className="btn primary" disabled={ed.solveBusy !== null || ed.meshBusy !== null} onClick={() => void solveAndShow(ed, node.id, onSelect)}>
-        {ed.solveBusy === node.id ? t.solve.running : `▶ ${t.solve.run}`}
+        {ed.solveBusy === node.id ? `${t.solve.running} ${Math.round(ed.solveProgress * 100)}%` : `▶ ${t.solve.run}`}
       </button>
+      {ed.solveBusy === node.id && (
+        <div className="progress" role="progressbar" aria-valuenow={Math.round(ed.solveProgress * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <div style={{ width: `${Math.round(ed.solveProgress * 100)}%` }} />
+        </div>
+      )}
       {err && <p className="err-text">{err}</p>}
       {sol ? (
         <>

@@ -44,7 +44,7 @@ test('circuito externo: fonte + R + bobina do FEM acoplados no transitório (KVL
   await page.locator('.sch-side').getByLabel('Resistência (Ω)').fill('0.5');
   await page.locator('.sch-side').getByLabel('Resistência (Ω)').press('Enter');
 
-  await run('s.physics("n2", analysis="transient", frequency="50", dt="0.0001", t_end="0.02")');
+  await run('s.physics("n2", analysis="circuit", dt="0.0001", t_end="0.02")');
   await run('m.settings("n1", size="4 mm")');
   await run('s.solve()');
   await expect.poll(() => page.evaluate(() => !!([...(window as any).__magfem.solutions.values()][0]?.circuit)), { timeout: 30000 }).toBe(true);

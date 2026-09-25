@@ -9,5 +9,6 @@ export type WorkerRequest =
   | { id: number; cmd: 'solveMagnetostatic'; input: MagInput };
 
 export type WorkerResponse =
+  | { id: number; progress: [number, number] }
   | { id: number; ok: true; result: unknown }
   | { id: number; ok: false; error: string };

@@ -37,9 +37,9 @@ import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './
 import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
-import { buildMagInput, depthOf, frameOf, smoothSolution, typicalSize, type Solution } from './solve';
+import { buildMagInput, depthOf, frameOf, regionJ, smoothSolution, typicalSize, type Solution } from './solve';
 import type { LegendLayout, PostNode, SchematicNode } from './types';
-import { buildNetlist } from './schematic';
+import { buildNetlist, sourceSteps } from './schematic';
 import { addNode } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
@@ -259,6 +259,8 @@ export class SketchEditor {
   /** Soluções por nó de física (não salvas; recalculáveis). */
   solutions = new Map<Id, Solution & { key: string }>();
   solveBusy: Id | null = null;
+  /** Progresso do cálculo em andamento (0–1). */
+  solveProgress = 0;
   solveErrors = new Map<Id, string>();
   /** Solução mostrada no modo resultados e as camadas visíveis (na ordem da árvore). */
   shownSolution: Id | null = null;
@@ -352,38 +354,58 @@ export class SketchEditor {
     const { input, problems } = buildMagInput(this.sketch, this.arrangement(), mesh, this.defaultOuter());
     if (problems.length) return fail(problems.join(' · '));
     let netInfo: { schematic: Id; partOf: Id[]; nodeOf: Map<string, number>; netNodes: number } | null = null;
-    // Transitório: fonte senoidal na frequência da física, passo dt até t_final (A(0) = 0).
-    if (node.analysis === 'transient') {
+    // Transitório: correntes = funções de t (avaliadas a cada passo), passo dt até t_final (A(0) = 0).
+    // Transitória com circuito: além disso, o esquemático escolhido é acoplado ao campo.
+    if (node.analysis === 'transient' || node.analysis === 'circuit') {
+      const arr = this.arrangement();
+      let steps = 0, dt = 0;
       try {
         const { values } = evaluateVariables(this.sketch.variables, this.sketch.settings.unit);
         const ev = (e: string) => evaluate(e, { env: values, unit: this.sketch.settings.unit }).v;
-        const f = ev(node.frequency), dt = ev(node.dt), tEnd = ev(node.tEnd);
+        dt = ev(node.dt);
+        const tEnd = ev(node.tEnd);
         if (!(dt > 0) || !(tEnd > dt)) return fail(t.solve.badTime);
-        input.freq = f > 0 ? f : 0;
+        steps = Math.min(2000, Math.round(tEnd / dt));
         input.dt = dt;
-        input.steps = Math.min(2000, Math.round(tEnd / dt));
+        input.steps = steps;
+        input.freq = 0;
       } catch (e) {
         return fail((e as Error).message);
       }
-      // Circuito externo: acopla as bobinas do esquemático (a corrente delas vem do circuito).
-      const schem = this.sketch.nodes.find((n): n is SchematicNode => n.kind === 'schematic' && n.parts.length > 0);
-      if (schem) {
-        const arr = this.arrangement();
+      let coupled = new Set<Id>();
+      if (node.analysis === 'circuit') {
+        const schem = this.sketch.nodes.find((n): n is SchematicNode => n.kind === 'schematic' && (n.id === node.schematic || !node.schematic));
+        if (!schem || !schem.parts.length) return fail(t.solve.noSchematic);
         const { net, problems: np } = buildNetlist(this.sketch, schem, arr);
         if (!net) return fail(np.join(' · '));
-        for (const a of this.sketch.regionAssigns) {
-          if (!a.circuit || !net.coupledCircuits.has(a.circuit)) continue;
-          const r = findRegion(arr, a);
-          if (r) input.J[r.index] = 0;
-        }
+        coupled = net.coupledCircuits;
         const { partOf: _p, nodeOf: _n, coupledCircuits: _c, ...fields } = net;
         Object.assign(input, fields);
+        try {
+          input.elSteps = sourceSteps(this.sketch, schem, net.partOf, dt, steps);
+        } catch (e) {
+          return fail((e as Error).message);
+        }
         netInfo = { schematic: schem.id, partOf: net.partOf, nodeOf: net.nodeOf, netNodes: net.netNodes };
+      }
+      try {
+        const jSteps: number[] = [];
+        for (let k = 1; k <= steps; k++) jSteps.push(...regionJ(this.sketch, arr, k * dt, coupled));
+        input.jSteps = jSteps;
+        // J de referência (para os mapas de J por passo): o do último passo.
+        input.J = regionJ(this.sketch, arr, steps * dt, coupled);
+      } catch (e) {
+        return fail((e as Error).message);
       }
     }
     const t0 = performance.now();
     try {
-      const out = await solver.call<MagOut>({ cmd: 'solveMagnetostatic', input });
+      this.solveProgress = 0;
+      const out = await solver.call<MagOut>({ cmd: 'solveMagnetostatic', input }, (k, n) => {
+        this.solveProgress = n > 0 ? k / n : 0;
+        this.changed();
+      });
+      this.solveProgress = 1;
       const bmag = new Float64Array(out.bx.length);
       let bmax = 0;
       for (let i = 0; i < bmag.length; i++) {
@@ -412,6 +434,7 @@ export class SketchEditor {
         times: out.times.length ? out.times : undefined,
         freq: input.freq,
         jPhase: input.jPhase,
+        jSteps: input.jSteps,
         circuit: netInfo && out.nodeV ? { ...netInfo, nodeV: out.nodeV, elI: out.elI } : undefined,
       });
       this.postFrame = out.times.length ? out.times.length - 1 : 0;

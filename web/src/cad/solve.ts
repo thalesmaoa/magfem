@@ -33,6 +33,9 @@ export interface MagInput {
   freq?: number;
   dt?: number;
   steps?: number;
+  /** Fontes por passo: J das regiões (steps × regiões) e das fontes do circuito (steps × elementos). */
+  jSteps?: number[];
+  elSteps?: number[];
   /** Circuito externo acoplado (ver core/src/magstatic.h). */
   netNodes?: number;
   elType?: number[];
@@ -79,6 +82,8 @@ export interface Solution {
   times?: Float64Array;
   freq?: number;
   jPhase?: number[];
+  /** J de cada região em cada passo (transitório com correntes em função de t). */
+  jSteps?: number[];
   /** Circuito externo acoplado: tensões de nó e correntes de elemento por passo. */
   circuit?: { schematic: Id; nodeV: Float64Array; elI: Float64Array; netNodes: number; partOf: Id[]; nodeOf: Map<string, number> };
   /** Quadro derivado: a solução transitória de origem e o índice do passo. */
@@ -86,12 +91,38 @@ export interface Solution {
   frame?: number;
 }
 
-const num = (sk: Sketch, expr: string | undefined, def: number): number => {
-  if (!expr?.trim()) return def;
+/** Ambiente das expressões: variáveis do projeto + t (s, sem unidade). */
+export function envAt(sk: Sketch, t: number): Map<string, { v: number; L: number; A: number }> {
   const { values } = evaluateVariables(sk.variables, sk.settings.unit);
-  const q = evaluate(expr, { env: values, unit: sk.settings.unit });
-  return q.v;
+  const env = new Map(values);
+  env.set('t', { v: t, L: 0, A: 0 });
+  return env;
+}
+
+const num = (sk: Sketch, expr: string | undefined, def: number, env = envAt(sk, 0)): number => {
+  if (!expr?.trim()) return def;
+  return evaluate(expr, { env, unit: sk.settings.unit }).v;
 };
+
+/**
+ * J (A/m²) de cada região no instante t: corrente (da região ou do circuito, expressão que pode usar t)
+ * × espiras / área. Regiões de circuitos em `skip` ficam com J = 0 (a corrente vem do circuito externo).
+ */
+export function regionJ(sk: Sketch, arr: Arrangement, t: number, skip: Set<Id> = new Set()): number[] {
+  const env = envAt(sk, t);
+  const J = new Array<number>(arr.regions.length).fill(0);
+  const seen = new Set<number>();
+  for (const a of sk.regionAssigns) {
+    const r = findRegion(arr, a);
+    if (!r || seen.has(r.index) || !a.material) continue;
+    seen.add(r.index);
+    if (a.circuit && skip.has(a.circuit)) continue;
+    const circ = a.circuit ? sk.circuits.find((c) => c.id === a.circuit) : undefined;
+    const I = circ ? num(sk, circ.current, 0, env) : num(sk, a.current, 0, env);
+    if (I) J[r.index] = (I * (a.turns ?? 1)) / (Math.abs(r.area) * 1e-6);
+  }
+  return J;
+}
 
 /** Profundidade do problema plano (m). */
 export function depthOf(sk: Sketch): number {
@@ -794,7 +825,8 @@ export function frameOf(sol: Solution, k: number): Solution {
   }
   // J do passo (fonte senoidal) para mapas de J.
   const w = 2 * Math.PI * (sol.freq ?? 0);
-  const J = sol.J.map((j, r) => (w ? j * Math.sin(w * sol.times![i] + (sol.jPhase?.[r] ?? 0)) : j));
+  const nr = sol.J.length;
+  const J = sol.jSteps ? sol.J.map((_, r) => sol.jSteps![i * nr + r]) : sol.J.map((j, r) => (w ? j * Math.sin(w * sol.times![i] + (sol.jPhase?.[r] ?? 0)) : j));
   const f: Solution = { ...sol, A: new Float64Array(A), bx, by, bmag, bmax, J, At: undefined, times: undefined, frameOf: sol, frame: i };
   cache.set(i, f);
   return f;

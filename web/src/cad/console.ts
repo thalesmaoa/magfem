@@ -866,7 +866,7 @@ export class CommandConsole {
         need(1);
         const id = String(a[0]);
         const patch: Record<string, string> = {};
-        for (const k of ['analysis', 'frequency', 'dt']) if (kw[k] !== undefined) patch[k] = String(kw[k]);
+        for (const k of ['analysis', 'frequency', 'dt', 'schematic']) if (kw[k] !== undefined) patch[k] = String(kw[k]);
         if (kw.t_end !== undefined) patch.tEnd = String(kw.t_end);
         this.commit(updateNode(sk, id, patch));
         return null;

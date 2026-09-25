@@ -511,3 +511,10 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .sch-signals .xychart { max-height: 200px; }
 .sch-side p, .sch-side .muted { font-size: 12px; line-height: 1.4; }
 .dev-badge { font-size: 11px; font-weight: 600; color: #7a4b00; background: #ffd66b; border-radius: 10px; padding: 1px 8px; margin-right: 8px; white-space: nowrap; }
+.solve-progress { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; margin-right: 10px; color: var(--accent); white-space: nowrap; }
+.solve-progress .bar { width: 120px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: inline-block; }
+.solve-progress .fill { display: block; height: 100%; background: var(--accent); transition: width 0.15s; }
+.solve-progress .fill.indet { width: 40%; animation: indet 1s linear infinite; }
+@keyframes indet { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.progress { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 6px 0; }
+.progress > div { height: 100%; background: var(--accent); transition: width 0.15s; }

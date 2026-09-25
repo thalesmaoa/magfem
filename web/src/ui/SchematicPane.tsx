@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
-import { partSignal, pinsOf } from '../cad/schematic';
+import { partSignal, pinsOf, sourceExpr } from '../cad/schematic';
 import { updateNode } from '../cad/tree';
 import type { Id, PartKind, SchematicNode, SchPart, SchWire } from '../cad/types';
 import { T, useT } from '../i18n';
@@ -60,7 +60,7 @@ export function addPart(ed: SketchEditor, schId: Id, kind: PartKind, circuit?: I
     ...freeSpot(sch.parts),
     rot: kind === 'gnd' ? 0 : 90,
     ...(kind === 'R' ? { value: '10' } : kind === 'L' ? { value: '0.01' } : kind === 'C' ? { value: '1e-6' } : {}),
-    ...(kind === 'V' || kind === 'I' ? { amp: kind === 'V' ? '10' : '1', freq: '50', phase: '0', dc: '0' } : {}),
+    ...(kind === 'V' || kind === 'I' ? { value: kind === 'V' ? '10*sin(2*pi*50*t)' : '1*sin(2*pi*50*t)' } : {}),
     ...(circuit ? { circuit } : {}),
   };
   void t;
@@ -292,10 +292,15 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
             {(selPart.kind === 'R' || selPart.kind === 'L' || selPart.kind === 'C') && field(t.sch.value[selPart.kind], 'value')}
             {(selPart.kind === 'V' || selPart.kind === 'I') && (
               <>
-                {field(t.sch.amp[selPart.kind], 'amp')}
-                {field(t.sch.freq, 'freq')}
-                {field(t.sch.phase, 'phase')}
-                {field(t.sch.dc, 'dc')}
+                <label className="field">
+                  <span>{selPart.kind === 'V' ? t.sch.vt : t.sch.it}</span>
+                  <LazyInput
+                    value={sourceExpr(selPart)}
+                    ariaLabel={selPart.kind === 'V' ? t.sch.vt : t.sch.it}
+                    onCommit={(v) => setPart({ value: v.trim(), amp: undefined, freq: undefined, phase: undefined, dc: undefined }, `c.set(${q(selPart.id)}, value=${q(v.trim())})`)}
+                  />
+                </label>
+                <p className="help-line">{t.sch.srcHelp}</p>
               </>
             )}
             {selPart.kind === 'coil' && (

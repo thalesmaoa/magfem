@@ -34,11 +34,13 @@ test('não linear: núcleo de aço satura (|B| < 2,2 T) em vez dos ~4 T do linea
   expect(r.it).toBeGreaterThan(1);
 });
 
-test('transitório: corrente senoidal, barra de tempo e passos', async ({ page }) => {
-  const box = await coreModel(page, '1');
+test('transitório: corrente = função de t com variável (x*sin(2πft)), barra de tempo e progresso', async ({ page }) => {
+  const box = await coreModel(page, 'x*sin(2*pi*50*t)');
+  await box.fill('g.var("x", "0.01")');
+  await box.press('Enter');
   await page.getByRole('treeitem', { name: /Campo magnético/ }).first().click();
   await page.locator('.props label', { hasText: 'Análise' }).locator('select').selectOption('transient');
-  await box.fill('s.physics("n2", frequency="50", dt="0.001", t_end="0.02")');
+  await box.fill('s.physics("n2", dt="0.001", t_end="0.02")');
   await box.press('Enter');
   await page.locator('.props').getByRole('button', { name: '▶ Resolver' }).click();
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode), { timeout: 30000 }).toBe('post');
@@ -53,6 +55,17 @@ test('transitório: corrente senoidal, barra de tempo e passos', async ({ page }
   const b10 = await page.evaluate(() => (window as any).__magfem.shownSol().bmax);
   expect(b5).toBeGreaterThan(10 * b10);
   await expect(page.locator('.time-label')).toContainText('10/20');
+  // x dobrado (0,01 → 0,02, abaixo da saturação): o campo praticamente dobra.
+  const b5x1 = b5;
+  await box.fill('g.var("x", "0.02")');
+  await box.press('Enter');
+  await page.getByRole('treeitem', { name: /Campo magnético/ }).first().click();
+  await page.locator('.props').getByRole('button', { name: '▶ Resolver' }).click();
+  await expect.poll(() => page.evaluate(() => [...(window as any).__magfem.solutions.values()][0].key), { timeout: 30000 }).not.toBe('');
+  await slider.fill('4');
+  const b5x2 = await page.evaluate(() => (window as any).__magfem.shownSol().bmax);
+  expect(b5x2 / b5x1).toBeGreaterThan(1.9);
+  expect(b5x2 / b5x1).toBeLessThan(2.1);
 });
 
 test('curva B-H: arrastar um ponto muda B (e respeita os vizinhos)', async ({ page }) => {

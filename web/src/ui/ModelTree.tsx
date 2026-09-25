@@ -198,13 +198,33 @@ function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsN
             <option value="magnetostatic">{t.problem.magnetostatic}</option>
             <option value="harmonic">{t.problem.harmonic}</option>
             <option value="transient">{t.problem.transient}</option>
+            <option value="circuit">{t.problem.circuit}</option>
           </select>
         </label>
         {node.analysis === 'harmonic' && field(t.problem.frequency, 'frequency', 'frequency')}
-        {node.analysis === 'transient' && (
+        {(node.analysis === 'transient' || node.analysis === 'circuit') && (
           <>
             {field(t.problem.dt, 'dt', 'dt')}
             {field(t.problem.tEnd, 'tEnd', 't_end')}
+            {node.analysis === 'circuit' && (
+              <label className="field">
+                <span>{t.solve.schematic}</span>
+                <select
+                  aria-label={t.solve.schematic}
+                  value={node.schematic ?? sk.nodes.find((n) => n.kind === 'schematic')?.id ?? ''}
+                  onChange={(e) => set({ schematic: e.target.value } as Partial<PhysicsNode>, `s.physics(${q(node.id)}, schematic=${q(e.target.value)})`)}
+                >
+                  {sk.nodes
+                    .filter((n) => n.kind === 'schematic')
+                    .map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+            <p className="help-line">{t.solve.timeHelp}</p>
           </>
         )}
       </section>

@@ -5,6 +5,26 @@ import { depthOf } from './solve';
 import { findRegion, type Arrangement } from './regions';
 import type { Id, SchematicNode, SchPart, Sketch } from './types';
 
+/** Expressão da fonte em função de t: v(t)/i(t); partes antigas (amplitude, frequência, fase, CC) viram expressão. */
+export function sourceExpr(p: SchPart): string {
+  if (p.value?.trim()) return p.value;
+  const amp = p.amp?.trim() || '0', f = p.freq?.trim() || '50', ph = p.phase?.trim() || '0', dc = p.dc?.trim() || '0';
+  return `${amp}*sin(2*pi*${f}*t + (${ph})*pi/180) + ${dc}`;
+}
+
+/** Valores das fontes em cada passo (steps × elementos; zero nos não-fonte). */
+export function sourceSteps(sk: Sketch, sch: SchematicNode, partOf: Id[], dt: number, steps: number): number[] {
+  const out: number[] = [];
+  const parts = partOf.map((id) => sch.parts.find((p) => p.id === id)!);
+  const { values } = evaluateVariables(sk.variables, sk.settings.unit);
+  for (let k = 1; k <= steps; k++) {
+    const env = new Map(values);
+    env.set('t', { v: k * dt, L: 0, A: 0 });
+    for (const p of parts) out.push(p.kind === 'V' || p.kind === 'I' ? evaluate(sourceExpr(p), { env, unit: sk.settings.unit }).v : 0);
+  }
+  return out;
+}
+
 /** Terminais do componente (coordenadas do esquemático). Terra tem um terminal. */
 export function pinsOf(p: SchPart): { x: number; y: number }[] {
   const local = p.kind === 'gnd' ? [{ x: 0, y: -20 }] : [{ x: -40, y: 0 }, { x: 40, y: 0 }];

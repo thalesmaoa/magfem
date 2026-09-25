@@ -206,6 +206,7 @@ MagOutput solve_magnetostatic(const MagInput& in) {
     return a;
   };
 
+  int curStep = 0;  // passo atual do transitório (1..steps; 0 no estático)
   // Resíduo R(A) (graus livres) e, se pedido, o Jacobiano (tangente de Newton).
   Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
   bool analyzed = false;
@@ -221,7 +222,8 @@ MagOutput solve_magnetostatic(const MagInput& in) {
       double nuv, dnu;
       elemNu(e, b2, nuv, dnu);
       double J = regv(e.r, in.J, 0);
-      if (transient && in.freq > 0) J *= std::sin(TWO_PI * in.freq * time + regv(e.r, in.jPhase, 0));
+      if (!in.jSteps.empty() && curStep > 0 && e.r >= 0 && e.r < nr) J = in.jSteps[static_cast<size_t>(curStep - 1) * nr + e.r];
+      else if (transient && in.freq > 0) J *= std::sin(TWO_PI * in.freq * time + regv(e.r, in.jPhase, 0));
       const double brx = regv(e.r, in.brx, 0), bry = regv(e.r, in.bry, 0);
       const double sg = transient ? regv(e.r, in.sigma, 0) : 0;
       double re[3], ke[3][3];
@@ -266,6 +268,7 @@ MagOutput solve_magnetostatic(const MagInput& in) {
     const int maxIt = nonlinear ? std::max(1, in.maxIter) : 1;
     double r0 = -1;
     for (int it = 0; it < maxIt; ++it) {
+      if (in.progress && !transient) in.progress(it, maxIt);
       expand(a);
       assemble(time, true, R, &K);
       const double rn = R.norm();
@@ -345,13 +348,17 @@ MagOutput solve_magnetostatic(const MagInput& in) {
       for (int i = 0; i < nn; ++i) l += sK[k][i] * Av[i];
       return cScale * l;
     };
-    auto src = [&](int e, double time) { return in.elValue[e] * std::sin(TWO_PI * in.elFreq[e] * time + in.elPhase[e]) + in.elDC[e]; };
+    auto src = [&](int e, double time) {
+      if (!in.elSteps.empty()) return in.elSteps[static_cast<size_t>(curStep - 1) * ne + e];
+      return in.elValue[e] * std::sin(TWO_PI * in.elFreq[e] * time + in.elPhase[e]) + in.elDC[e];
+    };
     std::vector<double> V(nv + 1, 0.0), Vprev(nv + 1, 0.0), Ib(nb, 0.0), Ibprev(nb, 0.0), lamPrev(nk, 0.0);
     Eigen::SparseLU<Eigen::SparseMatrix<double>> lu;
     bool luAnalyzed = false;
     out.At.reserve(static_cast<size_t>(in.steps) * nn);
     for (int step = 1; step <= in.steps; ++step) {
       const double time = step * in.dt;
+      curStep = step;
       Eigen::VectorXd a = reduce();
       const int maxIt = nonlinear ? std::max(1, in.maxIter) : 2;
       double r0 = -1;
@@ -476,16 +483,19 @@ MagOutput solve_magnetostatic(const MagInput& in) {
       Aprev = A;
       Vprev = V;
       Ibprev = Ib;
+      if (in.progress) in.progress(step, in.steps);
     }
     out.A = A;
   } else if (transient) {
     out.At.reserve(static_cast<size_t>(in.steps) * nn);
     for (int k = 1; k <= in.steps; ++k) {
       const double time = k * in.dt;
+      curStep = k;
       if (!solveStep(time)) return out;
       out.At.insert(out.At.end(), A.begin(), A.end());
       out.times.push_back(time);
       Aprev = A;
+      if (in.progress) in.progress(k, in.steps);
     }
   } else if (!solveStep(0)) {
     return out;

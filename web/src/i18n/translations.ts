@@ -156,6 +156,7 @@ export interface Translations {
     magnetostatic: string;
     harmonic: string;
     transient: string;
+    circuit: string;
     frequency: string;
     dt: string;
     tEnd: string;
@@ -373,6 +374,9 @@ export interface Translations {
     noDirichlet: string;
     onlyStatic: string;
     badTime: string;
+    noSchematic: string;
+    timeHelp: string;
+    schematic: string;
     frame: (k: number, n: number, t: string) => string;
     play: string;
     pause: string;
@@ -514,6 +518,9 @@ export interface Translations {
     freq: string;
     phase: string;
     dc: string;
+    vt: string;
+    it: string;
+    srcHelp: string;
     rotate: string;
     del: string;
     wireHint: string;
@@ -753,7 +760,8 @@ const PT: Translations = {
     analysis: 'Análise',
     magnetostatic: 'Magnetostática',
     harmonic: 'Harmônica (AC)',
-    transient: 'Transiente',
+    transient: 'Transitória (correntes em função de t)',
+    circuit: 'Transitória com circuito',
     frequency: 'Frequência (Hz)',
     dt: 'Passo de tempo (s)',
     tEnd: 'Tempo final (s)',
@@ -906,7 +914,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     region: (n) => `Região ${n}`,
     material: 'Material',
     area: 'Área',
-    current: 'Corrente por espira (A)',
+    current: 'Corrente por espira (A) — pode usar t',
     turns: 'Espiras',
     magnetAngle: 'Direção da magnetização (°)',
     boundaryType: 'Condição de contorno',
@@ -984,6 +992,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     noDirichlet: 'Falta um contorno com A prescrito (sem ele o potencial fica indefinido).',
     onlyStatic: 'Harmônica ainda não resolve; use magnetostática ou transitória.',
     badTime: 'Transitório: passo e tempo final precisam ser positivos (t final > passo).',
+    noSchematic: 'Transitória com circuito: crie um circuito (+ ao lado de Modelo) e ligue as bobinas.',
+    timeHelp: 'As correntes dos circuitos/regiões são expressões que podem usar o tempo t (s) e as variáveis do projeto. Ex.: I0*sin(2*pi*60*t). No estático, t = 0.',
+    schematic: 'Circuito',
     frame: (k, n, t) => `passo ${k}/${n} · t = ${t}`,
     play: 'Animar',
     pause: 'Pausar',
@@ -1069,7 +1080,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     name: 'Circuito',
     title: 'Circuitos',
     add: 'Novo circuito',
-    current: 'Corrente (A)',
+    current: 'Corrente (A) — expressão, pode usar t',
     kind: 'Ligação',
     series: 'Série',
     parallel: 'Paralelo',
@@ -1134,6 +1145,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     freq: 'Frequência (Hz)',
     phase: 'Fase (°)',
     dc: 'Nível CC',
+    vt: 'v(t) (V)',
+    it: 'i(t) (A)',
+    srcHelp: 'Expressão em t (s) e nas variáveis do projeto. Ex.: V0*sin(2*pi*60*t), ou 100 para CC.',
     rotate: 'Girar (R)',
     del: 'Apagar (Del)',
     wireHint: 'Arraste os blocos; clique num terminal e depois em outro para ligar com um fio.',
@@ -1379,7 +1393,8 @@ const EN: Translations = {
     analysis: 'Analysis',
     magnetostatic: 'Magnetostatic',
     harmonic: 'Harmonic (AC)',
-    transient: 'Transient',
+    transient: 'Transient (currents as functions of t)',
+    circuit: 'Transient with circuit',
     frequency: 'Frequency (Hz)',
     dt: 'Time step (s)',
     tEnd: 'End time (s)',
@@ -1532,7 +1547,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     region: (n) => `Region ${n}`,
     material: 'Material',
     area: 'Area',
-    current: 'Current per turn (A)',
+    current: 'Current per turn (A) — may use t',
     turns: 'Turns',
     magnetAngle: 'Magnetization direction (°)',
     boundaryType: 'Boundary condition',
@@ -1610,6 +1625,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     noDirichlet: 'A boundary with prescribed A is missing (without it the potential is undefined).',
     onlyStatic: 'Harmonic does not solve yet; use magnetostatic or transient.',
     badTime: 'Transient: step and end time must be positive (end > step).',
+    noSchematic: 'Transient with circuit: create a circuit (+ next to Model) and connect the coils.',
+    timeHelp: 'Circuit/region currents are expressions that may use time t (s) and project variables. E.g. I0*sin(2*pi*60*t). In statics, t = 0.',
+    schematic: 'Circuit',
     frame: (k, n, t) => `step ${k}/${n} · t = ${t}`,
     play: 'Animate',
     pause: 'Pause',
@@ -1695,7 +1713,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     name: 'Circuit',
     title: 'Circuits',
     add: 'New circuit',
-    current: 'Current (A)',
+    current: 'Current (A) — expression, may use t',
     kind: 'Connection',
     series: 'Series',
     parallel: 'Parallel',
@@ -1760,6 +1778,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     freq: 'Frequency (Hz)',
     phase: 'Phase (°)',
     dc: 'DC level',
+    vt: 'v(t) (V)',
+    it: 'i(t) (A)',
+    srcHelp: 'Expression in t (s) and the project variables. E.g. V0*sin(2*pi*60*t), or 100 for DC.',
     rotate: 'Rotate (R)',
     del: 'Delete (Del)',
     wireHint: 'Drag the blocks; click a terminal and then another to connect with a wire.',

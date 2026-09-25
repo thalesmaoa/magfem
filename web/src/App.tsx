@@ -419,6 +419,22 @@ function StageOverlay({ ed }: { ed: SketchEditor; sel: TreeSel }) {
   return <div className="overlay soon">{t.solve.noSolution}</div>;
 }
 
+/** Barra de progresso do cálculo (rodapé). */
+function SolveProgress({ ed }: { ed: SketchEditor }) {
+  const t = useT();
+  useEditor(ed);
+  if (!ed.solveBusy && !ed.meshBusy) return null;
+  const pct = ed.meshBusy ? null : Math.round(ed.solveProgress * 100);
+  return (
+    <span className="solve-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined} aria-label={t.solve.running}>
+      <span className="bar">
+        <span className={`fill${pct === null ? ' indet' : ''}`} style={pct === null ? undefined : { width: `${pct}%` }} />
+      </span>
+      {ed.meshBusy ? t.mesh.generating : `${t.solve.running} ${pct}%`}
+    </span>
+  );
+}
+
 /** Tema: automático (segue o sistema) → claro → escuro. */
 function ThemeSwitch() {
   const t = useT();
@@ -470,6 +486,7 @@ function StatusBar({ ed, core }: { ed: SketchEditor; core: { v?: string; err?: s
         </span>
       )}
       <span className="hint">{snap.message ? <span className="msg">{snap.message}</span> : snap.hint}</span>
+      {ed && <SolveProgress ed={ed} />}
       <span className="dev-badge" title={t.status.devHint}>
         {t.status.dev}
       </span>
