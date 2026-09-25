@@ -69,16 +69,10 @@ export const plotName = (plot: PlotKind, qty: PlotQuantity) => {
   return `${t.post.plots[plot]}: ${t.post.qty[qty].split(' —')[0]}`;
 };
 
-/** Resolve; se deu certo, garante uma vista padrão (superfície B + contorno A) e abre os resultados. */
+/** Resolve e seleciona os resultados da física (sem criar vistas: o usuário escolhe o que mostrar). */
 export async function solveAndShow(ed: SketchEditor, id: Id, onSelect: (s: TreeSel) => void) {
   if (!(await ed.solve(id))) return;
-  let view = ed.sketch.nodes.find((n) => n.kind === 'view' && n.physics === id)?.id;
-  if (!view) {
-    const v = addView(ed.sketch, id);
-    const a = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
-    const b = addPlot(a.sketch, v.node.id, 'contour', plotName('contour', 'a'), 'a');
-    if (ed.commit(b.sketch, [v.code, a.code, b.code])) view = v.node.id;
-  }
+  const view = ed.sketch.nodes.find((n) => n.kind === 'view' && n.physics === id)?.id;
   onSelect(view ? { kind: 'node', id: view } : { kind: 'results', id });
 }
 

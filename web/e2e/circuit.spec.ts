@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openApp, sketch } from './helpers';
+import { openApp, sketch, defaultView } from './helpers';
 
 const MU0 = 4e-7 * Math.PI;
 
@@ -25,7 +25,9 @@ test('circuito: λ, L = λ/I (½LI² = energia), R e perdas; tabela nos resultad
   await expect(page.getByRole('treeitem', { name: 'Bobina', exact: true })).toBeVisible();
 
   await page.getByRole('treeitem', { name: /Campo magnético/ }).first().getByRole('button', { name: 'Resolver' }).click();
-  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode), { timeout: 15000 }).toBe('post');
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.size), { timeout: 15000 }).toBeGreaterThan(0);
+  await defaultView(page);
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('post');
   await expect(page.locator('.props .circ-table')).toContainText('Bobina');
 
   const r = await page.evaluate(async () => {

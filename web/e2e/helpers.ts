@@ -63,3 +63,18 @@ export async function typeDim(page: Page, value: string) {
   await input.press('Enter');
   await expect(input).toHaveCount(0);
 }
+
+/** Resolver não cria vistas: cria "Vista 1" (Superfície: B + Contorno: A) na primeira física e a mostra. */
+export async function defaultView(page: Page) {
+  await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { addView, addPlot } = await import('/tools/magfem-web/src/cad/tree.ts');
+    const { plotName } = await import('/tools/magfem-web/src/ui/PostPanel.tsx');
+    const ph = ed.sketch.nodes.find((n: any) => n.kind === 'physics');
+    const v = addView(ed.sketch, ph.id);
+    const a = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
+    const b = addPlot(a.sketch, v.node.id, 'contour', plotName('contour', 'a'), 'a');
+    ed.commit(b.sketch, [v.code, a.code, b.code]);
+  });
+  await page.getByRole('treeitem', { name: 'Vista 1', exact: true }).click();
+}

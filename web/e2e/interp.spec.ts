@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openApp, sketch } from './helpers';
+import { openApp, sketch, defaultView } from './helpers';
 
 test('vista interpolada (pai), legenda com limites e duplicar gráfico', async ({ page }) => {
   await openApp(page);
@@ -14,7 +14,9 @@ test('vista interpolada (pai), legenda com limites e duplicar gráfico', async (
   await run('m.region((40, 0), material="Ar")');
   await run('m.settings("n1", size="12 mm")');
   await page.getByRole('treeitem', { name: /Campo magnético/ }).first().getByRole('button', { name: 'Resolver' }).click();
-  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode), { timeout: 15000 }).toBe('post');
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.size), { timeout: 15000 }).toBeGreaterThan(0);
+  await defaultView(page);
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('post');
 
   // Nova vista interpolada pelo + da física: vira uma aba própria com superfície e contorno.
   const grp = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();

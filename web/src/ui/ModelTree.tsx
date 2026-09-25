@@ -115,7 +115,7 @@ function NodeRow({ ed, node, active, onSelect, onTreeSelect }: { ed: SketchEdito
           {node.name}
         </span>
       )}
-      {node.kind === 'physics' && <span className="crefs">{t.problem[node.analysis]}</span>}
+      {node.kind === 'physics' && !node.coupled && <span className="crefs">{t.problem[node.analysis]}</span>}
       {node.kind === 'physics' && <SolveButton ed={ed} id={node.id} onSelect={onTreeSelect} />}
       <button
         className="x"
@@ -162,9 +162,7 @@ function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsN
         <h3>
           {t.tree.physicsProps}: {node.name}
         </h3>
-        {node.coupled ? (
-          <p className="muted">{t.solve.coupledPhysics}</p>
-        ) : (
+        {!node.coupled && (
           <label className="field">
             <span>{t.problem.analysis}</span>
             <select value={node.analysis} onChange={(e) => set({ analysis: e.target.value as AnalysisType }, `s.physics(${q(node.id)}, analysis=${q(e.target.value)})`)}>
@@ -187,7 +185,7 @@ function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsN
           </>
         )}
       </section>
-      {node.analysis !== 'harmonic' && <TimeSources ed={ed} node={node} />}
+      {node.analysis !== 'harmonic' && !node.coupled && <TimeSources ed={ed} node={node} />}
       <SolveSection ed={ed} node={node} onSelect={onSelect} />
     </div>
   );

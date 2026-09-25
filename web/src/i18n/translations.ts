@@ -390,7 +390,6 @@ export interface Translations {
     onlyStatic: string;
     badTime: string;
     noSchematic: string;
-    coupledPhysics: string;
     openCircuit: string;
     sources: string;
     sourcesTime: string;
@@ -1039,7 +1038,6 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     onlyStatic: 'Harmônica ainda não resolve; use magnetostática ou transitória.',
     badTime: 'Transitório: passo e tempo final precisam ser positivos (t final > passo).',
     noSchematic: 'O circuito desta física está vazio: abra o circuito e ligue as bobinas às fontes.',
-    coupledPhysics: 'Transitória acoplada ao circuito: as bobinas ligadas no circuito recebem a corrente dele a cada passo.',
     openCircuit: 'Abrir o circuito',
     sources: 'Correntes',
     sourcesTime: 'Correntes no tempo',
@@ -1703,7 +1701,6 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     onlyStatic: 'Harmonic does not solve yet; use magnetostatic or transient.',
     badTime: 'Transient: step and end time must be positive (end > step).',
     noSchematic: 'This physics circuit is empty: open the circuit and connect the coils to sources.',
-    coupledPhysics: 'Transient coupled to the circuit: coils in the circuit take its current at every step.',
     openCircuit: 'Open the circuit',
     sources: 'Currents',
     sourcesTime: 'Currents in time',

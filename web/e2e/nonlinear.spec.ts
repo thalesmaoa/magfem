@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openApp, sketch } from './helpers';
+import { openApp, sketch, defaultView } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
@@ -24,7 +24,9 @@ const coreModel = async (page: any, current: string) => {
 test('não linear: núcleo de aço satura (|B| < 2,2 T) em vez dos ~4 T do linear', async ({ page }) => {
   await coreModel(page, '5');
   await page.getByRole('treeitem', { name: /Campo magnético/ }).first().getByRole('button', { name: 'Resolver' }).click();
-  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode), { timeout: 20000 }).toBe('post');
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.size), { timeout: 20000 }).toBeGreaterThan(0);
+  await defaultView(page);
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('post');
   const r = await page.evaluate(() => {
     const s = [...(window as any).__magfem.solutions.values()][0];
     return { bmax: s.bmax, it: s.iterations };
@@ -43,7 +45,9 @@ test('transitório: corrente = função de t com variável (x*sin(2πft)), barra
   await box.fill('s.physics("n2", dt="0.001", t_end="0.02")');
   await box.press('Enter');
   await page.locator('.props').getByRole('button', { name: '▶ Resolver' }).click();
-  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode), { timeout: 30000 }).toBe('post');
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.size), { timeout: 30000 }).toBeGreaterThan(0);
+  await defaultView(page);
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('post');
   const n = await page.evaluate(() => [...(window as any).__magfem.solutions.values()][0].times.length);
   expect(n).toBe(20);
   const slider = page.getByRole('slider', { name: 't' });

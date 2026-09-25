@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickWorld, openApp, sketch } from './helpers';
+import { clickWorld, openApp, sketch, defaultView } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
@@ -27,7 +27,9 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
 
   // Resolver pelo ▶ da física: abre Resultados no modo resultados.
   await page.getByRole('treeitem', { name: /Campo magnético/ }).getByRole('button', { name: 'Resolver' }).click();
-  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode), { timeout: 15000 }).toBe('post');
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.size), { timeout: 15000 }).toBeGreaterThan(0);
+  await defaultView(page);
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('post');
   await expect(page.locator('.props')).toContainText('|B| máximo');
   await expect(page.locator('.props')).not.toContainText('resolva de novo');
 
