@@ -497,7 +497,7 @@ export function ResultsProps({ ed, id, onSelect }: { ed: SketchEditor; id: Id; o
           <h3>{t.circuit.results}</h3>
           <CircuitTable ed={ed} physics={id} />
           <button className="btn secondary" onClick={() => openTab({ kind: 'circuits', physics: id })}>
-            {t.post.openChart}
+            {t.circuit.openTable}
           </button>
         </section>
       )}
