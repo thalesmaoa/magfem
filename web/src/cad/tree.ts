@@ -76,6 +76,18 @@ export function duplicateNode(sk: Sketch, id: Id): { sketch: Sketch; node: TreeN
   return { sketch: { ...sk, nodes, nextId }, node: copy, code: `${copy.id} = r.duplicate(${q(id)})` };
 }
 
+/** Move uma camada para outra vista (pai); entra no fim da lista da vista de destino. */
+export function movePlot(sk: Sketch, id: Id, viewId: Id): Sketch {
+  const p = sk.nodes.find((n) => n.id === id);
+  const v = sk.nodes.find((n) => n.id === viewId);
+  if (p?.kind !== 'post' || v?.kind !== 'view' || p.view === viewId) return sk;
+  const moved: TreeNode = { ...p, view: viewId, physics: v.physics };
+  const rest = sk.nodes.filter((n) => n.id !== id);
+  const last = Math.max(rest.indexOf(v), ...rest.map((n, i) => (n.kind === 'post' && n.view === viewId ? i : -1)));
+  rest.splice(last + 1, 0, moved);
+  return { ...sk, nodes: rest };
+}
+
 export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch {
   return { ...sk, nodes: sk.nodes.map((n) => (n.id === id ? ({ ...n, ...patch } as TreeNode) : n)) };
 }

@@ -392,6 +392,7 @@ export interface Translations {
     component: string;
     comps: Record<'mag' | 'x' | 'y', string>;
     view: string;
+    parentView: string;
     copy: string;
     duplicate: string;
     rangeMin: string;
@@ -913,6 +914,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     component: 'Componente',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'Vista',
+    parentView: 'Vista (pai)',
     copy: 'cópia',
     duplicate: 'Duplicar',
     rangeMin: 'Limite inferior',
@@ -1440,6 +1442,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     component: 'Component',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'View',
+    parentView: 'View (parent)',
     copy: 'copy',
     duplicate: 'Duplicate',
     rangeMin: 'Lower limit',

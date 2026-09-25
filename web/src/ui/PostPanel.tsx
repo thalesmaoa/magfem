@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { lineProfile, probe, quantityLabel, type Solution } from '../cad/solve';
-import { addPlot, addView, duplicateNode, removeNode, updateNode, type TreeSel } from '../cad/tree';
+import { addPlot, addView, duplicateNode, movePlot, removeNode, updateNode, type TreeSel } from '../cad/tree';
 import { COLORMAPS, PLOT_KINDS, PLOT_QUANTITIES, type Colormap, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
@@ -149,11 +149,42 @@ function Row(p: {
   toggle?: { open: boolean; onToggle: () => void };
   onRename?: (n: string) => void;
   muted?: boolean;
+  /** Arrastar (camadas) e soltar (vistas). */
+  drag?: string;
+  onDropPlot?: (id: string) => void;
 }) {
   const t = useT();
   const [renaming, setRenaming] = useState(false);
+  const [over, setOver] = useState(false);
   return (
-    <div className={`tnode${p.selected ? ' on' : ''}${p.muted ? ' dim' : ''}`} role="treeitem" aria-selected={p.selected} aria-label={p.label} onClick={p.onClick}>
+    <div
+      className={`tnode${p.selected ? ' on' : ''}${p.muted ? ' dim' : ''}${over ? ' drop' : ''}`}
+      role="treeitem"
+      aria-selected={p.selected}
+      aria-label={p.label}
+      onClick={p.onClick}
+      draggable={!!p.drag}
+      onDragStart={p.drag ? (e) => e.dataTransfer.setData('application/x-magfem-plot', p.drag!) : undefined}
+      onDragOver={
+        p.onDropPlot
+          ? (e) => {
+              if (!e.dataTransfer.types.includes('application/x-magfem-plot')) return;
+              e.preventDefault();
+              setOver(true);
+            }
+          : undefined
+      }
+      onDragLeave={p.onDropPlot ? () => setOver(false) : undefined}
+      onDrop={
+        p.onDropPlot
+          ? (e) => {
+              setOver(false);
+              const id = e.dataTransfer.getData('application/x-magfem-plot');
+              if (id) p.onDropPlot!(id);
+            }
+          : undefined
+      }
+    >
       {p.toggle ? (
         <button
           className="twisty"
@@ -279,6 +310,12 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                         toggle={{ open: !closed.has(v.id), onToggle: () => toggle(v.id) }}
                         onClick={() => onSelect({ kind: 'node', id: v.id })}
                         onRename={rename(v.id)}
+                        onDropPlot={(pid) => {
+                          if (ed.commit(movePlot(ed.sketch, pid, v.id), [`r.move(${q(pid)}, ${q(v.id)})`])) {
+                            openRow(v.id);
+                            onSelect({ kind: 'node', id: pid });
+                          }
+                        }}
                         extra={
                           <>
                             {v.level ? <span className="crefs">×{v.level}</span> : null}
@@ -308,6 +345,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                                 selected={sel.kind === 'node' && sel.id === p.id}
                                 onClick={() => onSelect({ kind: 'node', id: p.id })}
                                 onRename={rename(p.id)}
+                                drag={p.id}
                                 extra={
                                   <>
                                     <button
@@ -543,6 +581,22 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
           {t.post.plots[plot]} <span className="muted">— {t.post.plotHelp[plot]}</span>
         </h3>
         {!sol && <p className="muted">{t.solve.noSolution}</p>}
+        <label className="field">
+          <span>{t.post.parentView}</span>
+          <select
+            aria-label={t.post.parentView}
+            value={node.view ?? ''}
+            onChange={(e) => ed.commit(movePlot(sk, node.id, e.target.value), [`r.move(${q(node.id)}, ${q(e.target.value)})`])}
+          >
+            {sk.nodes
+              .filter((n): n is ViewNode => n.kind === 'view')
+              .map((v) => (
+                <option key={v.id} value={v.id}>
+                  {sk.nodes.find((x) => x.id === v.physics)?.name} · {v.name}
+                </option>
+              ))}
+          </select>
+        </label>
         <label className="field">
           <span>{t.post.by[plot]}</span>
           <select aria-label={t.post.by[plot]} value={quantity} onChange={(e) => setQuantity(e.target.value as PlotQuantity)}>

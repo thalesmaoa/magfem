@@ -462,3 +462,5 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; min-width: 260px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
 .modal h3 { margin: 0 0 8px; font-size: 14px; }
 .modal-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.tnode.drop { outline: 2px dashed var(--accent); outline-offset: -2px; background: var(--accent-soft); }
+.tnode[draggable="true"] { cursor: grab; }

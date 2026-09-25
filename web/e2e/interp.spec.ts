@@ -51,4 +51,14 @@ test('vista interpolada (pai), legenda com limites e duplicar gráfico', async (
   await page.getByLabel('Colorir por').selectOption('h');
   const after = (await sketch(page)).nodes.filter((n: any) => n.kind === 'post' && n.plot === 'surface');
   expect(after.map((n: any) => n.quantity).sort()).toEqual(['b', 'b', 'h']);
+
+  // Mover a cópia para a vista interpolada pelas propriedades (pai).
+  await page.getByLabel('Vista (pai)').selectOption({ label: 'Campo magnético · Interpolação 1' });
+  let moved = (await sketch(page)).nodes.find((n: any) => n.name === 'Superfície: B (cópia)');
+  expect(moved.view).toBe(iv.id);
+  // …e de volta arrastando na árvore até a Vista 1.
+  const vista1 = page.getByRole('treeitem', { name: 'Vista 1', exact: true });
+  await page.getByRole('treeitem', { name: 'Superfície: B (cópia)' }).dragTo(vista1);
+  moved = (await sketch(page)).nodes.find((n: any) => n.name === 'Superfície: B (cópia)');
+  expect(moved.view).not.toBe(iv.id);
 });
