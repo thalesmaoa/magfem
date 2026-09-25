@@ -90,6 +90,8 @@ export function XYChart(p: {
   logX: boolean;
   logY: boolean;
   markers?: boolean;
+  /** Cor da curva (ausente = a do tema). */
+  color?: string;
   onPoint?: (i: number) => void;
   /** Arrastar um ponto: coordenadas de dados (final = soltou). */
   onDrag?: (i: number, x: number, y: number, final: boolean) => void;
@@ -177,7 +179,7 @@ export function XYChart(p: {
         </g>
       ))}
       <rect x={L} y={T} width={W - L - R} height={H - T - B} className="frame" />
-      <polyline points={idx.map((i) => `${X(tx(p.x[i])).toFixed(1)},${Y(ty(p.y[i])).toFixed(1)}`).join(' ')} className="curve" />
+      <polyline points={idx.map((i) => `${X(tx(p.x[i])).toFixed(1)},${Y(ty(p.y[i])).toFixed(1)}`).join(' ')} className="curve" style={p.color ? { stroke: p.color } : undefined} />
       {p.markers &&
         idx.map((i) => (
           <circle
@@ -246,6 +248,40 @@ export function ChartPane({ ed, tab }: { ed: SketchEditor; tab: string }) {
   return m ? <BHPane ed={ed} m={m} lx={lx} ly={ly} setLog={setLog} /> : null;
 }
 
+/** Cabeçalho do gráfico sobre linha (nome, grandeza, fluxo), mostrado na barra da aba. */
+export function LineHead({ ed, id }: { ed: SketchEditor; id: string }) {
+  const t = useT();
+  useDocVersion(ed.doc);
+  useEditor(ed);
+  const node = ed.sketch.nodes.find((n): n is PostNode => n.id === id && n.kind === 'post');
+  if (!node) return null;
+  const sol = node.physics ? ed.shownSol(node.physics) : undefined;
+  const smooth = ed.sketch.nodes.some((n) => n.id === node.view && n.kind === 'view' && !!n.level);
+  const prof = sol && node.curve ? lineProfile(sol, ed.sketch, node.curve, 400, smooth) : null;
+  const qty = (node.quantity ?? 'b') as PlotQuantity;
+  return (
+    <>
+      <strong className="chart-title">{node.name}</strong>
+      <select
+        aria-label={t.post.by.line}
+        value={qty}
+        onChange={(e) => ed.commit({ ...ed.sketch, nodes: ed.sketch.nodes.map((n) => (n.id === id ? { ...n, quantity: e.target.value as PlotQuantity } : n)) }, [`r.show(${q(id)}, quantity=${q(e.target.value)})`])}
+      >
+        {PLOT_QUANTITIES.line.map((k) => (
+          <option key={k} value={k}>
+            {t.post.qty[k]}
+          </option>
+        ))}
+      </select>
+      {prof && (
+        <span className="chart-stat">
+          {t.post.flux}: <b>{prof.flux.toPrecision(4)} Wb</b>
+        </span>
+      )}
+    </>
+  );
+}
+
 function LinePane({ ed, id, lx, ly }: { ed: SketchEditor; id: string; lx: boolean; ly: boolean; setLog?: (x: boolean, y: boolean) => void }) {
   const t = useT();
   const node = ed.sketch.nodes.find((n): n is PostNode => n.id === id && n.kind === 'post');
@@ -256,27 +292,8 @@ function LinePane({ ed, id, lx, ly }: { ed: SketchEditor; id: string; lx: boolea
   const qty = (node.quantity ?? 'b') as 'b' | 'bn' | 'bt' | 'h' | 'a';
   return (
     <div className="chart-pane">
-      <div className="chart-head">
-        <strong>{node.name}</strong>
-        <select
-          aria-label={t.post.by.line}
-          value={qty}
-          onChange={(e) => ed.commit({ ...ed.sketch, nodes: ed.sketch.nodes.map((n) => (n.id === id ? { ...n, quantity: e.target.value as PlotQuantity } : n)) }, [`r.show(${q(id)}, quantity=${q(e.target.value)})`])}
-        >
-          {PLOT_QUANTITIES.line.map((k) => (
-            <option key={k} value={k}>
-              {t.post.qty[k]}
-            </option>
-          ))}
-        </select>
-        {prof && (
-          <span className="chart-stat">
-            {t.post.flux}: <b>{prof.flux.toPrecision(4)} Wb</b>
-          </span>
-        )}
-      </div>
       {!sol ? <p className="muted">{t.solve.noSolution}</p> : !prof ? <p className="muted">{t.post.noCurve}</p> : (
-        <XYChart x={prof.s} y={prof[qty]} xLabel="s (mm)" yLabel={quantityLabel(qty, 'mag', sol.axisymmetric)} logX={lx} logY={ly} />
+        <XYChart x={prof.s} y={prof[qty]} xLabel="s (mm)" yLabel={quantityLabel(qty, 'mag', sol.axisymmetric)} logX={lx} logY={ly} color={node.color} />
       )}
     </div>
   );
@@ -436,6 +453,21 @@ export function LegendModal({ ed }: { ed: SketchEditor }) {
                 onChange={(e) => setBg(e.target.checked ? undefined : 'none')}
               />
               <span>{t.post.legendBox}</span>
+            </label>
+            <label className="field">
+              <span>{t.post.legendHeight}</span>
+              <input
+                type="number"
+                min={60}
+                max={900}
+                step={10}
+                aria-label={t.post.legendHeight}
+                defaultValue={Math.round(view.legend?.h ?? 180)}
+                onBlur={(e) => {
+                  const h = Math.min(900, Math.max(60, Number(e.target.value) || 180));
+                  ed.commit({ ...ed.sketch, nodes: ed.sketch.nodes.map((n) => (n.id === view.id ? { ...n, legend: { ...view.legend, h } } : n)) }, [`r.show(${q(view.id)}, legend_h=${h})`]);
+                }}
+              />
             </label>
             {view.legend?.bg !== 'none' && (
               <label className="field">

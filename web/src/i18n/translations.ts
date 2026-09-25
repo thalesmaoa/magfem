@@ -306,6 +306,17 @@ export interface Translations {
     hint: string;
     periodicNeedsTwo: string;
     addMaterial: string;
+    femmImport: string;
+    femmHint: string;
+    femmEmpty: string;
+    femmTitle: (n: number) => string;
+    femmNote: string;
+    femmFilter: string;
+    femmExists: string;
+    femmAll: string;
+    femmCancel: string;
+    femmFile: string;
+    femmDo: (n: number) => string;
     newMaterial: string;
     name: string;
     color: string;
@@ -421,6 +432,7 @@ export interface Translations {
     view: string;
     legendBox: string;
     legendBg: string;
+    legendHeight: string;
     parentView: string;
     copy: string;
     duplicate: string;
@@ -943,6 +955,17 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     hint: 'Clique numa região para escolher o material; clique nas bordas (Shift para várias) para definir o contorno. A borda externa é A = 0 por padrão.',
     periodicNeedsTwo: 'Periódico/antiperiódico liga pares de curvas: selecione duas.',
     addMaterial: 'Novo material',
+    femmImport: 'Importar do FEMM…',
+    femmHint: 'Biblioteca de materiais do FEMM 4.2 (245 materiais); também lê um matlib.dat seu (femm42/bin/matlib.dat)',
+    femmEmpty: 'Nenhum material encontrado — o arquivo é um matlib.dat do FEMM?',
+    femmTitle: (n) => `Biblioteca do FEMM (${n} materiais)`,
+    femmNote: 'Dados do matlib.dat do FEMM 4.2 (D. Meeker, femm.info). Importa μr, σ, Br (ímãs linearizados no ponto de recuo) e a curva B-H dos materiais moles. Laminação, histerese e fios trançados são ignorados.',
+    femmFilter: 'Filtrar por nome ou pasta',
+    femmExists: 'já existe (vai com sufixo)',
+    femmAll: 'Marcar visíveis',
+    femmCancel: 'Cancelar',
+    femmFile: 'Outro matlib.dat…',
+    femmDo: (n) => `Importar ${n}`,
     newMaterial: 'Material',
     name: 'Nome',
     color: 'Cor',
@@ -1058,6 +1081,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     view: 'Vista',
     legendBox: 'Caixa de fundo na legenda',
     legendBg: 'Cor do fundo',
+    legendHeight: 'Altura da barra (px) — ou arraste a borda de baixo',
     parentView: 'Vista (pai)',
     copy: 'cópia',
     duplicate: 'Duplicar',
@@ -1595,6 +1619,17 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     hint: 'Click a region to pick its material; click edges (Shift for several) to set a boundary. The outer border is A = 0 by default.',
     periodicNeedsTwo: 'Periodic/antiperiodic link pairs of curves: select two.',
     addMaterial: 'New material',
+    femmImport: 'Import from FEMM…',
+    femmHint: 'FEMM 4.2 material library (245 materials); can also read your own matlib.dat (femm42/bin/matlib.dat)',
+    femmEmpty: 'No materials found — is this a FEMM matlib.dat?',
+    femmTitle: (n) => `FEMM library (${n} materials)`,
+    femmNote: 'Data from the FEMM 4.2 matlib.dat (D. Meeker, femm.info). Imports μr, σ, Br (magnets linearized at the recoil point) and the B-H curve of soft materials. Lamination, hysteresis and stranded wire are ignored.',
+    femmFilter: 'Filter by name or folder',
+    femmExists: 'already exists (will get a suffix)',
+    femmAll: 'Select visible',
+    femmCancel: 'Cancel',
+    femmFile: 'Other matlib.dat…',
+    femmDo: (n) => `Import ${n}`,
     newMaterial: 'Material',
     name: 'Name',
     color: 'Color',
@@ -1710,6 +1745,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     view: 'View',
     legendBox: 'Legend background box',
     legendBg: 'Background color',
+    legendHeight: 'Bar height (px) — or drag the bottom edge',
     parentView: 'View (parent)',
     copy: 'copy',
     duplicate: 'Duplicate',

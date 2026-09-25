@@ -234,6 +234,8 @@ export interface LegendLayout {
   x?: number;
   y?: number;
   s?: number;
+  /** Altura da barra de cores (px na escala 1). */
+  h?: number;
   bg?: string;
 }
 

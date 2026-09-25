@@ -67,7 +67,7 @@ function AddMenu({ ed, kinds, label, onAdded }: { ed: SketchEditor; kinds: AddKi
     const r = addNode(ed.sketch, kind, name);
     if (ed.commit(r.sketch, [r.code])) onAdded(r.node.id);
   };
-  const itemIcon = (k: AddKind) => (k === 'physics-circuit' ? Icons.source : k === 'physics-magnetic' ? ICON.physics : k === 'mesh' ? ICON.mesh : ICON.post);
+  const itemIcon = (k: AddKind) => (k === 'physics-circuit' ? Icons.physicsCircuit : k === 'physics-magnetic' ? ICON.physics : k === 'mesh' ? ICON.mesh : ICON.post);
   const itemLabel = (k: AddKind) => (k === 'physics-circuit' ? t.tree.magneticCircuit : k === 'physics-magnetic' ? t.tree.magnetic : k === 'mesh' ? t.tree.addMesh : t.tree.addPost);
   return (
     <div className="add-menu" ref={ref} onClick={(e) => e.stopPropagation()}>
@@ -100,7 +100,7 @@ function NodeRow({ ed, node, active, onSelect, onTreeSelect }: { ed: SketchEdito
   const [renaming, setRenaming] = useState(false);
   return (
     <li className={`tnode${active ? ' on' : ''}`} onClick={onSelect} role="treeitem" aria-selected={active}>
-      <span className="ticon">{ICON[node.kind]}</span>
+      <span className="ticon">{node.kind === 'physics' && (node as { coupled?: boolean }).coupled ? Icons.physicsCircuit : ICON[node.kind]}</span>
       {renaming ? (
         <LazyInput
           autoFocus

@@ -72,6 +72,10 @@ privado, acadêmico e institucional e para redistribuição **gratuita** (com o 
 mas **uso comercial exige acordo com o autor**. Se isso for um problema para você, o gerador de malha
 fica isolado em `core/src/mesh2d.cpp` e pode ser trocado.
 
+A biblioteca de materiais embutida (`web/src/data/femm-matlib.json`, 245 materiais) foi convertida
+do `matlib.dat` do **FEMM 4.2** (David Meeker, [femm.info](https://www.femm.info)); o crédito é do
+FEMM. Em *Materiais → Importar do FEMM…* também dá para ler o `matlib.dat` da sua instalação.
+
 ## Citar
 
 Maia, T. (2026). *MagFEM: A Web-Based Magnetic Finite Element Analysis Tool*. (Use o botão

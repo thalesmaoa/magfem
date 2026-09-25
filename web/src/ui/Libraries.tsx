@@ -1,8 +1,11 @@
 // Bibliotecas do projeto: materiais (agrupados) e propriedades de contorno (como no FEMM).
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { addBoundaryDef, addMaterial, assignBoundary, duplicateMaterial, removeBoundaryDef, removeMaterial, updateBoundaryDef, updateMaterial } from '../cad/mesh';
+import { parseMatlib, type FemmMaterial } from '../io/femm';
+import { materialLine } from '../cad/script';
 import { DEFAULT_MATERIALS, MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type MaterialGroup } from '../cad/types';
 import { useT } from '../i18n';
 import { LazyInput } from './common';
@@ -194,6 +197,7 @@ export function MaterialLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
         >
           + {t.mesh.addMaterial}
         </button>
+        <FemmImportButton ed={ed} />
       </div>
       <ul className="lib-list" role="listbox" aria-label={t.mesh.libMaterials}>
         {groupedMaterials(sk.materials).map(([g, list]) => (
@@ -214,6 +218,145 @@ export function MaterialLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
         ))}
       </ul>
     </section>
+  );
+}
+
+/** Cor padrão dos materiais importados, por grupo. */
+const GROUP_COLOR: Record<MaterialGroup, string> = { air: '#dfe9f3', conductor: '#e8a15c', steel: '#9aa5b1', magnet: '#c77dd6', custom: '#b5d98a' };
+
+/** "Importar do FEMM…": lê um matlib.dat escolhido pelo usuário e importa os materiais marcados. */
+function FemmImportButton({ ed }: { ed: SketchEditor }) {
+  const t = useT();
+  const input = useRef<HTMLInputElement>(null);
+  const [lib, setLib] = useState<FemmMaterial[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <>
+      <button
+        className="btn secondary"
+        title={t.mesh.femmHint}
+        onClick={async () => setLib((await import('../data/femm-matlib.json')).default as FemmMaterial[])}
+      >
+        {t.mesh.femmImport}
+      </button>
+      <input
+        ref={input}
+        type="file"
+        accept=".dat,text/plain"
+        hidden
+        aria-label={t.mesh.femmImport}
+        onChange={async (e) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (!f) return;
+          const list = parseMatlib(await f.text());
+          if (!list.length) setErr(t.mesh.femmEmpty);
+          else setLib(list);
+        }}
+      />
+      {err && createPortal(
+        <div className="modal-back" onClick={() => setErr(null)}>
+          <div className="modal" role="alertdialog" onClick={(e) => e.stopPropagation()}>
+            <p className="err-text">{err}</p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setErr(null)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+      {lib && createPortal(<FemmImportModal ed={ed} lib={lib} onClose={() => setLib(null)} onFile={() => input.current?.click()} />, document.body)}
+    </>
+  );
+}
+
+function FemmImportModal({ ed, lib, onClose, onFile }: { ed: SketchEditor; lib: FemmMaterial[]; onClose: () => void; onFile: () => void }) {
+  const t = useT();
+  const have = new Set(ed.sketch.materials.map((m) => m.name));
+  const [sel, setSel] = useState<Set<number>>(() => new Set());
+  const [filter, setFilter] = useState('');
+  // Materiais por pasta (caminho completo), na ordem do arquivo.
+  const folders = useMemo(() => {
+    const map = new Map<string, number[]>();
+    lib.forEach((m, i) => {
+      const k = m.path.join(' / ') || '—';
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(i);
+    });
+    return [...map];
+  }, [lib]);
+  const f = filter.trim().toLowerCase();
+  const visible = (i: number) => !f || lib[i].material.name.toLowerCase().includes(f) || lib[i].path.join(' ').toLowerCase().includes(f);
+  const toggle = (ids: number[], on: boolean) =>
+    setSel((s) => {
+      const n = new Set(s);
+      for (const i of ids) {
+        if (on) n.add(i);
+        else n.delete(i);
+      }
+      return n;
+    });
+  const doImport = () => {
+    let sk = ed.sketch;
+    const code: string[] = [];
+    for (const i of [...sel].sort((a, b) => a - b)) {
+      const { name, ...src } = lib[i].material;
+      const r = addMaterial(sk, name, { ...src, color: GROUP_COLOR[src.group ?? 'custom'] }, src.group);
+      sk = r.sketch;
+      code.push(materialLine(r.material));
+    }
+    if (code.length && ed.commit(sk, code)) onClose();
+  };
+  return (
+    <div className="modal-back" onClick={onClose}>
+      <div className="modal femm-modal" role="dialog" aria-label={t.mesh.femmImport} onClick={(e) => e.stopPropagation()}>
+        <h3>{t.mesh.femmTitle(lib.length)}</h3>
+        <p className="hint">{t.mesh.femmNote}</p>
+        <input className="femm-filter" placeholder={t.mesh.femmFilter} aria-label={t.mesh.femmFilter} value={filter} onChange={(e) => setFilter(e.target.value)} />
+        <div className="femm-list">
+          {folders.map(([name, ids]) => {
+            const shown = ids.filter(visible);
+            if (!shown.length) return null;
+            const all = shown.every((i) => sel.has(i));
+            return (
+              <div key={name} className="femm-folder">
+                <label className="femm-row folder">
+                  <input type="checkbox" checked={all} onChange={(e) => toggle(shown, e.target.checked)} />
+                  <b>{name}</b> <span className="crefs">{shown.length}</span>
+                </label>
+                {shown.map((i) => {
+                  const m = lib[i].material;
+                  return (
+                    <label key={i} className="femm-row">
+                      <input type="checkbox" checked={sel.has(i)} onChange={(e) => toggle([i], e.target.checked)} />
+                      <Swatch color={GROUP_COLOR[m.group ?? 'custom']} /> {m.name}
+                      {have.has(m.name) && <span className="crefs">{t.mesh.femmExists}</span>}
+                      <span className="crefs">{materialSummary(m as Material)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+        <div className="modal-actions">
+          <button className="btn secondary" title={t.mesh.femmHint} onClick={onFile}>
+            {t.mesh.femmFile}
+          </button>
+          <button className="btn secondary" onClick={() => toggle(lib.map((_, i) => i).filter(visible), true)}>
+            {t.mesh.femmAll}
+          </button>
+          <button className="btn secondary" onClick={onClose}>
+            {t.mesh.femmCancel}
+          </button>
+          <button className="btn" disabled={!sel.size} onClick={doImport}>
+            {t.mesh.femmDo(sel.size)}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

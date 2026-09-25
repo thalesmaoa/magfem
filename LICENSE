@@ -29,3 +29,7 @@ Third-party components (not covered by the MIT license above):
   author. See the README of the Triangle package.
 - Eigen 3.4 (MPL 2.0), downloaded at build time.
 - PlaneGCS (FreeCAD) via @salusoft89/planegcs (LGPL-2.1).
+- web/src/data/femm-matlib.json: material properties converted from the
+  matlib.dat material library of FEMM 4.2 (David Meeker, https://www.femm.info),
+  which compiles manufacturer and handbook data. Credit belongs to FEMM; the file
+  is kept separate from the MIT-licensed code.

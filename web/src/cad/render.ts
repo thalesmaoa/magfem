@@ -142,15 +142,6 @@ export function colormap(name: Colormap | undefined, t: number): [number, number
   return turbo(t);
 }
 
-/** Cor clara ou escura para o halo, oposta à cor da linha. */
-const haloFor = (hex: string) => {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return 'rgba(255,255,255,0.75)';
-  const n = parseInt(m[1], 16);
-  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return lum > 0.55 ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.75)';
-};
-
 /** Segmentos de curvas de nível de um campo nodal (mm); guardados por solução, grandeza e quantidade. */
 const contourCache = new WeakMap<Solution, Map<string, { segs: Float64Array; lev: Float32Array }>>();
 function contourSegments(sol: Solution, key: string, A: Float64Array, n: number, range?: [number, number]): { segs: Float64Array; lev: Float32Array } {
@@ -309,12 +300,9 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
       } else {
         ctx.beginPath();
         for (let i = 0; i < segs.length; i += 4) line(i);
-        // Linha com halo contrastante: legível sobre qualquer cor do mapa.
-        ctx.strokeStyle = haloFor(color);
-        ctx.lineWidth = 2.6;
-        ctx.stroke();
+        // Exatamente a cor escolhida (sem halo).
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.3;
         ctx.stroke();
       }
     } else if (plot === 'arrow') {
@@ -409,7 +397,7 @@ function drawLegend(
   const placed = pos?.x !== undefined && pos?.y !== undefined;
   const x = placed ? pos!.x! * v.w - index * 84 * ui : v.w - (72 + index * 84) * ui;
   const y = placed ? pos!.y! * v.h : 16 * ui;
-  const w = 14 * ui, h = 180 * ui;
+  const w = 14 * ui, h = (pos?.h ?? 180) * ui;
   // Fundo próprio (cor escolhida, ou nenhum): legível sobre qualquer cor do mapa.
   const bx0 = x - 6 * ui, by0 = y - 8 * ui, bw = 74 * ui, bh = h + 30 * ui;
   if (pos?.bg !== 'none') {

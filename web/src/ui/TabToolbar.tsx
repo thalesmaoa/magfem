@@ -3,22 +3,28 @@ import { useEffect, useRef, useState } from 'react';
 import type { SketchEditor } from '../cad/editor';
 import { download } from '../io/export';
 import { useT } from '../i18n';
-import { LogToggles, setChartLog, useChartLog } from './CanvasTabs';
+import { LineHead, LogToggles, setChartLog, useChartLog } from './CanvasTabs';
 import { Icons } from './icons';
 import { deleteSelected, flipSelected, rotateSelected, schResult, setSchUi, useSchUi } from './SchematicPane';
 import { useEditor } from './useStore';
 
 export function TabToolbar({ ed, tab, name }: { ed: SketchEditor; tab: string; name: string }) {
   if (tab.startsWith('view:')) return <ViewToolbar ed={ed} name={name} />;
-  if (tab.startsWith('chart:') || tab.startsWith('bh:')) return <ChartToolbar tab={tab} />;
+  if (tab.startsWith('chart:') || tab.startsWith('bh:')) return <ChartToolbar ed={ed} tab={tab} />;
   if (tab.startsWith('sch:')) return <SchToolbar ed={ed} id={tab.slice(4)} />;
   return <div className="toolbar" />;
 }
 
-function ChartToolbar({ tab }: { tab: string }) {
+function ChartToolbar({ ed, tab }: { ed: SketchEditor; tab: string }) {
   const [lx, ly] = useChartLog(tab);
   return (
     <div className="toolbar tab-toolbar">
+      {tab.startsWith('chart:') && (
+        <>
+          <LineHead ed={ed} id={tab.slice(6)} />
+          <span className="sep" />
+        </>
+      )}
       <LogToggles logX={lx} logY={ly} set={(x, y) => setChartLog(tab, x, y)} />
     </div>
   );

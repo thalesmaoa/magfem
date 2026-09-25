@@ -1143,7 +1143,7 @@ export class CommandConsole {
           const arr = computeArrangement(sk);
           patch.regions = (seq(kw.regions) ?? []).map((p) => regionKey(regionAtOrThrow(arr, this.xy(p))));
         }
-        if (kw.legend !== undefined || kw.legend_bg !== undefined) {
+        if (kw.legend !== undefined || kw.legend_bg !== undefined || kw.legend_h !== undefined) {
           const cur = (sk.nodes.find((n) => n.id === String(a[0])) as { legend?: Record<string, unknown> } | undefined)?.legend ?? {};
           const L = kw.legend !== undefined && kw.legend !== null ? seq(kw.legend) : null;
           const next: Record<string, unknown> = { ...cur };
@@ -1151,7 +1151,12 @@ export class CommandConsole {
             delete next.x;
             delete next.y;
             delete next.s;
-          } else if (L) Object.assign(next, { x: Number(L[0]), y: Number(L[1]), s: Number(L[2] ?? 1) });
+            delete next.h;
+          } else if (L) Object.assign(next, { x: Number(L[0]), y: Number(L[1]), s: Number(L[2] ?? 1), ...(L[3] !== undefined ? { h: Number(L[3]) } : {}) });
+          if (kw.legend_h !== undefined) {
+            if (kw.legend_h === null) delete next.h;
+            else next.h = Math.min(900, Math.max(60, Number(kw.legend_h)));
+          }
           if (kw.legend_bg !== undefined) {
             if (kw.legend_bg === null) delete next.bg;
             else next.bg = String(kw.legend_bg);

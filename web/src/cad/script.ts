@@ -1,7 +1,7 @@
 // Script da API que recria o modelo exatamente (mesmos ids), para rodar no console ou pelo WebSocket.
 import { q } from './code';
 import { computeArrangement, findRegion } from './regions';
-import type { Constraint, Sketch } from './types';
+import type { Constraint, Material, Sketch } from './types';
 
 const n = (v: number) => {
   const r = Number(v.toPrecision(12));
@@ -76,12 +76,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
   for (const c of sk.constraints) add(constraintLine(c));
 
   add('\n# Materiais');
-  for (const m of sk.materials) {
-    const kw = [`id=${q(m.id)}`, `group=${q(m.group ?? 'custom')}`, `color=${q(m.color)}`, `mur=${n(m.mur)}`, `sigma=${n(m.sigma)}`];
-    if (m.br) kw.push(`br=${n(m.br)}`);
-    if (m.bh) kw.push(`bh=[${m.bh.map((p) => `(${n(p[0])}, ${n(p[1])})`).join(', ')}]`);
-    add(`m.material(${q(m.name)}, ${kw.join(', ')})`);
-  }
+  for (const m of sk.materials) add(materialLine(m));
   if (sk.circuits.length) add('\n# Circuitos');
   for (const c of sk.circuits) add(`m.circuit(${q(c.name)}, id=${q(c.id)}, current=${q(c.current)}, kind=${q(c.kind)})`);
   if (sk.boundaries.length) add('\n# Contornos');
@@ -126,7 +121,8 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       else add(`r.view(${q(p.physics)}, name=${q(p.name)}, id=${q(p.id)})`);
       if (p.legend) {
         const kw: string[] = [];
-        if (p.legend.x !== undefined && p.legend.y !== undefined) kw.push(`legend=(${n(p.legend.x)}, ${n(p.legend.y)}, ${n(p.legend.s ?? 1)})`);
+        if (p.legend.x !== undefined && p.legend.y !== undefined) kw.push(`legend=(${n(p.legend.x)}, ${n(p.legend.y)}, ${n(p.legend.s ?? 1)}${p.legend.h !== undefined ? `, ${n(p.legend.h)}` : ''})`);
+        else if (p.legend.h !== undefined) kw.push(`legend_h=${n(p.legend.h)}`);
         if (p.legend.bg !== undefined) kw.push(`legend_bg=${q(p.legend.bg)}`);
         if (kw.length) add(`r.show(${q(p.id)}, ${kw.join(', ')})`);
       }
@@ -184,4 +180,12 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
   add(`g.next_id(${sk.nextId})`);
   add('\n# Para calcular: m.generate() e s.solve()');
   return L.join('\n') + '\n';
+}
+
+/** Comando que recria um material (com id), usado no script e na importação do FEMM. */
+export function materialLine(m: Material): string {
+  const kw = [`id=${q(m.id)}`, `group=${q(m.group ?? 'custom')}`, `color=${q(m.color)}`, `mur=${n(m.mur)}`, `sigma=${n(m.sigma)}`];
+  if (m.br) kw.push(`br=${n(m.br)}`);
+  if (m.bh) kw.push(`bh=[${m.bh.map((p) => `(${n(p[0])}, ${n(p[1])})`).join(', ')}]`);
+  return `m.material(${q(m.name)}, ${kw.join(', ')})`;
 }

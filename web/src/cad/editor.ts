@@ -282,7 +282,7 @@ export class SketchEditor {
   postView_: Id | null = null;
   postLegend: LegendLayout | undefined;
   private legendLive: LegendLayout | null = null;
-  private legendDrag: { mode: 'move' | 'resize'; start: Vec; orig: { x: number; y: number; s: number }; moved: boolean; layer: Id; lo: number; hi: number } | null = null;
+  private legendDrag: { mode: 'move' | 'resize' | 'height'; start: Vec; orig: { x: number; y: number; s: number; h: number }; moved: boolean; layer: Id; lo: number; hi: number } | null = null;
 
   showSolution(id: Id | null, layers: PostNode[] = [], level = 0, view: Id | null = null, legend?: LegendLayout) {
     this.shownSolution = id;
@@ -1429,10 +1429,11 @@ export class SketchEditor {
         // Arrastar move (ou redimensiona pela borda de baixo); clique sem mover abre os limites.
         const ui = this.postLegend?.s ?? 1;
         const L = this.postLegend;
-        const orig = { x: L?.x ?? (lg.x0 + 6 * ui) / this.view.w, y: L?.y ?? (lg.y0 + 8 * ui) / this.view.h, s: ui };
-        // Alça no canto inferior direito (18 px) redimensiona; o resto move.
+        const orig = { x: L?.x ?? (lg.x0 + 6 * ui) / this.view.w, y: L?.y ?? (lg.y0 + 8 * ui) / this.view.h, s: ui, h: L?.h ?? 180 };
+        // Canto inferior direito: escala tudo; borda de baixo: só a altura; o resto move.
         const corner = s.x > lg.x1 - 18 && s.y > lg.y1 - 18;
-        this.legendDrag = { mode: corner ? 'resize' : 'move', start: s, orig, moved: false, layer: lg.id, lo: lg.data![0], hi: lg.data![1] };
+        const bottom = !corner && s.y > lg.y1 - 10;
+        this.legendDrag = { mode: corner ? 'resize' : bottom ? 'height' : 'move', start: s, orig, moved: false, layer: lg.id, lo: lg.data![0], hi: lg.data![1] };
         return;
       }
       this.probeAt = w;
@@ -1504,8 +1505,10 @@ export class SketchEditor {
         this.legendLive =
           d.mode === 'move'
             ? { ...this.postLegend, ...d.orig, x: Math.min(0.98, Math.max(0, d.orig.x + dx / this.view.w)), y: Math.min(0.95, Math.max(0, d.orig.y + dy / this.view.h)) }
-            : { ...this.postLegend, ...d.orig, s: Math.min(4, Math.max(0.4, d.orig.s * (1 + Math.max(dx / 74, dy / 210) / d.orig.s))) };
-        this.canvas.style.cursor = d.mode === 'move' ? 'grabbing' : 'nwse-resize';
+            : d.mode === 'height'
+              ? { ...this.postLegend, ...d.orig, h: Math.min(900, Math.max(60, d.orig.h + dy / d.orig.s)) }
+              : { ...this.postLegend, ...d.orig, s: Math.min(4, Math.max(0.4, d.orig.s * (1 + Math.max(dx / 74, dy / 210) / d.orig.s))) };
+        this.canvas.style.cursor = d.mode === 'move' ? 'grabbing' : d.mode === 'height' ? 'ns-resize' : 'nwse-resize';
         this.changed();
       }
       return;
@@ -1514,7 +1517,17 @@ export class SketchEditor {
       const h = this.picking ? this.hitTest(s, { entitiesOnly: true }) : null;
       this.hover = h?.kind === 'curve' ? h : null;
       const lgHit = this.hits.find((x) => x.kind === 'legend' && s.x >= x.x0 && s.x <= x.x1 && s.y >= x.y0 && s.y <= x.y1);
-      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : lgHit ? (s.x > lgHit.x1 - 18 && s.y > lgHit.y1 - 18 ? 'nwse-resize' : 'grab') : 'crosshair';
+      this.canvas.style.cursor = this.picking
+        ? this.hover
+          ? 'pointer'
+          : 'default'
+        : lgHit
+          ? s.x > lgHit.x1 - 18 && s.y > lgHit.y1 - 18
+            ? 'nwse-resize'
+            : s.y > lgHit.y1 - 10
+              ? 'ns-resize'
+              : 'grab'
+          : 'crosshair';
       this.changed();
       return;
     }
@@ -1562,10 +1575,10 @@ export class SketchEditor {
       if (!lgd.moved) this.legendEdit = { layer: lgd.layer, lo: lgd.lo, hi: lgd.hi };
       else if (this.legendLive && this.postView_) {
         const lv = this.legendLive;
-        const L: LegendLayout = { ...this.postLegend, x: +(lv.x ?? 0).toFixed(4), y: +(lv.y ?? 0).toFixed(4), s: +(lv.s ?? 1).toFixed(3) };
+        const L: LegendLayout = { ...this.postLegend, x: +(lv.x ?? 0).toFixed(4), y: +(lv.y ?? 0).toFixed(4), s: +(lv.s ?? 1).toFixed(3), h: Math.round(lv.h ?? 180) };
         this.commit(
           { ...this.sketch, nodes: this.sketch.nodes.map((n) => (n.id === this.postView_ ? { ...n, legend: L } : n)) },
-          [`r.show(${q(this.postView_)}, legend=(${L.x}, ${L.y}, ${L.s}))`],
+          [`r.show(${q(this.postView_)}, legend=(${L.x}, ${L.y}, ${L.s}, ${L.h}))`],
         );
         this.postLegend = L;
       }

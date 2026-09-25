@@ -144,6 +144,17 @@ export const Icons = {
       <path d="M13.5 1.5l0 3.2l-3.2 0" />
     </S>
   ),
+  physicsCircuit: (
+    // Ímã em ferradura ligado a uma fonte senoidal (campo magnético + circuito).
+    <S>
+      <path d="M2 3v5.5a3.5 3.5 0 0 0 7 0V3" />
+      <path d="M4.5 3v5.5a1 1 0 0 0 2 0V3" />
+      <path d="M2 5h2.5M6.5 5H9" strokeWidth="2.2" />
+      <circle cx="14.5" cy="12.5" r="4" />
+      <path d="M12.5 12.5q1 -2 2 0t2 0" />
+      <path d="M9 3h5.5v5.5M5.5 12v6.5h9v-2" />
+    </S>
+  ),
   source: (
     // Fonte senoidal (círculo com ~).
     <S>
