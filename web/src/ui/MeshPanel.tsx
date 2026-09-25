@@ -534,6 +534,7 @@ function MeshNodeProps({ ed, node }: { ed: SketchEditor; node: MeshNode }) {
           }}
         />
       </label>
+      <p className="help-line">{t.mesh.minAngleHelp}</p>
       <button className="btn primary" disabled={ed.meshBusy !== null} onClick={() => void ed.generateMesh(node.id)}>
         {ed.meshBusy === node.id ? t.mesh.generating : `▶ ${t.mesh.generate}`}
       </button>

@@ -345,6 +345,7 @@ export interface Translations {
     elements: (n: number) => string;
     elementsNode: string;
     regionName: string;
+    minAngleHelp: string;
     nameTaken: (n: string) => string;
   };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
@@ -776,6 +777,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     elements: (n) => `${n} el.`,
     elementsNode: 'Elementos',
     regionName: 'Nome da região',
+    minAngleHelp: 'Nenhum triângulo terá ângulo interno menor que este. Triângulos achatados pioram a precisão do campo; valores maiores dão elementos mais regulares, porém mais elementos. 30° é um bom padrão; o máximo aceito é 34°.',
   },
   hist: {
     title: 'Histórico',
@@ -1212,6 +1214,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     elements: (n) => `${n} el.`,
     elementsNode: 'Triangle',
     regionName: 'Region name',
+    minAngleHelp: 'No triangle will have an interior angle smaller than this. Flat triangles hurt field accuracy; larger values give more regular elements but more of them. 30° is a good default; the maximum accepted is 34°.',
   },
   hist: {
     title: 'History',
