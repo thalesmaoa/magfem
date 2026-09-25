@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import logo from './assets/magfem.svg';
+import logo from './assets/magfem-logo.png';
 import planegcsWasm from '@salusoft89/planegcs/dist/planegcs_dist/planegcs.wasm?url';
 import { q } from './cad/code';
 import { SketchDoc } from './cad/doc';
