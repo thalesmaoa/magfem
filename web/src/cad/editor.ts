@@ -880,6 +880,9 @@ export class SketchEditor {
       hideDim: null,
       measure: null,
       plain: true,
+      // Vista de resultados/malha: a imagem leva o campo (ou as regiões), não só a geometria.
+      post: this.mode === 'post' ? this.postView() : undefined,
+      mesh: this.mode === 'mesh' ? this.meshView() : undefined,
     });
     return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('canvas'))), type, 0.95));
   }

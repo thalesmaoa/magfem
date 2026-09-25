@@ -23,6 +23,7 @@ import { RightDrawer } from './ui/RightDrawer';
 import { setDrawer, useDrawer } from './ui/drawerStore';
 import { activateTab, openTab, pruneTabs, useTabs } from './ui/tabsStore';
 import { CanvasTabBar, ChartPane, LegendModal } from './ui/CanvasTabs';
+import { chartImage, chartSVG, tabCSV } from './ui/chartExport';
 import { Toolbar } from './ui/Toolbar';
 import { LazyInput } from './ui/common';
 import { useDocVersion, useEditor } from './ui/useStore';
@@ -313,12 +314,27 @@ function ExportMenu({ ed, name }: { ed: SketchEditor; name: string }) {
     window.addEventListener('mousedown', close);
     return () => window.removeEventListener('mousedown', close);
   }, [open]);
-  const run = async (kind: 'svg' | 'dxf' | 'png' | 'jpg') => {
+  const tabs = useTabs();
+  // Abas de gráfico/tabela exportam o próprio gráfico (e os dados em CSV).
+  const chartTab = tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:') || tabs.active.startsWith('circuits:');
+  const hasChart = tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:');
+  const run = async (kind: 'svg' | 'dxf' | 'png' | 'jpg' | 'csv') => {
     setOpen(false);
     try {
+      if (chartTab) {
+        const base = `${name}-${tabs.active.replace(':', '-')}`;
+        if (kind === 'csv') {
+          const csv = tabCSV(ed, tabs.active);
+          if (csv) download(`${base}.csv`, new Blob([csv], { type: 'text/csv' }));
+        } else if (kind === 'svg') {
+          const svg = chartSVG();
+          if (svg) download(`${base}.svg`, new Blob([svg], { type: 'image/svg+xml' }));
+        } else if (kind === 'png' || kind === 'jpg') download(`${base}.${kind}`, await chartImage(kind === 'png' ? 'image/png' : 'image/jpeg'));
+        return;
+      }
       if (kind === 'svg') download(`${name}.svg`, new Blob([toSVG(ed.sketch)], { type: 'image/svg+xml' }));
       else if (kind === 'dxf') download(`${name}.dxf`, new Blob([toDXF(ed.sketch)], { type: 'application/dxf' }));
-      else download(`${name}.${kind}`, await ed.exportImage(kind === 'png' ? 'image/png' : 'image/jpeg'));
+      else if (kind === 'png' || kind === 'jpg') download(`${name}.${kind}`, await ed.exportImage(kind === 'png' ? 'image/png' : 'image/jpeg'));
     } catch (e) {
       ed.flash(T().file.saveError(String(e)));
     }
@@ -331,19 +347,43 @@ function ExportMenu({ ed, name }: { ed: SketchEditor; name: string }) {
       </button>
       {open && (
         <div className="menu" role="menu">
-          <button role="menuitem" onClick={() => run('svg')}>
-            SVG <span className="muted">— {t.file.exportSvg}</span>
-          </button>
-          <button role="menuitem" onClick={() => run('dxf')}>
-            DXF <span className="muted">— {t.file.exportDxf}</span>
-          </button>
-          <hr />
-          <button role="menuitem" onClick={() => run('png')}>
-            PNG <span className="muted">— {t.file.exportImg}</span>
-          </button>
-          <button role="menuitem" onClick={() => run('jpg')}>
-            JPG <span className="muted">— {t.file.exportImg}</span>
-          </button>
+          {chartTab ? (
+            <>
+              {hasChart && (
+                <>
+                  <button role="menuitem" onClick={() => run('svg')}>
+                    SVG <span className="muted">— {t.file.exportChart}</span>
+                  </button>
+                  <button role="menuitem" onClick={() => run('png')}>
+                    PNG <span className="muted">— {t.file.exportChart}</span>
+                  </button>
+                  <button role="menuitem" onClick={() => run('jpg')}>
+                    JPG <span className="muted">— {t.file.exportChart}</span>
+                  </button>
+                  <hr />
+                </>
+              )}
+              <button role="menuitem" onClick={() => run('csv')}>
+                CSV <span className="muted">— {t.file.exportCsv}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button role="menuitem" onClick={() => run('svg')}>
+                SVG <span className="muted">— {t.file.exportSvg}</span>
+              </button>
+              <button role="menuitem" onClick={() => run('dxf')}>
+                DXF <span className="muted">— {t.file.exportDxf}</span>
+              </button>
+              <hr />
+              <button role="menuitem" onClick={() => run('png')}>
+                PNG <span className="muted">— {tabs.active.startsWith('view:') ? t.file.exportView : t.file.exportImg}</span>
+              </button>
+              <button role="menuitem" onClick={() => run('jpg')}>
+                JPG <span className="muted">— {tabs.active.startsWith('view:') ? t.file.exportView : t.file.exportImg}</span>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

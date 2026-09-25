@@ -26,6 +26,9 @@ export interface Translations {
     exportSvg: string;
     exportDxf: string;
     exportImg: string;
+    exportChart: string;
+    exportCsv: string;
+    exportView: string;
   };
   bench: { pre: string; mesh: string; post: string; soon: (phase: string) => string };
   tree: {
@@ -514,6 +517,9 @@ const PT: Translations = {
     exportSvg: 'vetorial, em mm',
     exportDxf: 'CAD (LibreCAD, FreeCAD...), em mm',
     exportImg: 'imagem do desenho',
+    exportChart: 'gráfico desta aba',
+    exportCsv: 'dados desta aba (planilha)',
+    exportView: 'imagem da vista (campo)',
   },
   bench: {
     pre: 'Pré-processador',
@@ -1063,6 +1069,9 @@ const EN: Translations = {
     exportSvg: 'vector, in mm',
     exportDxf: 'CAD (LibreCAD, FreeCAD...), in mm',
     exportImg: 'image of the drawing',
+    exportChart: 'chart in this tab',
+    exportCsv: 'data in this tab (spreadsheet)',
+    exportView: 'view image (field)',
   },
   bench: {
     pre: 'Pre-processor',

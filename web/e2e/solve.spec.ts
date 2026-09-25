@@ -100,6 +100,17 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
   await expect(page.locator('.chart-pane svg.xychart')).toBeVisible();
   await page.locator('.chart-tools input').first().check(); // eixo x log
   await expect(page.locator('.chart-pane svg.xychart')).toBeVisible();
+  // Exportar na aba do gráfico: CSV com os dados e SVG do gráfico.
+  await page.getByRole('button', { name: 'Exportar' }).click();
+  const [csvDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /CSV/ }).click()]);
+  expect(csvDl.suggestedFilename()).toMatch(/\.csv$/);
+  const csv = await (await csvDl.createReadStream()).toArray();
+  const text = Buffer.concat(csv as Buffer[]).toString('utf8');
+  expect(text.split('\n')[0]).toContain('s (mm)');
+  expect(text).toContain('fluxo (Wb)');
+  await page.getByRole('button', { name: 'Exportar' }).click();
+  const [svgDl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /SVG/ }).click()]);
+  expect(svgDl.suggestedFilename()).toMatch(/\.svg$/);
   await expect(page.locator('.props svg.chart')).toBeVisible();
   const flux = await page.evaluate(async () => {
     const ed = (window as any).__magfem;
