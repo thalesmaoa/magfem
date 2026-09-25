@@ -42,7 +42,8 @@ if(EMSCRIPTEN)
     -lembind
     -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createCore
     -sENVIRONMENT=worker,web
-    -sALLOW_MEMORY_GROWTH=1)
+    -sALLOW_MEMORY_GROWTH=1
+    -sSTACK_SIZE=8MB)
 else()
   enable_testing()
   add_executable(test_poisson1d tests/test_poisson1d.cpp)

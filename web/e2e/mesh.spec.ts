@@ -126,3 +126,48 @@ test('gaveta: biblioteca de materiais agrupada e contornos', async ({ page }) =>
   await page.locator('.lib-editor').getByLabel('Condição de contorno').selectOption('periodic');
   expect((await sketch(page)).boundaries[0].type).toBe('periodic');
 });
+
+test('malha de núcleo com bobinas (geometria do usuário) e tamanho 4 mm nas bobinas', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  const run = async (cmd: string) => {
+    await box.fill(cmd);
+    await box.press('Enter');
+  };
+  await run('g.rectangle((-105, -110), (105, 110))');
+  await run('g.rectangle((-45, -70), (45, 70))');
+  await run('g.rectangle((-25, -50), (25, 50))');
+  await run('g.line((0, 50), (0, -50))');
+  for (const sx of [-1, 1]) {
+    await run(`a = g.point((${sx * 45}, 50))`);
+    await run(`b = g.point((${sx * 70}, 50))`);
+    await run(`c = g.point((${sx * 70}, -50))`);
+    await run(`d = g.point((${sx * 45}, -50))`);
+    await run('g.line(a, b)');
+    await run('g.line(b, c)');
+    await run('g.line(c, d)');
+  }
+  await page.getByRole('treeitem', { name: 'Malha', exact: true }).click();
+  await expect(page.getByRole('treeitem', { name: 'Regiões', exact: true })).toBeVisible();
+  for (const x of [-12.5, 12.5, -57.5, 57.5]) await run(`m.mesh_size((${x}, 0), "4 mm")`);
+  await page.getByRole('treeitem', { name: 'Elementos', exact: true }).getByRole('button', { name: 'Gerar malha' }).click();
+  await expect(page.locator('.props')).toContainText('triângulos');
+  await expect(page.locator('.props .err-text')).toHaveCount(0);
+  const m = await page.evaluate(() => [...(window as any).__magfem.meshes.values()][0]);
+  expect(m.elements).toBeGreaterThan(2000);
+  expect(m.minAngle).toBeGreaterThan(29.9);
+});
+
+test('malha grande (muitos elementos) gera sem estourar a pilha do WASM', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  const run = async (cmd: string) => {
+    await box.fill(cmd);
+    await box.press('Enter');
+  };
+  await run('g.rectangle((-100, -60), (100, 60))');
+  await run('g.circle((0, 0), r=30)');
+  await run('m.settings("n1", size="0.8 mm")');
+  await run('m.generate("n1")');
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.meshes.size), { timeout: 20000 }).toBe(1);
+  const m = await page.evaluate(() => [...(window as any).__magfem.meshes.values()][0]);
+  expect(m.elements).toBeGreaterThan(30000);
+});

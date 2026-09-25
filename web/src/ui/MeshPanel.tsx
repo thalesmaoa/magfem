@@ -538,6 +538,7 @@ function MeshNodeProps({ ed, node }: { ed: SketchEditor; node: MeshNode }) {
       <button className="btn primary" disabled={ed.meshBusy !== null} onClick={() => void ed.generateMesh(node.id)}>
         {ed.meshBusy === node.id ? t.mesh.generating : `▶ ${t.mesh.generate}`}
       </button>
+      {ed.meshErrors.get(node.id) && <p className="err-text">{ed.meshErrors.get(node.id)}</p>}
       <p className={stale ? 'err-text' : 'muted'}>{m ? (stale ? t.mesh.stale : t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)) : t.mesh.notGenerated}</p>
       {m && stale && <p className="muted">{t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)}</p>}
       <p className="help-line">{t.mesh.mesher}</p>

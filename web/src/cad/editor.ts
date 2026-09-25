@@ -174,6 +174,8 @@ export class SketchEditor {
 
   /** Malhas geradas (não são salvas no projeto; regeráveis) por nó de malha. */
   meshes = new Map<Id, MeshResult>();
+  /** Último erro de geração por nó (mostrado nas Propriedades até a próxima tentativa). */
+  meshErrors = new Map<Id, string>();
   /** Nó de malha sendo gerado (UI mostra "gerando…"). */
   meshBusy: Id | null = null;
   /** Nó de malha exibido no canvas (modo malha). */
@@ -210,6 +212,7 @@ export class SketchEditor {
     }
     const { input } = buildMeshInput(this.sketch, arr, node);
     this.meshBusy = id;
+    this.meshErrors.delete(id);
     this.changed();
     const t0 = performance.now();
     try {
@@ -231,7 +234,9 @@ export class SketchEditor {
       this.shownMesh = id;
       return res;
     } catch (e) {
-      this.flash(T().mesh.failed((e as Error).message));
+      const msg = T().mesh.failed((e as Error).message);
+      this.meshErrors.set(id, msg);
+      this.flash(msg);
       return null;
     } finally {
       this.meshBusy = null;
