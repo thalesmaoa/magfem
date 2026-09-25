@@ -470,7 +470,12 @@ function StatusBar({ ed, core }: { ed: SketchEditor; core: { v?: string; err?: s
         </span>
       )}
       <span className="hint">{snap.message ? <span className="msg">{snap.message}</span> : snap.hint}</span>
-      <span className="core">{core.err ? t.status.coreError(core.err) : core.v ? t.status.core(core.v) : t.status.coreLoading}</span>
+      <span className="dev-badge" title={t.status.devHint}>
+        {t.status.dev}
+      </span>
+      <span className="core" title={core.v ? `core ${core.v}` : undefined}>
+        {core.err ? t.status.coreError(core.err) : core.v ? t.status.core(core.v) : t.status.coreLoading}
+      </span>
     </footer>
   );
 }

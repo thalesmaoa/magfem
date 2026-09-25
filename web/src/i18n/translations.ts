@@ -136,6 +136,8 @@ export interface Translations {
     coreLoading: string;
     core: (v: string) => string;
     coreError: (e: string) => string;
+    dev: string;
+    devHint: string;
     polar: string;
     cartesian: string;
     toggleCoords: string;
@@ -729,9 +731,11 @@ const PT: Translations = {
     empty: 'Sketch vazio',
     defined: 'Totalmente definido',
     dof: (n) => `${n} grau${n > 1 ? 's' : ''} de liberdade`,
-    coreLoading: 'núcleo FEM: carregando…',
-    core: (v) => `núcleo FEM v${v}`,
+    coreLoading: 'MagFEM v0.1 · carregando o núcleo…',
+    core: () => `MagFEM v0.1 · núcleo WASM ok`,
     coreError: (e) => `núcleo FEM: erro (${e})`,
+    dev: 'Em desenvolvimento',
+    devHint: 'Versão de testes: pode ter erros e mudar sem aviso. Salve seus projetos em arquivo.',
     polar: 'polar',
     cartesian: 'cartesiano',
     toggleCoords: 'Clique para alternar entre coordenadas cartesianas e polares',
@@ -1353,9 +1357,11 @@ const EN: Translations = {
     empty: 'Empty sketch',
     defined: 'Fully defined',
     dof: (n) => `${n} degree${n > 1 ? 's' : ''} of freedom`,
-    coreLoading: 'FEM core: loading…',
-    core: (v) => `FEM core v${v}`,
+    coreLoading: 'MagFEM v0.1 · loading core…',
+    core: () => `MagFEM v0.1 · WASM core ok`,
     coreError: (e) => `FEM core: error (${e})`,
+    dev: 'Under development',
+    devHint: 'Test version: may have bugs and change without notice. Save your projects to file.',
     polar: 'polar',
     cartesian: 'cartesian',
     toggleCoords: 'Click to toggle cartesian / polar coordinates',
