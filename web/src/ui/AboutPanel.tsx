@@ -1,21 +1,15 @@
-import { useEffect, useRef } from 'react';
 import { CITATION } from '../cad/citation';
 import { useT } from '../i18n';
 import logo from '../assets/magfem-logo.png';
 
 const REPO = 'https://github.com/thalesmaoa/magfem';
 
-/** Diálogo "Sobre": versão, autor, licença e componentes de terceiros. */
-export function AboutDialog({ onClose }: { onClose: () => void }) {
+/** "Sobre" (na gaveta da direita): versão, autor, licença e componentes de terceiros. */
+export function AboutPanel() {
   const t = useT();
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const d = ref.current;
-    if (d && !d.open) d.showModal();
-  }, []);
   const a = CITATION.authors[0];
   return (
-    <dialog ref={ref} className="cite about" onClose={onClose} onClick={(e) => e.target === ref.current && ref.current?.close()}>
+    <section className="about-panel">
       <div className="about-head">
         <img src={logo} alt="" width={48} height={48} />
         <div>
@@ -52,11 +46,6 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
           Bug reports
         </a>
       </p>
-      <div className="modal-actions">
-        <button className="btn" onClick={() => ref.current?.close()}>
-          OK
-        </button>
-      </div>
-    </dialog>
+    </section>
   );
 }

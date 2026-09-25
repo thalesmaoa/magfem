@@ -33,7 +33,7 @@ button { font: inherit; }
 .tb-btn.active { background: var(--accent-soft); border-color: #9cc3f0; color: var(--accent); }
 .tb-btn:disabled { color: #b9c3cd; cursor: default; }
 
-.work { display: grid; grid-template-columns: 290px minmax(0, 1fr) auto; min-height: 0; min-width: 0; }
+.work { display: grid; grid-template-columns: var(--left-w, 290px) minmax(0, 1fr) auto; min-height: 0; min-width: 0; position: relative; }
 .center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .center .canvas-wrap { flex: 1; }
 .canvas-wrap { position: relative; min-width: 0; min-height: 0; }
@@ -167,7 +167,7 @@ dialog.cite .actions { display: flex; justify-content: flex-end; margin-top: 14p
 .drawer { position: relative; display: flex; border-left: 1px solid var(--border); background: var(--panel); }
 .drawer-tab { writing-mode: vertical-rl; border: none; background: #f5f7fa; color: var(--muted); cursor: pointer; padding: 10px 4px; font: inherit; font-size: 12px; display: flex; align-items: center; gap: 8px; width: 28px; }
 .drawer-tab:hover { color: var(--accent); background: var(--accent-soft); }
-.drawer-body { width: 300px; overflow-y: auto; }
+.drawer-body { width: var(--right-w, 300px); overflow-y: auto; position: relative; }
 /* Faixa "Problema e bibliotecas" na borda direita da tela; o painel abre à esquerda dela. */
 .drawer-strip { order: 2; display: flex; flex-direction: column; border-left: 1px solid var(--border); background: #f5f7fa; }
 .drawer-strip .drawer-tab { border-bottom: 1px solid var(--border); }
@@ -570,3 +570,11 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .bc-param.off input { opacity: 0.45; }
 .bc-color { display: inline-flex; gap: 6px; align-items: center; }
 .x-space { visibility: hidden; pointer-events: none; }
+.panel-resizer { position: absolute; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 30; }
+.panel-resizer:hover, body.resizing .panel-resizer { background: var(--accent-soft); }
+.panel-resizer.left { left: calc(var(--left-w, 290px) - 4px); }
+.panel-resizer.right { left: -4px; }
+body.resizing { cursor: col-resize; user-select: none; }
+.about-panel { padding: 10px 12px; font-size: 13px; }
+.about-panel h2 { margin: 0; font-size: 16px; }
+.drawer-tab.on { color: var(--accent); background: var(--accent-soft); }

@@ -3,6 +3,8 @@ import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { asLength, DISPLAY_UNITS, evaluate, evaluateVariables, type LengthUnit } from '../cad/expr';
 import type { ProblemType, Settings } from '../cad/types';
+import { AboutPanel } from './AboutPanel';
+import { PanelResizer } from './PanelResizer';
 import { useT } from '../i18n';
 import { useDocVersion, useEditor } from './useStore';
 import { setDrawer, useDrawer, type DrawerTab } from './drawerStore';
@@ -56,7 +58,7 @@ function ProblemPanel({ ed }: { ed: SketchEditor }) {
 }
 
 /** Gaveta da direita (oculta por padrão): Problema e bibliotecas de materiais e contornos. */
-export function RightDrawer({ ed, open, onToggle, onAbout }: { ed: SketchEditor; open: boolean; onToggle: () => void; onAbout: () => void }) {
+export function RightDrawer({ ed, open, onToggle }: { ed: SketchEditor; open: boolean; onToggle: () => void }) {
   const t = useT();
   useDocVersion(ed.doc);
   useEditor(ed);
@@ -74,10 +76,16 @@ export function RightDrawer({ ed, open, onToggle, onAbout }: { ed: SketchEditor;
           <span>{open ? '›' : '‹'}</span>
           <span className="drawer-tab-label">{t.drawer.open}</span>
         </button>
-        <button className="drawer-tab about-tab" onClick={onAbout} title={t.about.button}>
+        <button
+          className={`drawer-tab about-tab${open && d.tab === 'about' ? ' on' : ''}`}
+          onClick={() => (open && d.tab === 'about' ? setDrawer({ open: false }) : setDrawer({ open: true, tab: 'about', focus: null }))}
+          aria-expanded={open && d.tab === 'about'}
+          title={t.about.button}
+        >
           <span className="drawer-tab-label">{t.about.button}</span>
         </button>
       </div>
+      {open && <PanelResizer side="right" />}
       {open && (
         <div className="drawer-body side">
           <div className="drawer-tabs" role="tablist">
@@ -89,6 +97,7 @@ export function RightDrawer({ ed, open, onToggle, onAbout }: { ed: SketchEditor;
           </div>
           {d.tab === 'problem' && <ProblemPanel ed={ed} />}
           {d.tab === 'materials' && <MaterialLibrary ed={ed} focus={d.focus} onFocus={(id) => setDrawer({ focus: id })} />}
+          {d.tab === 'about' && <AboutPanel />}
           {d.tab === 'boundaries' && <BoundaryLibrary ed={ed} focus={d.focus} onFocus={(id) => setDrawer({ focus: id })} />}
         </div>
       )}

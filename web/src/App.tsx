@@ -14,7 +14,7 @@ import { hasFsAccess, loadDraft, openProject, parse, saveDraft, saveProject, ser
 import { download, toDXF, toSVG } from './io/export';
 import { Icons } from './ui/icons';
 import { setThemePref, useThemePref, type ThemePref } from './theme';
-import { AboutDialog } from './ui/AboutDialog';
+import { PanelResizer, useSavedPanelWidths } from './ui/PanelResizer';
 import { CiteDialog } from './ui/CiteDialog';
 import { DimInput } from './ui/DimInput';
 import { HistoryConsole } from './ui/HistoryConsole';
@@ -68,7 +68,7 @@ export default function App() {
     }
   };
   const [citing, setCiting] = useState(false);
-  const [about, setAbout] = useState(false);
+  useSavedPanelWidths();
   const [renaming, setRenaming] = useState(false);
 
   // Malha (seção, material, contorno ou nó de malha) troca o canvas para o modo malha.
@@ -278,6 +278,7 @@ export default function App() {
       )}
       <main className={`work${drawer ? ' drawer-open' : ''}`}>
         {ed ? <ModelTree ed={ed} sel={treeSel} onSelect={setTreeSel} name={name} /> : <aside className="side left" />}
+        <PanelResizer side="left" />
         <div className="center">
           {ed && <CanvasTabBar ed={ed} onSelect={setTreeSel} />}
           <div className="canvas-wrap">
@@ -320,11 +321,10 @@ export default function App() {
             </PopoutWindow>
           )}
         </div>
-        {ed ? <RightDrawer ed={ed} open={drawer} onToggle={() => setDrawer({ open: !drawer })} onAbout={() => setAbout(true)} /> : <aside className="drawer" />}
+        {ed ? <RightDrawer ed={ed} open={drawer} onToggle={() => setDrawer({ open: !drawer })} /> : <aside className="drawer" />}
       </main>
       {ed ? <StatusBar ed={ed} core={core} /> : <footer className="status" />}
       {citing && <CiteDialog onClose={() => setCiting(false)} />}
-      {about && <AboutDialog onClose={() => setAbout(false)} />}
     </div>
   );
 }

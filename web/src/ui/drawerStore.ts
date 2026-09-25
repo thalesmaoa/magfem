@@ -1,7 +1,7 @@
 // Estado da gaveta da direita (Problema, biblioteca de materiais e de contornos): abrível de qualquer lugar.
 import { useSyncExternalStore } from 'react';
 
-export type DrawerTab = 'problem' | 'materials' | 'boundaries';
+export type DrawerTab = 'problem' | 'materials' | 'boundaries' | 'about';
 export interface DrawerState {
   open: boolean;
   tab: DrawerTab;
