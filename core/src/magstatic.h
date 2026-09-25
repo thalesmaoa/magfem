@@ -23,6 +23,11 @@ struct MagInput {
   std::vector<int> periodicSlave;       // nó escravo = sinal × nó mestre
   std::vector<int> periodicMaster;
   std::vector<int> periodicSign;        // +1 periódico, −1 antiperiódico
+  // Contorno misto (FEMM "Mixed"): ν ∂A/∂n + c0 A + c1 = 0 em cada aresta (robinA, robinB) do contorno (plano).
+  std::vector<int> robinA;
+  std::vector<int> robinB;
+  std::vector<double> robinC0;  // H/m² … (1/(μ0 R) para borda aberta assintótica)
+  std::vector<double> robinC1;
 
   // Não linear: curva B-H por região (pontos (B, H) crescentes, sem o (0, 0)); bhStart tem nr+1 índices
   // em bhB/bhH (região r usa [bhStart[r], bhStart[r+1])). Região sem pontos = linear (nu).

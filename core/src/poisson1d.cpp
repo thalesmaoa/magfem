@@ -6,7 +6,7 @@
 
 namespace magfem {
 
-const char* version() { return "0.0.1"; }
+const char* version() { return "1.0.0"; }
 
 double poisson1d_max(int n) {
   if (n < 2) return 0.0;

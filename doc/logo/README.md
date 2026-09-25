@@ -1,6 +1,8 @@
 # Logo do MagFEM
 
-`magfem.svg` — símbolo adotado: ímã em ferradura com o **corpo malhado** (elementos finitos) e
+`magfem.png` — logo atual (o mesmo do app e do favicon: `web/public/magfem-192.png`).
+
+Histórico: `magfem.svg` foi o primeiro símbolo: ímã em ferradura com o **corpo malhado** (elementos finitos) e
 **linhas de fluxo** douradas entre os polos (N vermelho, S azul, polos prateados). Funciona em
 fundo claro e escuro e continua legível em 16×16 (favicon).
 

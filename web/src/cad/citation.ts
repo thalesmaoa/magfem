@@ -5,7 +5,7 @@ export const CITATION = {
   name: 'MagFEM',
   subtitle: 'A Web-Based Magnetic Finite Element Analysis Tool',
   year: 2026,
-  version: '0.2.0',
+  version: '1.0.0',
   url: 'https://thalesmaia.com/tools/magfem-web/',
   key: 'maia2026magfem',
 };

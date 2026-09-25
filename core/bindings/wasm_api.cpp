@@ -54,6 +54,12 @@ val solveMagnetostatic(val in) {
   m.periodicMaster = convertJSArrayToNumberVector<int>(in["periodicMaster"]);
   m.periodicSign = convertJSArrayToNumberVector<int>(in["periodicSign"]);
   auto has = [&](const char* k) { return !in[k].isUndefined() && !in[k].isNull(); };
+  if (has("robinA")) {
+    m.robinA = convertJSArrayToNumberVector<int>(in["robinA"]);
+    m.robinB = convertJSArrayToNumberVector<int>(in["robinB"]);
+    m.robinC0 = convertJSArrayToNumberVector<double>(in["robinC0"]);
+    m.robinC1 = convertJSArrayToNumberVector<double>(in["robinC1"]);
+  }
   if (has("bhStart")) {
     m.bhStart = convertJSArrayToNumberVector<int>(in["bhStart"]);
     m.bhB = convertJSArrayToNumberVector<double>(in["bhB"]);

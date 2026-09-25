@@ -51,3 +51,37 @@ export function useT(): Translations {
   const l = useSyncExternalStore(subscribeLang, getLang);
   return TRANSLATIONS[l];
 }
+
+// Nomes padrão gravados no projeto ("Campo magnético", "Vista 2", "Superfície: B") aparecem no idioma atual;
+// nomes digitados pelo usuário ficam como estão.
+let nameIndex: Map<string, string> | null = null;
+function buildIndex() {
+  const idx = new Map<string, string>();
+  const walk = (o: unknown, path: string) => {
+    if (typeof o === 'string') {
+      if (o.length >= 3 && o.length <= 48 && /\p{L}{2}/u.test(o) && !idx.has(o)) idx.set(o, path);
+    } else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) walk(v, path ? `${path}.${k}` : k);
+  };
+  walk(TRANSLATIONS.pt, '');
+  walk(TRANSLATIONS.en, '');
+  return idx;
+}
+function lookup(s: string): string | null {
+  nameIndex ??= buildIndex();
+  const path = nameIndex.get(s);
+  if (!path) return null;
+  let o: unknown = TRANSLATIONS[lang];
+  for (const k of path.split('.')) o = (o as Record<string, unknown> | undefined)?.[k];
+  return typeof o === 'string' ? o : null;
+}
+export function displayName(name: string): string {
+  const m = /^(.*?)(\s+\d+)?$/.exec(name)!;
+  const base = lookup(m[1]);
+  if (base) return base + (m[2] ?? '');
+  const k = name.indexOf(': ');
+  if (k > 0) {
+    const head = lookup(name.slice(0, k));
+    if (head) return head + name.slice(k);
+  }
+  return name;
+}

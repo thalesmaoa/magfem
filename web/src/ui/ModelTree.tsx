@@ -9,7 +9,7 @@ import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType
 import { deleteVariable, nextVarName, renameVariable, setVariable } from '../cad/vars';
 import { groupOf } from '../cad/ops';
 import { formatValue } from '../cad/measure';
-import { useT } from '../i18n';
+import { useT, displayName } from '../i18n';
 import { LazyInput } from './common';
 import { Icons } from './icons';
 import { GeometryProps } from './GeometryProps';
@@ -112,7 +112,7 @@ function NodeRow({ ed, node, active, onSelect, onTreeSelect }: { ed: SketchEdito
         />
       ) : (
         <span className="tname" title={t.tree.rename} onDoubleClick={() => setRenaming(true)}>
-          {node.name}
+          {displayName(node.name)}
         </span>
       )}
       {node.kind === 'physics' && !node.coupled && <span className="crefs">{t.problem[node.analysis]}</span>}
@@ -160,7 +160,7 @@ function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsN
     <div className="props-body">
       <section>
         <h3>
-          {t.tree.physicsProps}: {node.name}
+          {t.tree.physicsProps}: {displayName(node.name)}
         </h3>
         {!node.coupled && (
           <label className="field">

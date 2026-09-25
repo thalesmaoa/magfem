@@ -45,8 +45,7 @@ export function setBoundary(sk: Sketch, ids: Id[], ref: string | null): Sketch {
   return assignBoundary(r.sketch, ids, r.boundary.id);
 }
 
-const BOUNDARY_BASE = (type: BoundaryType) =>
-  ({ dirichlet: 'A = 0', neumann: 'Neumann', periodic: T().mesh.periodic, antiperiodic: T().mesh.antiperiodic })[type];
+const BOUNDARY_BASE = (type: BoundaryType) => (type === 'dirichlet' ? 'Dirichlet' : type === 'neumann' ? 'Neumann' : T().mesh[type]);
 
 /** Nova propriedade de contorno (como no FEMM), ainda sem curvas. */
 export function addBoundaryDef(sk: Sketch, type: BoundaryType, name?: string): { sketch: Sketch; boundary: Boundary } {

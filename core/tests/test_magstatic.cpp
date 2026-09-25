@@ -1,4 +1,5 @@
 // Validação do solver magnetostático contra soluções analíticas.
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -60,6 +61,34 @@ int main() {
     // Energia: ∫ ½ ν B² = ½ μ0 J² ∫ (L/2 − x)² dx · H = μ0 J² H L³ / 24
     const double W = MU0 * J * J * H * L * L * L / 24;
     check(std::fabs(o.energy - W) / W < 0.01, "faixa com corrente: energia por metro (J/m)", o.energy, W);
+  }
+  // 1b) Contorno misto (FEMM "Mixed"): A = 1 em x = 0, ν ∂A/∂n + c0 A = 0 em x = L, sem corrente.
+  //     A(x) = 1 + s x, s = −c0/(ν + c0 L); com c0 = ν/L, A(L) = 1/2.
+  {
+    const double L = 0.1, H = 0.05, nu = 1 / MU0, c0 = nu / L;
+    MeshOutput m = rectMesh(0, 0, L, H, 20, 10, 2e-6);
+    MagInput in;
+    in.xy = m.xy;
+    in.triangles = m.triangles;
+    in.triRegion.assign(m.triangles.size() / 3, 0);
+    in.nu = {nu};
+    in.J = {0};
+    std::vector<int> right;
+    for (size_t i = 0; i < m.xy.size() / 2; ++i) {
+      if (m.xy[2 * i] < 1e-12) in.dirichletNodes.push_back(static_cast<int>(i)), in.dirichletValues.push_back(1);
+      if (m.xy[2 * i] > L - 1e-12) right.push_back(static_cast<int>(i));
+    }
+    std::sort(right.begin(), right.end(), [&](int a, int b) { return m.xy[2 * a + 1] < m.xy[2 * b + 1]; });
+    for (size_t k = 0; k + 1 < right.size(); ++k) {
+      in.robinA.push_back(right[k]);
+      in.robinB.push_back(right[k + 1]);
+      in.robinC0.push_back(c0);
+      in.robinC1.push_back(0);
+    }
+    MagOutput o = solve_magnetostatic(in);
+    double err = 0;
+    for (size_t i = 0; i < m.xy.size() / 2; ++i) err = std::max(err, std::fabs(o.A[i] - (1 - m.xy[2 * i] / (2 * L))));
+    check(o.error.empty() && err < 1e-6, "contorno misto: erro máx. de A (A(L) = 1/2)", err, 0);
   }
   // 2) Ímã preenchendo o domínio, Neumann em tudo e um nó fixo: B = Br exatamente.
   {

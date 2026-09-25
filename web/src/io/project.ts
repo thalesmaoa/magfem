@@ -1,6 +1,6 @@
 // Arquivo de projeto .magfem (JSON) — abrir/salvar direto no disco, estilo draw.io/Excalidraw.
 import { T } from '../i18n';
-import { DEFAULT_MATERIALS, DEFAULT_SETTINGS, emptySketch, newPhysics, ORIGIN_ID, type PlotKind, type PlotQuantity, type Sketch } from '../cad/types';
+import { DEFAULT_BOUNDARIES, DEFAULT_MATERIALS, DEFAULT_SETTINGS, emptySketch, newPhysics, ORIGIN_ID, type Boundary, type PlotKind, type PlotQuantity, type Sketch } from '../cad/types';
 
 export const FILE_EXT = '.magfem';
 const FORMAT = 'magfem';
@@ -41,7 +41,7 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
       group: m.group ?? DEFAULT_MATERIALS.find((d) => d.id === m.id)?.group ?? 'custom',
     })),
     regionAssigns: raw.regionAssigns ?? [],
-    boundaries: raw.boundaries ?? [],
+    boundaries: withDefaultBoundaries(raw.boundaries ?? []),
     circuits: raw.circuits ?? [],
     nextId: typeof raw.nextId === 'number' ? raw.nextId : 1,
   };
@@ -213,18 +213,61 @@ export interface Draft {
   savedAt: number;
 }
 
+const BACKUPS = 10;
+const BACKUP_EVERY = 60_000;
+
+/**
+ * Grava o rascunho. A cada minuto a versão anterior vai para um anel de cópias (backup-0..9):
+ * se algo sobrescrever o rascunho por engano, as cópias anteriores continuam lá.
+ */
 export async function saveDraft(d: Draft) {
   try {
     const conn = await db();
     await new Promise<void>((resolve, reject) => {
       const tx = conn.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(d, 'draft');
+      const st = tx.objectStore(STORE);
+      const prevReq = st.get('draft');
+      prevReq.onsuccess = () => {
+        const prev = prevReq.result as Draft | undefined;
+        const metaReq = st.get('backup-meta');
+        metaReq.onsuccess = () => {
+          const meta = (metaReq.result as { next: number; at: number } | undefined) ?? { next: 0, at: 0 };
+          if (prev && prev.text !== d.text && d.savedAt - meta.at >= BACKUP_EVERY) {
+            st.put(prev, `backup-${meta.next}`);
+            st.put({ next: (meta.next + 1) % BACKUPS, at: d.savedAt }, 'backup-meta');
+          }
+          st.put(d, 'draft');
+        };
+      };
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
     conn.close();
   } catch {
     // Sem IndexedDB (aba privada etc.): o app segue funcionando sem rascunho.
+  }
+}
+
+/** Cópias automáticas do rascunho (mais recente primeiro). */
+export async function listDraftBackups(): Promise<Draft[]> {
+  try {
+    const conn = await db();
+    const all = await new Promise<Draft[]>((resolve, reject) => {
+      const out: Draft[] = [];
+      const st = conn.transaction(STORE, 'readonly').objectStore(STORE);
+      const req = st.openCursor();
+      req.onsuccess = () => {
+        const c = req.result;
+        if (!c) return resolve(out);
+        if (String(c.key).startsWith('backup-') && c.key !== 'backup-meta') out.push(c.value as Draft);
+        c.continue();
+      };
+      req.onerror = () => reject(req.error);
+    });
+    conn.close();
+    return all.sort((a, b) => b.savedAt - a.savedAt);
+  } catch {
+    return [];
   }
 }
 
@@ -241,4 +284,11 @@ export async function loadDraft(): Promise<Draft | null> {
   } catch {
     return null;
   }
+}
+
+/** Projetos antigos (sem nenhuma condição padrão) recebem as condições prontas, sem repetir nomes. */
+function withDefaultBoundaries(list: Boundary[]): Boundary[] {
+  if (list.some((b) => b.id.startsWith('bd_'))) return list;
+  const names = new Set(list.map((b) => b.name));
+  return [...list, ...DEFAULT_BOUNDARIES.filter((d) => !names.has(d.name)).map((d) => ({ ...d, curves: [] }))];
 }

@@ -17,7 +17,7 @@ test('malha: materiais por região, contornos, tamanho por região e geração c
   await run('c = g.circle((0, 0), r=5)');
   await page.getByRole('treeitem', { name: 'Malha', exact: true }).click();
   await expect.poll(() => mode(page)).toBe('mesh');
-  await expect(page.getByRole('treeitem', { name: 'Borda externa (A = 0)' })).toBeVisible();
+  await expect(page.getByRole('treeitem', { name: /Dirichlet \(A = 0\)/ })).toBeVisible();
 
   // 1. Materiais: clique no anel e escolha na lista agrupada.
   await clickWorld(page, { x: 15, y: 0 });
@@ -69,8 +69,10 @@ test('malha: materiais por região, contornos, tamanho por região e geração c
   await page.getByLabel('Contorno', { exact: true }).selectOption({ label: 'Novo contorno…' });
   await page.getByLabel('Condição de contorno').selectOption('neumann');
   sk = await sketch(page);
-  expect(sk.boundaries).toHaveLength(1);
-  expect(sk.boundaries[0]).toMatchObject({ type: 'neumann', name: 'Neumann 1', curves: [expect.any(String)] });
+  // Além das condições padrão da biblioteca (bd_*), só o contorno novo.
+  const mine = sk.boundaries.filter((b: any) => !b.id.startsWith('bd_'));
+  expect(mine).toHaveLength(1);
+  expect(mine[0]).toMatchObject({ type: 'neumann', name: 'Neumann 2', curves: [expect.any(String)] });
   await run('m.boundary([c], "periodic")');
   await expect(page.locator('.console .out pre.err').last()).toContainText('duas');
 
@@ -130,7 +132,7 @@ test('gaveta: biblioteca de materiais agrupada e contornos', async ({ page }) =>
   await page.getByRole('tab', { name: 'Contornos' }).click();
   await page.getByRole('button', { name: '+ Novo contorno' }).click();
   await page.locator('.lib-editor').getByLabel('Condição de contorno').selectOption('periodic');
-  expect((await sketch(page)).boundaries[0].type).toBe('periodic');
+  expect((await sketch(page)).boundaries.find((b: any) => !b.id.startsWith('bd_')).type).toBe('periodic');
 });
 
 test('malha de núcleo com bobinas (geometria do usuário) e tamanho 4 mm nas bobinas', async ({ page }) => {

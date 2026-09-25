@@ -1,5 +1,5 @@
 // Textos da interface em português e inglês (mesmo padrão do im-calc-map).
-import type { ConstraintType } from '../cad/types';
+import type { BoundaryType, ConstraintType } from '../cad/types';
 
 export type Lang = 'pt' | 'en';
 
@@ -137,8 +137,7 @@ export interface Translations {
     coreLoading: string;
     core: (v: string) => string;
     coreError: (e: string) => string;
-    dev: string;
-    devHint: string;
+    github: string;
     polar: string;
     cartesian: string;
     toggleCoords: string;
@@ -289,6 +288,23 @@ export interface Translations {
     antiperiodic: string;
     dirichlet: string;
     neumann: string;
+    skin: string;
+    mixed: string;
+    dualImage: string;
+    periodicAirGap: string;
+    antiperiodicAirGap: string;
+    bcType: string;
+    bcColor: string;
+    bcColorReset: string;
+    bcPrescribed: string;
+    bcSkin: string;
+    bcMixed: string;
+    bcAirGap: string;
+    bcMu: string;
+    bcSigma: string;
+    bcInner: string;
+    bcOuter: string;
+    bcUnsupported: string;
     noMaterial: string;
     materials: string;
     regions: string;
@@ -305,6 +321,7 @@ export interface Translations {
     curves: (n: number) => string;
     hint: string;
     periodicNeedsTwo: string;
+    boundaryHelp: Record<BoundaryType, string>;
     addMaterial: string;
     femmImport: string;
     femmHint: string;
@@ -368,6 +385,7 @@ export interface Translations {
     elementsNode: string;
     regionName: string;
     outerHelp: string;
+    outerIncluded: (n: number) => string;
     bhAdd: string;
     turnsNonZero: string;
     bhPoint: string;
@@ -387,6 +405,8 @@ export interface Translations {
     periodicMismatch: (name: string) => string;
     negativeR: string;
     noDirichlet: string;
+    boundaryUnsupported: (name: string, type: string) => string;
+    mixedAxi: (name: string) => string;
     onlyStatic: string;
     badTime: string;
     noSchematic: string;
@@ -769,11 +789,10 @@ const PT: Translations = {
     empty: 'Sketch vazio',
     defined: 'Totalmente definido',
     dof: (n) => `${n} grau${n > 1 ? 's' : ''} de liberdade`,
-    coreLoading: 'MagFEM v0.1 · carregando o núcleo…',
-    core: () => `MagFEM v0.1 · núcleo WASM ok`,
+    coreLoading: 'MagFEM v1.0 · carregando o núcleo…',
+    core: () => `MagFEM v1.0 · WASM Core`,
     coreError: (e) => `núcleo FEM: erro (${e})`,
-    dev: 'Em desenvolvimento',
-    devHint: 'Versão de testes: pode ter erros e mudar sem aviso. Salve seus projetos em arquivo.',
+    github: 'Relatar um problema ou sugerir melhoria (GitHub Issues)',
     polar: 'polar',
     cartesian: 'cartesiano',
     toggleCoords: 'Clique para alternar entre coordenadas cartesianas e polares',
@@ -935,8 +954,25 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
   mesh: {
     periodic: 'Periódico',
     antiperiodic: 'Antiperiódico',
-    dirichlet: 'A = 0 (Dirichlet)',
-    neumann: 'Neumann (fluxo tangente)',
+    dirichlet: 'A prescrito',
+    neumann: 'Neumann (sem condição)',
+    skin: 'Pequena profundidade de penetração',
+    mixed: 'Misto',
+    dualImage: 'Imagem dual estratégica',
+    periodicAirGap: 'Entreferro periódico',
+    antiperiodicAirGap: 'Entreferro antiperiódico',
+    bcType: 'Tipo (como no FEMM)',
+    bcColor: 'Cor no desenho',
+    bcColorReset: 'Cor do tipo',
+    bcPrescribed: 'A prescrito: A = A0 + A1·x + A2·y (x, y em m)',
+    bcSkin: 'Pequena profundidade de penetração',
+    bcMixed: 'Misto: ν ∂A/∂n + c0·A + c1 = 0',
+    bcAirGap: 'Entreferro',
+    bcMu: 'μ relativo',
+    bcSigma: 'σ (MS/m)',
+    bcInner: 'Ângulo interno (graus)',
+    bcOuter: 'Ângulo externo (graus)',
+    bcUnsupported: 'Ainda não resolvido pelo solver (precisa da análise harmônica ou de entreferro móvel).',
     noMaterial: 'sem material',
     materials: 'Materiais',
     regions: 'Regiões',
@@ -953,6 +989,17 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     curves: (n) => `${n} curva${n === 1 ? '' : 's'} selecionada${n === 1 ? '' : 's'}`,
     hint: 'Clique numa região para escolher o material; clique nas bordas (Shift para várias) para definir o contorno. A borda externa é A = 0 por padrão.',
     periodicNeedsTwo: 'Periódico/antiperiódico liga pares de curvas: selecione duas.',
+    boundaryHelp: {
+      dirichlet: 'A fixo na curva. A = 0: o fluxo não atravessa a curva (borda do domínio).',
+      skin: 'Condutor com pequena profundidade de penetração na curva (análise harmônica).',
+      mixed: 'Robin. Borda aberta assintótica: c0 = 1/(μ0·R), R = raio do domínio em m, c1 = 0.',
+      dualImage: 'Aproximação de domínio aberto por imagem (FEMM).',
+      periodicAirGap: 'Entreferro periódico para máquinas girando (banda móvel).',
+      antiperiodicAirGap: 'Entreferro antiperiódico para máquinas girando (banda móvel).',
+      neumann: 'Neumann: ∂A/∂n = 0 — o fluxo cruza a curva perpendicularmente (simetria magnética).',
+      periodic: 'Periódico: A igual nas duas curvas do par (repete o domínio).',
+      antiperiodic: 'Antiperiódico: A com sinal trocado nas duas curvas do par (meio período).',
+    },
     addMaterial: 'Novo material',
     femmImport: 'Importar do FEMM…',
     femmHint: 'Biblioteca de materiais do FEMM 4.2 (245 materiais); também lê um matlib.dat seu (femm42/bin/matlib.dat)',
@@ -1026,6 +1073,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     bhMonotonic: 'A curva precisa ter H e B crescentes.',
     bhHelp: 'Pares (H, B) crescentes a partir de (0, 0). O solver ainda usa o μr linear; a curva entra na próxima etapa (não linear).',
     outerHelp: 'Curvas da borda externa que não têm contorno recebem A = 0 automaticamente.',
+    outerIncluded: (n) => `Inclui automaticamente a borda mais externa do desenho (${n} curva${n === 1 ? '' : 's'} sem outro contorno).`,
     outerName: 'Borda externa',
     outerMakeEditable: 'Tornar editável (virar um contorno)',
     minAngleHelp: 'Nenhum triângulo terá ângulo interno menor que este. Triângulos achatados pioram a precisão do campo; valores maiores dão elementos mais regulares, porém mais elementos. 30° é um bom padrão; o máximo aceito é 34°.',
@@ -1035,6 +1083,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     periodicMismatch: (b) => `${b}: as duas curvas precisam do mesmo número de nós (gere a malha de novo).`,
     negativeR: 'Axissimétrico: há geometria com r < 0 (o eixo é x = 0).',
     noDirichlet: 'Falta um contorno com A prescrito (sem ele o potencial fica indefinido).',
+    boundaryUnsupported: (n, ty) => `${n}: contorno "${ty}" ainda não é resolvido pelo solver.`,
+    mixedAxi: (n) => `${n}: contorno misto ainda só no problema planar.`,
     onlyStatic: 'Harmônica ainda não resolve; use magnetostática ou transitória.',
     badTime: 'Transitório: passo e tempo final precisam ser positivos (t final > passo).',
     noSchematic: 'O circuito desta física está vazio: abra o circuito e ligue as bobinas às fontes.',
@@ -1432,11 +1482,10 @@ const EN: Translations = {
     empty: 'Empty sketch',
     defined: 'Fully defined',
     dof: (n) => `${n} degree${n > 1 ? 's' : ''} of freedom`,
-    coreLoading: 'MagFEM v0.1 · loading core…',
-    core: () => `MagFEM v0.1 · WASM core ok`,
+    coreLoading: 'MagFEM v1.0 · loading core…',
+    core: () => `MagFEM v1.0 · WASM Core`,
     coreError: (e) => `FEM core: error (${e})`,
-    dev: 'Under development',
-    devHint: 'Test version: may have bugs and change without notice. Save your projects to file.',
+    github: 'Report a bug or suggest an improvement (GitHub Issues)',
     polar: 'polar',
     cartesian: 'cartesian',
     toggleCoords: 'Click to toggle cartesian / polar coordinates',
@@ -1598,8 +1647,25 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
   mesh: {
     periodic: 'Periodic',
     antiperiodic: 'Antiperiodic',
-    dirichlet: 'A = 0 (Dirichlet)',
-    neumann: 'Neumann (tangent flux)',
+    dirichlet: 'Prescribed A',
+    neumann: 'Neumann (no condition)',
+    skin: 'Small skin depth',
+    mixed: 'Mixed',
+    dualImage: 'Strategic dual image',
+    periodicAirGap: 'Periodic air gap',
+    antiperiodicAirGap: 'Anti-periodic air gap',
+    bcType: 'Type (as in FEMM)',
+    bcColor: 'Color in the drawing',
+    bcColorReset: 'Type color',
+    bcPrescribed: 'Prescribed A: A = A0 + A1·x + A2·y (x, y in m)',
+    bcSkin: 'Small skin depth',
+    bcMixed: 'Mixed: ν ∂A/∂n + c0·A + c1 = 0',
+    bcAirGap: 'Air gap',
+    bcMu: 'Relative μ',
+    bcSigma: 'σ (MS/m)',
+    bcInner: 'Inner angle (deg)',
+    bcOuter: 'Outer angle (deg)',
+    bcUnsupported: 'Not solved yet (needs harmonic analysis or a moving air gap).',
     noMaterial: 'no material',
     materials: 'Materials',
     regions: 'Regions',
@@ -1616,6 +1682,17 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     curves: (n) => `${n} curve${n === 1 ? '' : 's'} selected`,
     hint: 'Click a region to pick its material; click edges (Shift for several) to set a boundary. The outer border is A = 0 by default.',
     periodicNeedsTwo: 'Periodic/antiperiodic link pairs of curves: select two.',
+    boundaryHelp: {
+      dirichlet: 'Fixed A on the curve. A = 0: no flux crosses the curve (domain border).',
+      skin: 'Conductor with small skin depth on the curve (harmonic analysis).',
+      mixed: 'Robin. Asymptotic open boundary: c0 = 1/(μ0·R), R = domain radius in m, c1 = 0.',
+      dualImage: 'Open-domain approximation by imaging (FEMM).',
+      periodicAirGap: 'Periodic air gap for rotating machines (moving band).',
+      antiperiodicAirGap: 'Anti-periodic air gap for rotating machines (moving band).',
+      neumann: 'Neumann: ∂A/∂n = 0 — flux crosses the curve at right angles (magnetic symmetry).',
+      periodic: 'Periodic: same A on both curves of the pair (repeats the domain).',
+      antiperiodic: 'Antiperiodic: opposite A on both curves of the pair (half period).',
+    },
     addMaterial: 'New material',
     femmImport: 'Import from FEMM…',
     femmHint: 'FEMM 4.2 material library (245 materials); can also read your own matlib.dat (femm42/bin/matlib.dat)',
@@ -1677,7 +1754,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     curvesOf: (n) => `${n} curve${n === 1 ? '' : 's'}`,
     unassigned: 'no boundary (natural Neumann)',
     elements: (n) => `${n} el.`,
-    elementsNode: 'Triangle',
+    elementsNode: 'Elements',
     regionName: 'Region name',
     bhAdd: 'Add B-H curve (nonlinear)',
     turnsNonZero: 'Turns: any nonzero number (negative reverses the direction).',
@@ -1689,6 +1766,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     bhMonotonic: 'The curve needs increasing H and B.',
     bhHelp: 'Increasing (H, B) pairs starting at (0, 0). The solver still uses the linear μr; the curve comes in the next step (nonlinear).',
     outerHelp: 'Outer border curves without a boundary get A = 0 automatically.',
+    outerIncluded: (n) => `Automatically includes the outermost border of the drawing (${n} curve${n === 1 ? '' : 's'} without another boundary).`,
     outerName: 'Outer border',
     outerMakeEditable: 'Make editable (turn into a boundary)',
     minAngleHelp: 'No triangle will have an interior angle smaller than this. Flat triangles hurt field accuracy; larger values give more regular elements but more of them. 30° is a good default; the maximum accepted is 34°.',
@@ -1698,6 +1776,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     periodicMismatch: (b) => `${b}: both curves need the same number of nodes (generate the mesh again).`,
     negativeR: 'Axisymmetric: some geometry has r < 0 (the axis is x = 0).',
     noDirichlet: 'A boundary with prescribed A is missing (without it the potential is undefined).',
+    boundaryUnsupported: (n, ty) => `${n}: "${ty}" boundary is not solved yet.`,
+    mixedAxi: (n) => `${n}: mixed boundary is planar-only for now.`,
     onlyStatic: 'Harmonic does not solve yet; use magnetostatic or transient.',
     badTime: 'Transient: step and end time must be positive (end > step).',
     noSchematic: 'This physics circuit is empty: open the circuit and connect the coils to sources.',

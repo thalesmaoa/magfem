@@ -255,6 +255,23 @@ MagOutput solve_magnetostatic(const MagInput& in) {
         }
       }
     }
+    // Contorno misto: ∮ (c0 A + c1) N_i ds em cada aresta (massa 1D: L/3, L/6).
+    for (size_t k = 0; k < in.robinA.size() && k < in.robinB.size(); ++k) {
+      const int v[2] = {in.robinA[k], in.robinB[k]};
+      if (v[0] < 0 || v[0] >= nn || v[1] < 0 || v[1] >= nn || v[0] == v[1]) continue;
+      const double c0 = k < in.robinC0.size() ? in.robinC0[k] : 0, c1 = k < in.robinC1.size() ? in.robinC1[k] : 0;
+      const double L = std::hypot(in.xy[2 * v[1]] - in.xy[2 * v[0]], in.xy[2 * v[1] + 1] - in.xy[2 * v[0] + 1]);
+      for (int i = 0; i < 2; ++i) {
+        const Dof& di = dof[v[i]];
+        if (di.free < 0) continue;
+        R[di.free] += di.sign * (c0 * L * (2 * A[v[i]] + A[v[1 - i]]) / 6 + c1 * L / 2);
+        if (!withJac) continue;
+        for (int j = 0; j < 2; ++j) {
+          const Dof& dj = dof[v[j]];
+          if (dj.free >= 0) trip.emplace_back(di.free, dj.free, di.sign * c0 * L * (i == j ? 2 : 1) / 6 * dj.sign);
+        }
+      }
+    }
     if (withJac) {
       Kt->resize(nfree, nfree);
       Kt->setFromTriplets(trip.begin(), trip.end());

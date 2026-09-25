@@ -6,14 +6,13 @@ import type { SketchEditor } from '../cad/editor';
 import { addBoundaryDef, addMaterial, assignBoundary, duplicateMaterial, removeBoundaryDef, removeMaterial, updateBoundaryDef, updateMaterial } from '../cad/mesh';
 import { parseMatlib, type FemmMaterial } from '../io/femm';
 import { materialLine } from '../cad/script';
-import { DEFAULT_MATERIALS, MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type MaterialGroup } from '../cad/types';
+import { BOUNDARY_TYPES, BOUNDARY_UNSUPPORTED, boundaryColor, OUTER_BOUNDARY, DEFAULT_MATERIALS, MATERIAL_GROUPS, type BoundaryType, type Id, type Material, type MaterialGroup } from '../cad/types';
 import { useT } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
 import { openTab } from './tabsStore';
 import { Icons } from './icons';
 
-export const BOUNDARY_TYPES: BoundaryType[] = ['dirichlet', 'neumann', 'periodic', 'antiperiodic'];
 
 export const Swatch = ({ color }: { color: string | null | undefined }) => (
   <span className="swatch" style={color ? { background: color } : undefined} aria-hidden="true" />
@@ -366,6 +365,20 @@ export function BoundaryEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
   const b = ed.sketch.boundaries.find((x) => x.id === id);
   if (!b) return null;
   const set = (patch: Parameters<typeof updateBoundaryDef>[2], code: string) => ed.meshOp((s) => updateBoundaryDef(s, id, patch), `m.boundary_def(${q(b.name)}, ${code})`);
+  // Campo de um parâmetro (expressão); desabilitado quando não vale para o tipo, como no FEMM.
+  type Key = 'value' | 'a1' | 'a2' | 'phi' | 'mu' | 'sigma' | 'c0' | 'c1' | 'innerAngle' | 'outerAngle';
+  const kwOf: Record<Key, string> = { value: 'value', a1: 'a1', a2: 'a2', phi: 'phi', mu: 'mu', sigma: 'sigma', c0: 'c0', c1: 'c1', innerAngle: 'inner_angle', outerAngle: 'outer_angle' };
+  const param = (k: Key, label: string, on: boolean) => (
+    <label className={`field bc-param${on ? '' : ' off'}`}>
+      <span>{label}</span>
+      {on ? (
+        <LazyInput value={b[k] ?? ''} placeholder="0" ariaLabel={label} onCommit={(v) => set({ [k]: v.trim() || undefined }, `${kwOf[k]}=${q(v.trim() || '0')}`)} />
+      ) : (
+        <input disabled value="" placeholder="0" aria-label={label} />
+      )}
+    </label>
+  );
+  const ty = b.type;
   return (
     <div className="lib-editor">
       <label className="field">
@@ -373,8 +386,8 @@ export function BoundaryEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
         <LazyInput value={b.name} ariaLabel={t.mesh.name} onCommit={(v) => v.trim() && v.trim() !== b.name && set({ name: v.trim() }, `name=${q(v.trim())}`)} />
       </label>
       <label className="field">
-        <span>{t.mesh.boundaryType}</span>
-        <select aria-label={t.mesh.boundaryType} value={b.type} onChange={(e) => set({ type: e.target.value as BoundaryType }, `type=${q(e.target.value)}`)}>
+        <span>{t.mesh.bcType}</span>
+        <select aria-label={t.mesh.boundaryType} value={ty} onChange={(e) => set({ type: e.target.value as BoundaryType }, `type=${q(e.target.value)}`)}>
           {BOUNDARY_TYPES.map((k) => (
             <option key={k} value={k}>
               {t.mesh[k]}
@@ -382,13 +395,43 @@ export function BoundaryEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
           ))}
         </select>
       </label>
-      {b.type === 'dirichlet' && (
-        <label className="field">
-          <span>{t.mesh.boundaryValue}</span>
-          <LazyInput value={b.value ?? ''} placeholder="0" ariaLabel={t.mesh.boundaryValue} onCommit={(v) => set({ value: v.trim() || undefined }, `value=${q(v.trim() || '0')}`)} />
-        </label>
-      )}
-      {(b.type === 'periodic' || b.type === 'antiperiodic') && <p className="help-line">{t.mesh.periodicNeedsTwo}</p>}
+      <label className="field">
+        <span>{t.mesh.bcColor}</span>
+        <span className="bc-color">
+          <input type="color" aria-label={t.mesh.bcColor} value={boundaryColor(b)} onChange={(e) => set({ color: e.target.value }, `color=${q(e.target.value)}`)} />
+          {b.color && (
+            <button className="btn secondary small" onClick={() => set({ color: undefined }, 'color=None')}>
+              {t.mesh.bcColorReset}
+            </button>
+          )}
+        </span>
+      </label>
+      <p className="help-line">{t.mesh.boundaryHelp[ty]}</p>
+      {b.id === OUTER_BOUNDARY && ty === 'dirichlet' && <p className="help-line">{t.mesh.outerIncluded(ed.defaultOuter().length)}</p>}
+      {BOUNDARY_UNSUPPORTED.includes(ty) && <p className="err-text">{t.mesh.bcUnsupported}</p>}
+      <fieldset className="bc-group">
+        <legend>{t.mesh.bcPrescribed}</legend>
+        {param('value', 'A0 (Wb/m)', ty === 'dirichlet')}
+        {param('a1', 'A1 (Wb/m²)', ty === 'dirichlet')}
+        {param('a2', 'A2 (Wb/m²)', ty === 'dirichlet')}
+        {param('phi', 'φ (°)', ty === 'dirichlet')}
+      </fieldset>
+      <fieldset className="bc-group">
+        <legend>{t.mesh.bcMixed}</legend>
+        {param('c0', 'c0', ty === 'mixed')}
+        {param('c1', 'c1', ty === 'mixed')}
+      </fieldset>
+      <fieldset className="bc-group">
+        <legend>{t.mesh.bcSkin}</legend>
+        {param('mu', t.mesh.bcMu, ty === 'skin')}
+        {param('sigma', t.mesh.bcSigma, ty === 'skin')}
+      </fieldset>
+      <fieldset className="bc-group">
+        <legend>{t.mesh.bcAirGap}</legend>
+        {param('innerAngle', t.mesh.bcInner, ty === 'periodicAirGap' || ty === 'antiperiodicAirGap')}
+        {param('outerAngle', t.mesh.bcOuter, ty === 'periodicAirGap' || ty === 'antiperiodicAirGap')}
+      </fieldset>
+      {(ty === 'periodic' || ty === 'antiperiodic') && <p className="help-line">{t.mesh.periodicNeedsTwo}</p>}
       <p className="muted">{t.mesh.curvesOf(b.curves.length)}</p>
       <button
         className="btn danger"
@@ -412,6 +455,7 @@ export function newBoundary(ed: SketchEditor, type: BoundaryType = 'dirichlet'):
 export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focus: Id | null; onFocus: (id: Id | null) => void }) {
   const t = useT();
   const outer = ed.defaultOuter();
+  const hasOuterB = ed.sketch.boundaries.some((b) => b.id === OUTER_BOUNDARY && b.type === 'dirichlet');
   return (
     <section>
       <div className="lib-head">
@@ -421,7 +465,7 @@ export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
         </button>
       </div>
       <ul className="lib-list" role="listbox" aria-label={t.mesh.libBoundaries}>
-        {outer.length > 0 && (
+        {outer.length > 0 && !hasOuterB && (
           <li>
             <button role="option" aria-selected={focus === 'outer'} className={`lib-item${focus === 'outer' ? ' on' : ''}`} onClick={() => onFocus(focus === 'outer' ? null : 'outer')}>
               <span className="bswatch b-dirichlet" /> <span className="tname">{t.mesh.outerDefault}</span>
@@ -447,8 +491,10 @@ export function BoundaryLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
         {ed.sketch.boundaries.map((b) => (
           <li key={b.id}>
             <button role="option" aria-selected={focus === b.id} className={`lib-item${focus === b.id ? ' on' : ''}`} onClick={() => onFocus(focus === b.id ? null : b.id)}>
-              <span className={`bswatch b-${b.type}`} /> <span className="tname">{b.name}</span>
-              <span className="crefs">{t.mesh.curvesOf(b.curves.length)}</span>
+              <span className="bswatch" style={{ background: boundaryColor(b) }} /> <span className="tname">{b.name}</span>
+              <span className="crefs">
+                {t.mesh[b.type]} · {t.mesh.curvesOf(b.curves.length + (b.id === OUTER_BOUNDARY && hasOuterB ? outer.length : 0))}
+              </span>
             </button>
             {focus === b.id && <BoundaryEditor ed={ed} id={b.id} onRemoved={() => onFocus(null)} />}
           </li>

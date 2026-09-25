@@ -27,7 +27,7 @@ import {
 import { addNode, addPlot, addSchematic, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { BOUNDARY_TYPES, type Boundary, DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
 import { duplicateMaterial, addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
@@ -974,16 +974,22 @@ export class CommandConsole {
         need(1);
         const name = String(a[0]);
         const cur = findBoundary(sk, name);
-        const patch: { type?: BoundaryType; value?: string; name?: string } = {};
-        if (kw.type !== undefined) patch.type = String(kw.type) as BoundaryType;
-        if (kw.value !== undefined) patch.value = String(kw.value);
+        const patch: Partial<Omit<Boundary, 'id' | 'curves'>> = {};
+        if (kw.type !== undefined) {
+          if (!BOUNDARY_TYPES.includes(String(kw.type) as BoundaryType)) throw new ConsoleError(t.notFound(String(kw.type)));
+          patch.type = String(kw.type) as BoundaryType;
+        }
         if (kw.name !== undefined) patch.name = String(kw.name);
+        // Parâmetros do FEMM (None apaga): value = A0, a1, a2, phi, mu, sigma, c0, c1, inner_angle, outer_angle; color.
+        const params: [string, keyof Boundary][] = [['value', 'value'], ['a1', 'a1'], ['a2', 'a2'], ['phi', 'phi'], ['mu', 'mu'], ['sigma', 'sigma'], ['c0', 'c0'], ['c1', 'c1'], ['inner_angle', 'innerAngle'], ['outer_angle', 'outerAngle'], ['color', 'color']];
+        for (const [k, f] of params) if (kw[k] !== undefined) (patch as Record<string, unknown>)[f] = kw[k] === null ? undefined : String(kw[k]);
         if (cur) {
           this.commit(updateBoundaryDef(sk, cur.id, patch));
           return cur.id;
         }
         const r = addBoundaryDef(sk, patch.type ?? 'dirichlet', name);
-        return this.commitWithIdOf(patch.value !== undefined ? updateBoundaryDef(r.sketch, r.boundary.id, { value: patch.value }) : r.sketch, r.boundary.id, kw.id);
+        const { type: _ty, name: _nm, ...rest } = patch;
+        return this.commitWithIdOf(Object.keys(rest).length ? updateBoundaryDef(r.sketch, r.boundary.id, rest) : r.sketch, r.boundary.id, kw.id);
       }
       case 'mesh_size': {
         need(1);

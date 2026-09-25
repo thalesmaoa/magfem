@@ -31,5 +31,6 @@ Third-party components (not covered by the MIT license above):
 - PlaneGCS (FreeCAD) via @salusoft89/planegcs (LGPL-2.1).
 - web/src/data/femm-matlib.json: material properties converted from the
   matlib.dat material library of FEMM 4.2 (David Meeker, https://www.femm.info),
-  which compiles manufacturer and handbook data. Credit belongs to FEMM; the file
-  is kept separate from the MIT-licensed code.
+  which compiles manufacturer and handbook data. FEMM is distributed under the
+  Aladdin Free Public License (free redistribution, no commercial use); the file
+  is kept separate from the MIT-licensed code and credit belongs to FEMM.

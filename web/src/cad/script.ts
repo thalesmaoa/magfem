@@ -81,7 +81,10 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
   for (const c of sk.circuits) add(`m.circuit(${q(c.name)}, id=${q(c.id)}, current=${q(c.current)}, kind=${q(c.kind)})`);
   if (sk.boundaries.length) add('\n# Contornos');
   for (const b of sk.boundaries) {
-    add(`m.boundary_def(${q(b.name)}, id=${q(b.id)}, type=${q(b.type)}${b.value !== undefined ? `, value=${q(b.value)}` : ''})`);
+    const kw = [`id=${q(b.id)}`, `type=${q(b.type)}`];
+    const params: [string, string | undefined][] = [['value', b.value], ['a1', b.a1], ['a2', b.a2], ['phi', b.phi], ['mu', b.mu], ['sigma', b.sigma], ['c0', b.c0], ['c1', b.c1], ['inner_angle', b.innerAngle], ['outer_angle', b.outerAngle], ['color', b.color]];
+    for (const [k, v] of params) if (v !== undefined) kw.push(`${k}=${q(v)}`);
+    add(`m.boundary_def(${q(b.name)}, ${kw.join(', ')})`);
     if (b.curves.length) add(`m.boundary(${list(b.curves)}, ${q(b.name)})`);
   }
 

@@ -510,7 +510,7 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .sch-side { border-left: 1px solid var(--border); padding: 10px 12px; overflow-y: auto; background: var(--panel); }
 .sch-signals .xychart { max-height: 200px; }
 .sch-side p, .sch-side .muted { font-size: 12px; line-height: 1.4; }
-.dev-badge { font-size: 11px; font-weight: 600; color: #7a4b00; background: #ffd66b; border-radius: 10px; padding: 1px 8px; margin-right: 8px; white-space: nowrap; }
+.gh-link { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); text-decoration: none; margin-right: 10px; white-space: nowrap; } .gh-link:hover { color: var(--text); } .gh-link svg { width: 16px; height: 16px; }
 .solve-progress { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; margin-right: 10px; color: var(--accent); white-space: nowrap; }
 .solve-progress .bar { width: 120px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; display: inline-block; }
 .solve-progress .fill { display: block; height: 100%; background: var(--accent); transition: width 0.15s; }
@@ -558,3 +558,11 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .femm-row.folder { padding-left: 0; margin-top: 4px; }
 .femm-row .crefs { margin-left: auto; }
 .femm-row .crefs + .crefs { margin-left: 8px; }
+
+.core-ok { color: #3fb950; font-weight: 600; }
+.bc-group { border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px 4px; margin: 6px 0; }
+.bc-group legend { font-size: 11px; color: var(--muted); padding: 0 4px; }
+.bc-param.off span { opacity: 0.45; }
+.bc-param.off input { opacity: 0.45; }
+.bc-color { display: inline-flex; gap: 6px; align-items: center; }
+.x-space { visibility: hidden; pointer-events: none; }

@@ -30,7 +30,7 @@ import {
 } from './ops';
 import { LABEL_DEFAULT_PX, render, type HitRegion, type Preview, type RenderState } from './render';
 import { groupParams, type DragTarget } from './solver';
-import { isCurve, isDimension, ORIGIN_ID, type BoundaryType, type Constraint, type ConstraintType, type Group, type Id, type LineEnt, type RegionAssign, type Sketch } from './types';
+import { isCurve, isDimension, ORIGIN_ID, type Constraint, type ConstraintType, type Group, type Id, type LineEnt, type RegionAssign, type Sketch, BOUNDARY_COLOR, boundaryColor, OUTER_BOUNDARY } from './types';
 import { View } from './view';
 import { computeArrangement, findRegion, regionAt, type Arrangement } from './regions';
 import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './mesh';
@@ -1159,10 +1159,12 @@ export class SketchEditor {
       if (r) byRegion.set(r.index, a);
     }
     const selKey = this.meshSel?.kind === 'region' ? findRegion(arr, this.meshSel) : null;
-    const boundaryOf = new Map<Id, BoundaryType>();
-    for (const b of sk.boundaries) for (const c of b.curves) boundaryOf.set(c, b.type);
+    // Cor de cada curva com contorno (a escolhida ou a do tipo).
+    const boundaryOf = new Map<Id, string>();
+    for (const b of sk.boundaries) for (const c of b.curves) boundaryOf.set(c, boundaryColor(b));
     // Borda externa sem contorno explícito: A = 0 (padrão).
-    for (const c of this.defaultOuter()) boundaryOf.set(c, 'dirichlet');
+    const outerB = sk.boundaries.find((b) => b.id === OUTER_BOUNDARY);
+    for (const c of this.defaultOuter()) boundaryOf.set(c, outerB ? boundaryColor(outerB) : BOUNDARY_COLOR.dirichlet);
     return {
       regions: arr.regions.map((r) => {
         const a = byRegion.get(r.index);

@@ -4,7 +4,7 @@ import { asLength, evaluate, evaluateVariables } from './expr';
 import { arcAngles } from './geometry';
 import type { MeshResult } from './meshgen';
 import { findRegion, type Arrangement } from './regions';
-import type { Id, Sketch } from './types';
+import { BOUNDARY_UNSUPPORTED, OUTER_BOUNDARY, type Boundary, type Id, type Sketch } from './types';
 
 export const MU0 = 4e-7 * Math.PI;
 
@@ -23,6 +23,11 @@ export interface MagInput {
   periodicSlave: number[];
   periodicMaster: number[];
   periodicSign: number[];
+  /** Contorno misto: arestas (robinA[k], robinB[k]) com ν ∂A/∂n + c0 A + c1 = 0. */
+  robinA?: number[];
+  robinB?: number[];
+  robinC0?: number[];
+  robinC1?: number[];
   /** Curvas B-H: região r usa bhB/bhH[bhStart[r] .. bhStart[r+1]). */
   bhStart?: number[];
   bhB?: number[];
@@ -200,19 +205,56 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
   const setD = (ids: Id[], v: number) => {
     for (const c of ids) for (const n of mesh.curveNodes[c] ?? []) dirichlet.set(n, v);
   };
-  setD(outerDefault, 0);
+  // Prescribed A (FEMM): A = A0 + A1·x + A2·y, x e y em metros.
+  const prescribed = (b: Boundary, ids: Id[]) => {
+    let a0 = 0, a1 = 0, a2 = 0;
+    try {
+      a0 = num(sk, b.value, 0);
+      a1 = num(sk, b.a1, 0);
+      a2 = num(sk, b.a2, 0);
+    } catch (e) {
+      problems.push(`${b.name}: ${(e as Error).message}`);
+    }
+    for (const c of ids) for (const n of mesh.curveNodes[c] ?? []) dirichlet.set(n, a0 + a1 * xy[2 * n] * 1e-3 + a2 * xy[2 * n + 1] * 1e-3);
+  };
+  // Borda externa sem contorno: segue o "Dirichlet (A = 0)" da biblioteca (ou A = 0 se ele foi removido).
+  const outerB = sk.boundaries.find((b) => b.id === OUTER_BOUNDARY && b.type === 'dirichlet');
+  if (outerB) prescribed(outerB, outerDefault);
+  else setD(outerDefault, 0);
   const slave: number[] = [];
   const master: number[] = [];
   const sign: number[] = [];
+  const robinA: number[] = [], robinB: number[] = [], robinC0: number[] = [], robinC1: number[] = [];
+  let anchored = false; // contorno misto com c0 > 0 também fixa o potencial
   for (const b of sk.boundaries) {
-    if (b.type === 'dirichlet') {
-      let v = 0;
+    if (!b.curves.length) continue; // condição da biblioteca ainda não usada
+    if (BOUNDARY_UNSUPPORTED.includes(b.type)) {
+      problems.push(t.solve.boundaryUnsupported(b.name, t.mesh[b.type]));
+      continue;
+    }
+    if (b.type === 'dirichlet') prescribed(b, b.curves);
+    else if (b.type === 'mixed') {
+      if (axisymmetric) {
+        problems.push(t.solve.mixedAxi(b.name));
+        continue;
+      }
+      let c0 = 0, c1 = 0;
       try {
-        v = num(sk, b.value, 0);
+        c0 = num(sk, b.c0, 0);
+        c1 = num(sk, b.c1, 0);
       } catch (e) {
         problems.push(`${b.name}: ${(e as Error).message}`);
       }
-      setD(b.curves, v);
+      if (c0 > 0) anchored = true;
+      for (const c of b.curves) {
+        const nodes = mesh.curveNodes[c] ?? [];
+        for (let k = 0; k + 1 < nodes.length; k++) {
+          robinA.push(nodes[k]);
+          robinB.push(nodes[k + 1]);
+          robinC0.push(c0);
+          robinC1.push(c1);
+        }
+      }
     } else if (b.type === 'periodic' || b.type === 'antiperiodic') {
       if (b.curves.length !== 2) {
         problems.push(`${b.name}: ${t.mesh.periodicNeedsTwo}`);
@@ -242,7 +284,7 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
     }
     if (neg) problems.push(t.solve.negativeR);
   }
-  if (!dirichlet.size) problems.push(t.solve.noDirichlet);
+  if (!dirichlet.size && !anchored) problems.push(t.solve.noDirichlet);
 
   const bhStart: number[] = [0];
   const bhB: number[] = [];
@@ -271,6 +313,7 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
       periodicSlave: slave,
       periodicMaster: master,
       periodicSign: sign,
+      ...(robinA.length ? { robinA, robinB, robinC0, robinC1 } : {}),
       bhStart,
       bhB,
       bhH,

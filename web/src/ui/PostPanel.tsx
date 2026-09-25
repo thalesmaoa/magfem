@@ -5,7 +5,7 @@ import { entityLabel, type SketchEditor } from '../cad/editor';
 import { lineProfile, probe, quantityLabel, type Solution } from '../cad/solve';
 import { addPlot, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode, type TreeSel } from '../cad/tree';
 import { COLORMAPS, PLOT_KINDS, PLOT_QUANTITIES, type Colormap, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode, type TableNode, type TableItem, TABLE_ITEMS } from '../cad/types';
-import { T, useT } from '../i18n';
+import { T, useT, displayName } from '../i18n';
 import { LazyInput } from './common';
 import { Icons } from './icons';
 import { useEditor } from './useStore';
@@ -319,7 +319,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
           <li key={ph.id}>
             <Row
               icon={Icons.treePhysics}
-              label={ph.name}
+              label={displayName(ph.name)}
               selected={sel.kind === 'results' && sel.id === ph.id}
               toggle={{ open: !closed.has(ph.id), onToggle: () => toggle(ph.id) }}
               onClick={() => onSelect({ kind: 'results', id: ph.id })}
@@ -409,7 +409,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                     <li key={v.id}>
                       <Row
                         icon={v.level ? FILTER_ICON : <span className="plot-ico tab" />}
-                        label={v.name}
+                        label={displayName(v.name)}
                         selected={sel.kind === 'node' && sel.id === v.id}
                         toggle={{ open: !closed.has(v.id), onToggle: () => toggle(v.id) }}
                         onClick={() => onSelect({ kind: 'node', id: v.id })}
@@ -444,7 +444,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                             <li key={p.id}>
                               <Row
                                 icon={PLOT_ICON[p.plot ?? 'surface']}
-                                label={p.name}
+                                label={displayName(p.name)}
                                 muted={p.hidden}
                                 selected={sel.kind === 'node' && sel.id === p.id}
                                 onClick={() => onSelect({ kind: 'node', id: p.id })}
@@ -483,7 +483,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                       <li key={tb.id}>
                         <Row
                           icon={TABLE_ICON}
-                          label={tb.name}
+                          label={displayName(tb.name)}
                           selected={sel.kind === 'node' && sel.id === tb.id}
                           toggle={{ open: !closed.has(tb.id), onToggle: () => toggle(tb.id) }}
                           onClick={() => onSelect({ kind: 'node', id: tb.id })}
@@ -519,7 +519,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                               <li key={it.id}>
                                 <Row
                                   icon={ITEM_ICON[it.item ?? 'circuits']}
-                                  label={it.name}
+                                  label={displayName(it.name)}
                                   selected={sel.kind === 'node' && sel.id === it.id}
                                   onClick={() => onSelect({ kind: 'node', id: it.id })}
                                   onRename={rename(it.id)}
@@ -616,7 +616,7 @@ export function ResultsProps({ ed, id, onSelect }: { ed: SketchEditor; id: Id; o
   return (
     <div className="props-body">
       <section>
-        <h3>{ph.name}</h3>
+        <h3>{displayName(ph.name)}</h3>
         {!sol ? (
           <>
             <p className="muted">{t.solve.notSolved}</p>
@@ -768,7 +768,7 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
               .filter((n): n is ViewNode => n.kind === 'view')
               .map((v) => (
                 <option key={v.id} value={v.id}>
-                  {sk.nodes.find((x) => x.id === v.physics)?.name} · {v.name}
+                  {displayName(sk.nodes.find((x) => x.id === v.physics)?.name ?? '')} · {displayName(v.name)}
                 </option>
               ))}
           </select>

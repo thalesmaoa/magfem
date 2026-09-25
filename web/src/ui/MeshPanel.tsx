@@ -11,6 +11,7 @@ import type { Id, MeshNode } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
+import { boundaryColor, OUTER_BOUNDARY } from '../cad/types';
 import { Icons } from './icons';
 import { BoundaryEditor, MaterialPicker, newBoundary, Swatch } from './Libraries';
 import { useEditor } from './useStore';
@@ -109,6 +110,7 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
   const mats = new Map(sk.materials.map((m) => [m.id, m]));
   const selRegion = snap.meshSel?.kind === 'region' ? findRegion(arr, snap.meshSel) : null;
   const outer = ed.defaultOuter();
+  const hasOuterB = sk.boundaries.some((b) => b.id === OUTER_BOUNDARY && b.type === 'dirichlet');
   const sub = sel.kind === 'mesh' ? sel.sub : undefined;
   const meshNodes = sk.nodes.filter((n): n is MeshNode => n.kind === 'mesh');
   const unit = sk.settings.unit;
@@ -263,7 +265,8 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
         )}
         {open.has('boundaries') && (
           <ul role="group">
-            {outer.length > 0 && (
+            {/* Borda externa sem contorno: entra no "Dirichlet (A = 0)" da biblioteca (ou fica avulsa, se ele foi removido). */}
+            {outer.length > 0 && !hasOuterB && (
               <li>
                 <Row
                   icon={<span className="bswatch b-dirichlet" />}
@@ -277,20 +280,24 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
                 />
               </li>
             )}
-            {sk.boundaries.map((b) => (
-              <li key={b.id}>
-                <Row
-                  icon={<span className={`bswatch b-${b.type}`} />}
-                  label={b.name}
-                  selected={sel.kind === 'boundary' && sel.id === b.id}
-                  onClick={() => {
-                    ed.selectCurves(b.curves);
-                    onSelect({ kind: 'boundary', id: b.id });
-                  }}
-                  extra={<span className="crefs">{t.mesh.curvesOf(b.curves.length)}</span>}
-                />
-              </li>
-            ))}
+            {/* Só os contornos em uso (a biblioteca completa fica no menu da direita), e o que está sendo editado. */}
+            {sk.boundaries
+              .map((b) => ({ b, curves: b.id === OUTER_BOUNDARY && hasOuterB ? [...b.curves, ...outer] : b.curves }))
+              .filter(({ b, curves }) => curves.length > 0 || (sel.kind === 'boundary' && sel.id === b.id))
+              .map(({ b, curves }) => (
+                <li key={b.id}>
+                  <Row
+                    icon={<span className="bswatch" style={{ background: boundaryColor(b) }} />}
+                    label={b.name}
+                    selected={sel.kind === 'boundary' && sel.id === b.id}
+                    onClick={() => {
+                      ed.selectCurves(curves);
+                      onSelect({ kind: 'boundary', id: b.id });
+                    }}
+                    extra={<span className="crefs">{t.mesh.curvesOf(curves.length)}</span>}
+                  />
+                </li>
+              ))}
           </ul>
         )}
       </li>
@@ -346,6 +353,10 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
               >
                 ▶
               </button>
+              {/* Mesmo espaço do × das físicas: os ▶ ficam alinhados. */}
+              <span className="x x-space" aria-hidden="true">
+                ×
+              </span>
             </>
           }
         />

@@ -93,7 +93,8 @@ export interface RenderState {
   /** Modo malha: regiões preenchidas pelo material e contornos coloridos (sem cotas/símbolos). */
   mesh?: {
     regions: { index: number; outer: Vec[]; holes: Vec[][]; color: string | null; label: string; at: Vec; labelOffset: Vec | null; selected: boolean; hovered: boolean }[];
-    boundaryOf: Map<Id, 'dirichlet' | 'neumann' | 'periodic' | 'antiperiodic'>;
+    /** Cor de cada curva com contorno. */
+    boundaryOf: Map<Id, string>;
     selectedCurves: Set<Id>;
     hoverCurve: Id | null;
     /** Malha gerada (triângulos); `stale` = o desenho mudou depois. */
@@ -437,7 +438,6 @@ function drawLegend(
   return { id: lg.layer, kind: 'legend', x0: bx0, y0: by0, x1: bx0 + bw, y1: by0 + bh, data: [lg.lo, lg.hi] };
 }
 
-const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
 
 /** Deslocamento padrão da etiqueta (px de tela, para cima e à direita). */
 export const LABEL_DEFAULT_PX = { x: 34, y: -28 };
@@ -860,7 +860,7 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
       const b = m.boundaryOf.get(e.id);
       const sel = m.selectedCurves.has(e.id);
       const hot = m.hoverCurve === e.id;
-      const color = sel || hot ? COLORS.defined : b ? BOUNDARY_COLORS[b] : e.construction ? COLORS.construction : COLORS.defined;
+      const color = sel || hot ? COLORS.defined : b ? b : e.construction ? COLORS.construction : COLORS.defined;
       drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: null, related: new Set(), defined: new Set(), colorOverride: color, widthOverride: sel ? 5 : hot ? 3.5 : b ? 3 : 1.4 } as RenderState);
     }
     // Etiquetas por último: ficam sobre as linhas (com a malha à mostra, ficam ocultas).

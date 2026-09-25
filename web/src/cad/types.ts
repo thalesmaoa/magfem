@@ -365,7 +365,26 @@ export interface Circuit {
   kind: 'series' | 'parallel';
 }
 
-export type BoundaryType = 'dirichlet' | 'neumann' | 'periodic' | 'antiperiodic';
+/**
+ * Tipos de contorno do FEMM (mesma ordem): Prescribed A (dirichlet), Small skin depth, Mixed, Strategic dual image,
+ * Periodic, Anti-periodic, Periodic/Anti-periodic air gap; e Neumann (no FEMM, a curva sem condição).
+ */
+export type BoundaryType = 'dirichlet' | 'skin' | 'mixed' | 'dualImage' | 'periodic' | 'antiperiodic' | 'periodicAirGap' | 'antiperiodicAirGap' | 'neumann';
+export const BOUNDARY_TYPES: BoundaryType[] = ['dirichlet', 'skin', 'mixed', 'dualImage', 'periodic', 'antiperiodic', 'periodicAirGap', 'antiperiodicAirGap', 'neumann'];
+/** Tipos que o solver ainda não resolve (harmônico ou entreferro móvel). */
+export const BOUNDARY_UNSUPPORTED: BoundaryType[] = ['skin', 'dualImage', 'periodicAirGap', 'antiperiodicAirGap'];
+export const BOUNDARY_COLOR: Record<BoundaryType, string> = {
+  dirichlet: '#d93025',
+  skin: '#c2185b',
+  mixed: '#1f78c8',
+  dualImage: '#6d4c41',
+  periodic: '#8e44ad',
+  antiperiodic: '#d4880f',
+  periodicAirGap: '#00897b',
+  antiperiodicAirGap: '#7cb342',
+  neumann: '#2e8b57',
+};
+export const boundaryColor = (b: { type: BoundaryType; color?: string }) => b.color ?? BOUNDARY_COLOR[b.type];
 
 /** Condição de contorno aplicada a curvas do desenho. */
 export interface Boundary {
@@ -373,9 +392,35 @@ export interface Boundary {
   name: string;
   type: BoundaryType;
   curves: Id[];
-  /** Valor de A (Wb/m) para Dirichlet (padrão 0). */
+  /** Prescribed A: A = A0 + A1·x + A2·y (x, y em m), fase φ (graus, só no harmônico). value = A0 (Wb/m). */
   value?: string;
+  a1?: string;
+  a2?: string;
+  phi?: string;
+  /** Small skin depth: μr e σ (MS/m). */
+  mu?: string;
+  sigma?: string;
+  /** Mixed: ν ∂A/∂n + c0·A + c1 = 0. */
+  c0?: string;
+  c1?: string;
+  /** Air gap: ângulos interno e externo (graus). */
+  innerAngle?: string;
+  outerAngle?: string;
+  /** Cor no desenho (ausente = a do tipo). */
+  color?: string;
 }
+
+/**
+ * Condições de contorno prontas em todo projeto (como os materiais padrão); recebem curvas ao serem usadas.
+ * A primeira (OUTER_BOUNDARY) vale também, automaticamente, para a borda mais externa do desenho.
+ */
+export const OUTER_BOUNDARY = 'bd_a0';
+export const DEFAULT_BOUNDARIES: Boundary[] = [
+  { id: 'bd_a0', name: 'Dirichlet (A = 0)', type: 'dirichlet', curves: [] },
+  { id: 'bd_neumann', name: 'Neumann', type: 'neumann', curves: [] },
+  { id: 'bd_periodic', name: 'Periódico', type: 'periodic', curves: [] },
+  { id: 'bd_antiperiodic', name: 'Antiperiódico', type: 'antiperiodic', curves: [] },
+];
 
 /** Biblioteca inicial de materiais (cada projeto novo leva uma cópia editável). */
 export const DEFAULT_MATERIALS: Material[] = [
@@ -467,7 +512,7 @@ export function emptySketch(): Sketch {
     nodes: [{ id: 'n1', kind: 'mesh', name: 'Malha 1', size: '', minAngle: 30 }, newPhysics('n2', 'Campo magnético')],
     materials: DEFAULT_MATERIALS.map((m) => ({ ...m })),
     regionAssigns: [],
-    boundaries: [],
+    boundaries: DEFAULT_BOUNDARIES.map((b) => ({ ...b, curves: [] })),
     circuits: [],
     nextId: 3,
   };

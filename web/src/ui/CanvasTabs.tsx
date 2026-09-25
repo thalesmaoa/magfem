@@ -8,7 +8,7 @@ import { findRegion } from '../cad/regions';
 import { outputsOf, resultVars, safeName, varNameOf } from '../cad/results';
 import type { TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
-import { T, useT } from '../i18n';
+import { T, useT, displayName } from '../i18n';
 import { LazyInput } from './common';
 import { useDocVersion, useEditor } from './useStore';
 import { activateTab, closeTab, tabKey, useTabs, type CanvasTab } from './tabsStore';
@@ -41,12 +41,12 @@ export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s:
     if (tab.kind === 'view') {
       const v = sk.nodes.find((n) => n.id === tab.id);
       const ph = v?.kind === 'view' ? sk.nodes.find((n) => n.id === v.physics) : undefined;
-      return v ? `${ph?.name ?? ''} · ${v.name}` : '?';
+      return v ? `${displayName(ph?.name ?? '')} · ${displayName(v.name)}` : '?';
     }
-    if (tab.kind === 'chart') return `${t.post.chart}: ${sk.nodes.find((n) => n.id === tab.plot)?.name ?? '?'}`;
-    if (tab.kind === 'table') return sk.nodes.find((n) => n.id === tab.id)?.name ?? '?';
+    if (tab.kind === 'chart') return `${t.post.chart}: ${displayName(sk.nodes.find((n) => n.id === tab.plot)?.name ?? '?')}`;
+    if (tab.kind === 'table') return displayName(sk.nodes.find((n) => n.id === tab.id)?.name ?? '?');
     if (tab.kind === 'sch') return t.sch.tabCircuit;
-    if (tab.kind === 'circuits') return `${t.circuit.title}: ${sk.nodes.find((n) => n.id === tab.physics)?.name ?? '?'}`;
+    if (tab.kind === 'circuits') return `${t.circuit.title}: ${displayName(sk.nodes.find((n) => n.id === tab.physics)?.name ?? '?')}`;
     return `${t.post.bhTab}: ${sk.materials.find((m) => m.id === tab.material)?.name ?? '?'}`;
   };
   if (tabs.length < 2) return null;
@@ -261,7 +261,7 @@ export function LineHead({ ed, id }: { ed: SketchEditor; id: string }) {
   const qty = (node.quantity ?? 'b') as PlotQuantity;
   return (
     <>
-      <strong className="chart-title">{node.name}</strong>
+      <strong className="chart-title">{displayName(node.name)}</strong>
       <select
         aria-label={t.post.by.line}
         value={qty}

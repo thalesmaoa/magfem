@@ -1,4 +1,4 @@
-<p align="center"><img src="doc/logo/magfem.svg" width="96" alt="MagFEM"></p>
+<p align="center"><img src="doc/logo/magfem.png" width="96" alt="MagFEM"></p>
 
 # MagFEM
 
@@ -9,6 +9,8 @@ como no draw.io.
 
 *2D magnetic finite elements in the browser (planar and axisymmetric), with a parametric sketcher,
 meshing, solver and ParaView-like post-processing — all local, no install.*
+
+**Use agora / Try it:** <https://thalesmaia.com/tools/magfem-web/>
 
 ## O que já faz
 

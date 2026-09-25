@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import logo from './assets/magfem-logo.png';
 import planegcsWasm from '@salusoft89/planegcs/dist/planegcs_dist/planegcs.wasm?url';
 import { q } from './cad/code';
@@ -35,7 +35,10 @@ type Handle = Awaited<ReturnType<typeof saveProject>> extends infer R ? (R exten
 
 export default function App() {
   const t = useT();
-  const doc = useMemo(() => new SketchDoc(), []);
+  // useState (não useMemo): o hot reload recria memos, e um doc novo e vazio sobrescreveria o rascunho.
+  const [doc] = useState(() => new SketchDoc());
+  // Só grava o rascunho depois que ele foi lido para este doc.
+  const draftLoaded = useRef<SketchDoc | null>(null);
   const [ready, setReady] = useState<'loading' | 'ok' | string>('loading');
   const [ed, setEd] = useState<SketchEditor | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -118,9 +121,12 @@ export default function App() {
             doc.reset(parse(draft.text));
             setName(draft.name);
           } catch {
+            // Rascunho ilegível: guarda uma cópia antes de começar vazio.
+            await saveDraft({ ...draft, name: `${draft.name} (ilegível)`, savedAt: 0 });
             doc.reset(emptySketch());
           }
         } else doc.reset(emptySketch());
+        draftLoaded.current = doc;
         setSavedVersion(doc.version);
         setReady('ok');
       } catch (e) {
@@ -144,7 +150,7 @@ export default function App() {
 
   // Rascunho automático (debounce).
   useEffect(() => {
-    if (ready !== 'ok') return;
+    if (ready !== 'ok' || draftLoaded.current !== doc) return;
     const h = setTimeout(() => saveDraft({ name, text: serialize(doc.sketch), savedAt: Date.now() }), 400);
     return () => clearTimeout(h);
   }, [version, name, ready, doc]);
@@ -487,11 +493,19 @@ function StatusBar({ ed, core }: { ed: SketchEditor; core: { v?: string; err?: s
       )}
       <span className="hint">{snap.message ? <span className="msg">{snap.message}</span> : snap.hint}</span>
       {ed && <SolveProgress ed={ed} />}
-      <span className="dev-badge" title={t.status.devHint}>
-        {t.status.dev}
-      </span>
+      <a className="gh-link" href="https://github.com/thalesmaoa/magfem/issues" target="_blank" rel="noopener noreferrer" title={t.status.github}>
+        {Icons.github} Bug reports
+      </a>
       <span className="core" title={core.v ? `core ${core.v}` : undefined}>
-        {core.err ? t.status.coreError(core.err) : core.v ? t.status.core(core.v) : t.status.coreLoading}
+        {core.err ? (
+          t.status.coreError(core.err)
+        ) : core.v ? (
+          <>
+            {t.status.core(core.v)} <b className="core-ok">Loaded</b>
+          </>
+        ) : (
+          t.status.coreLoading
+        )}
       </span>
     </footer>
   );
