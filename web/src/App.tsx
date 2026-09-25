@@ -10,7 +10,7 @@ import { isMeshSel, type TreeSel } from './cad/tree';
 import type { PostNode } from './cad/types';
 import { emptySketch } from './cad/types';
 import { setLang, T, useLang, useT, type Lang } from './i18n';
-import { hasFsAccess, loadDraft, openProject, parse, saveDraft, saveProject, serialize } from './io/project';
+import { hasFsAccess, loadDraft, loadFileHandle, openProject, parse, saveDraft, saveFileHandle, saveProject, serialize } from './io/project';
 import { download, toDXF, toSVG } from './io/export';
 import { Icons } from './ui/icons';
 import { setThemePref, useThemePref, type ThemePref } from './theme';
@@ -122,6 +122,8 @@ export default function App() {
           try {
             doc.reset(parse(draft.text));
             setName(draft.name);
+            // O arquivo de onde o rascunho veio: "Salvar" continua gravando nele depois de recarregar.
+            handleRef.current = await loadFileHandle<NonNullable<Handle>>();
           } catch {
             // Rascunho ilegível: guarda uma cópia antes de começar vazio.
             await saveDraft({ ...draft, name: `${draft.name} (ilegível)`, savedAt: 0 });
@@ -165,6 +167,7 @@ export default function App() {
         const r = await saveProject(doc.sketch, name, as ? null : handleRef.current);
         if (!r) return;
         handleRef.current = r.handle;
+        void saveFileHandle(r.handle);
         setName(r.name.replace(/\.magfem$/, ''));
         setSavedVersion(doc.version);
         ed?.flash(hasFsAccess ? T().file.savedTo(r.name) : T().file.downloadedAs(r.name));
@@ -181,6 +184,7 @@ export default function App() {
       if (!f) return;
       doc.load(f.sketch, [`open(${q(f.name)})`]);
       handleRef.current = f.handle;
+      void saveFileHandle(f.handle);
       setName(f.name.replace(/\.magfem$/, ''));
       setSavedVersion(doc.version);
       ed?.fit();
@@ -192,6 +196,7 @@ export default function App() {
   const newDoc = useCallback(() => {
     doc.load(emptySketch(), ['new()']);
     handleRef.current = null;
+    void saveFileHandle(null);
     setName(T().app.untitled);
     setSavedVersion(doc.version);
     ed?.fit();

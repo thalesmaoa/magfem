@@ -119,6 +119,8 @@ type FileHandle = {
   name: string;
   getFile(): Promise<File>;
   createWritable(): Promise<{ write(d: string): Promise<void>; close(): Promise<void> }>;
+  queryPermission?(o: { mode: 'readwrite' }): Promise<PermissionState>;
+  requestPermission?(o: { mode: 'readwrite' }): Promise<PermissionState>;
 };
 type PickerWindow = Window & {
   showOpenFilePicker?: (o: unknown) => Promise<FileHandle[]>;
@@ -167,11 +169,16 @@ export async function openProject(): Promise<OpenedFile | null> {
 export async function saveProject(
   sketch: Sketch,
   name: string,
-  handle: FileHandle | null,
+  handleIn: FileHandle | null,
 ): Promise<{ name: string; handle: FileHandle | null } | null> {
   const text = serialize(sketch);
+  let handle = handleIn;
   if (w.showSaveFilePicker) {
     try {
+      // Arquivo lembrado de outra sessão: o navegador pode pedir para confirmar a gravação.
+      if (handle?.queryPermission && (await handle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+        if ((await handle.requestPermission?.({ mode: 'readwrite' })) !== 'granted') handle = null;
+      }
       const h = handle ?? (await w.showSaveFilePicker({ suggestedName: withExt(name), types: pickerTypes }));
       const out = await h.createWritable();
       await out.write(text);
@@ -268,6 +275,38 @@ export async function listDraftBackups(): Promise<Draft[]> {
     return all.sort((a, b) => b.savedAt - a.savedAt);
   } catch {
     return [];
+  }
+}
+
+/** Arquivo do projeto aberto (File System Access), lembrado entre recargas junto do rascunho. */
+export async function saveFileHandle(h: unknown | null) {
+  try {
+    const conn = await db();
+    await new Promise<void>((resolve, reject) => {
+      const tx = conn.transaction(STORE, 'readwrite');
+      if (h) tx.objectStore(STORE).put(h, 'file-handle');
+      else tx.objectStore(STORE).delete('file-handle');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    conn.close();
+  } catch {
+    // Sem IndexedDB ou handle não clonável: "Salvar" volta a perguntar o arquivo.
+  }
+}
+
+export async function loadFileHandle<T>(): Promise<T | null> {
+  try {
+    const conn = await db();
+    const h = await new Promise<T | null>((resolve, reject) => {
+      const req = conn.transaction(STORE, 'readonly').objectStore(STORE).get('file-handle');
+      req.onsuccess = () => resolve((req.result as T) ?? null);
+      req.onerror = () => reject(req.error);
+    });
+    conn.close();
+    return h;
+  } catch {
+    return null;
   }
 }
 
