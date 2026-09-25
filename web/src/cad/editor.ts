@@ -28,12 +28,12 @@ import {
   type GeomTool,
   type Transform,
 } from './ops';
-import { render, type HitRegion, type Preview, type RenderState } from './render';
+import { LABEL_DEFAULT_PX, render, type HitRegion, type Preview, type RenderState } from './render';
 import { groupParams, type DragTarget } from './solver';
 import { isCurve, isDimension, ORIGIN_ID, type BoundaryType, type Constraint, type ConstraintType, type Group, type Id, type LineEnt, type RegionAssign, type Sketch } from './types';
 import { View } from './view';
 import { computeArrangement, findRegion, regionAt, type Arrangement } from './regions';
-import { assignOf, type RegionKey } from './mesh';
+import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './mesh';
 import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
 import { solver } from '../worker/client';
 import type { TriangulateOut } from '../wasm/core';
@@ -903,7 +903,10 @@ export class SketchEditor {
       regions: arr.regions.map((r) => {
         const a = byRegion.get(r.index);
         const m = a?.material ? mats.get(a.material) : undefined;
+        const drag = this.regionLabelDrag?.index === r.index ? this.regionLabelDrag.off : null;
         return {
+          index: r.index,
+          labelOffset: drag ?? a?.labelOffset ?? null,
           outer: r.outer.poly,
           holes: r.holes.map((h) => h.poly),
           color: m?.color ?? null,
@@ -948,6 +951,18 @@ export class SketchEditor {
   defaultOuter(): Id[] {
     const taken = new Set(this.sketch.boundaries.flatMap((b) => b.curves));
     return this.arrangement().outer.filter((c) => !taken.has(c));
+  }
+
+  /** Etiqueta de região sendo arrastada (deslocamento ao vivo, gravado ao soltar). */
+  private regionLabelDrag: { index: number; off: Vec; grab: Vec; moved: boolean } | null = null;
+
+  /** Etiqueta de região sob o cursor (índice da região). */
+  private regionLabelAt(s: Vec): number | null {
+    for (let i = this.hits.length - 1; i >= 0; i--) {
+      const h = this.hits[i];
+      if (h.kind === 'regionLabel' && s.x >= h.x0 && s.x <= h.x1 && s.y >= h.y0 && s.y <= h.y1) return Number(h.id);
+    }
+    return null;
   }
 
   /** Seleciona curvas (contornos) pela árvore. */
@@ -1048,7 +1063,7 @@ export class SketchEditor {
     if (!opts.entitiesOnly) {
       for (let i = this.hits.length - 1; i >= 0; i--) {
         const h = this.hits[i];
-        if (s.x >= h.x0 && s.x <= h.x1 && s.y >= h.y0 && s.y <= h.y1) return { kind: h.kind, id: h.id };
+        if (h.kind !== 'regionLabel' && s.x >= h.x0 && s.x <= h.x1 && s.y >= h.y0 && s.y <= h.y1) return { kind: h.kind, id: h.id };
       }
     }
     for (const e of Object.values(sk.entities)) {
@@ -1135,6 +1150,15 @@ export class SketchEditor {
     }
     if (e.button !== 0) return;
     if (this.mode === 'mesh') {
+      const li = this.regionLabelAt(s);
+      if (li !== null) {
+        // Arrastar a etiqueta: o deslocamento parte da posição atual (salva ou padrão).
+        const r = this.arrangement().regions[li];
+        const cur = this.assignOf(regionKey(r))?.labelOffset ?? { x: LABEL_DEFAULT_PX.x / this.view.scale, y: -LABEL_DEFAULT_PX.y / this.view.scale };
+        this.regionLabelDrag = { index: li, off: cur, grab: { x: w.x - (r.label.x + cur.x), y: w.y - (r.label.y + cur.y) }, moved: false };
+        this.selectRegion(li);
+        return;
+      }
       this.meshClick(s, e.shiftKey || e.ctrlKey);
       return;
     }
@@ -1183,8 +1207,18 @@ export class SketchEditor {
       return;
     }
     if (this.mode === 'mesh') {
-      this.meshHover = this.meshHit(s);
-      this.canvas.style.cursor = this.meshHover ? 'pointer' : 'default';
+      const ld = this.regionLabelDrag;
+      if (ld) {
+        const r = this.arrangement().regions[ld.index];
+        ld.off = { x: w.x - ld.grab.x - r.label.x, y: w.y - ld.grab.y - r.label.y };
+        ld.moved = true;
+        this.canvas.style.cursor = 'grabbing';
+        this.changed();
+        return;
+      }
+      const onLabel = this.regionLabelAt(s) !== null;
+      this.meshHover = onLabel ? null : this.meshHit(s);
+      this.canvas.style.cursor = onLabel ? 'grab' : this.meshHover ? 'pointer' : 'default';
       this.changed();
       return;
     }
@@ -1209,6 +1243,19 @@ export class SketchEditor {
   }
 
   private onUp(e: PointerEvent) {
+    const ld = this.regionLabelDrag;
+    if (ld) {
+      this.regionLabelDrag = null;
+      if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+      const r = this.arrangement().regions[ld.index];
+      if (ld.moved && r) {
+        const off = { x: Math.round(ld.off.x * 1000) / 1000, y: Math.round(ld.off.y * 1000) / 1000 };
+        this.meshOp((sk) => assignRegion(sk, this.arrangement(), regionKey(r), { labelOffset: off }), `m.region(${pointCode(r.label)}, label=(${off.x}, ${off.y}))`);
+      }
+      this.canvas.style.cursor = 'grab';
+      this.changed();
+      return;
+    }
     const d = this.drag;
     this.drag = null;
     if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);

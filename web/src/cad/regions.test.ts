@@ -20,6 +20,15 @@ const areas = (sk: Sketch) =>
     .sort((a, b) => a - b);
 
 describe('regiões', () => {
+  test('rótulo no meio do material: moldura com pernas iguais → meio da perna, à meia altura', () => {
+    const d = new Draft(emptySketch());
+    rect(d, -45, -70, 45, 70);
+    rect(d, -25, -50, 25, 50); // janela
+    const arr = computeArrangement(d.sk);
+    const frame = arr.regions.find((r) => r.holes.length === 1)!;
+    expect(Math.abs(frame.label.y)).toBeLessThan(3);
+    expect(Math.abs(Math.abs(frame.label.x) - 35)).toBeLessThan(1.5);
+  });
   test('borda externa: só as curvas de fora (o círculo interno e a linha divisória não)', () => {
     const d = new Draft(emptySketch());
     const r = rect(d, 0, 0, 40, 20);

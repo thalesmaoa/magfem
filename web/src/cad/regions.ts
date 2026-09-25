@@ -149,31 +149,72 @@ function inside(p: Vec, poly: Vec[]) {
 }
 
 /** Ponto interno do polígono com furos: meio do maior intervalo interno numa linha horizontal. */
+/** Distância do ponto ao segmento ab. */
+function segDist(p: Vec, a: Vec, b: Vec): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const L = dx * dx + dy * dy;
+  const t = L > 0 ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / L)) : 0;
+  return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
+}
+
+/**
+ * Ponto interno para o rótulo: o mais afastado das bordas (meio da parte mais grossa do material);
+ * entre candidatos quase empatados, o mais perto do centroide (ex.: núcleo com pernas iguais →
+ * meio da perna, à meia altura).
+ */
 function labelPoint(outer: Vec[], holes: Vec[][]): Vec {
-  let y0 = Infinity;
-  let y1 = -Infinity;
+  const polys = [outer, ...holes];
+  const isIn = (p: Vec) => inside(p, outer) && !holes.some((h) => inside(p, h));
+  const clearance = (p: Vec) => {
+    let d = Infinity;
+    for (const poly of polys) for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) d = Math.min(d, segDist(p, poly[j], poly[i]));
+    return d;
+  };
+  // Centroide da área (contorno menos furos).
+  let A = 0, cx = 0, cy = 0;
+  for (const poly of polys)
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const cr = poly[j].x * poly[i].y - poly[i].x * poly[j].y;
+      A += cr;
+      cx += (poly[j].x + poly[i].x) * cr;
+      cy += (poly[j].y + poly[i].y) * cr;
+    }
+  const cen = Math.abs(A) > 1e-12 ? { x: cx / (3 * A), y: cy / (3 * A) } : outer[0];
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const p of outer) {
+    x0 = Math.min(x0, p.x);
     y0 = Math.min(y0, p.y);
+    x1 = Math.max(x1, p.x);
     y1 = Math.max(y1, p.y);
   }
-  let best: { p: Vec; w: number } | null = null;
-  for (const f of [0.5, 0.37, 0.63, 0.25, 0.75, 0.13, 0.87]) {
-    const y = y0 + (y1 - y0) * f;
-    const xs: number[] = [];
-    for (const poly of [outer, ...holes])
-      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-        const a = poly[i];
-        const b = poly[j];
-        if (a.y > y !== b.y > y) xs.push(((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x);
-      }
-    xs.sort((m, n) => m - n);
-    for (let k = 0; k + 1 < xs.length; k += 2) {
-      const w = xs[k + 1] - xs[k];
-      if (!best || w > best.w) best = { p: { x: (xs[k] + xs[k + 1]) / 2, y }, w };
+  // Grade grossa + refinamento em volta dos melhores candidatos.
+  type C = { p: Vec; d: number };
+  // Células quadradas (grade anisotrópica favorece a direção mais fina).
+  const hc = Math.max(x1 - x0, y1 - y0) / 32;
+  let cands: C[] = [];
+  for (let x = x0 + hc / 2; x < x1; x += hc)
+    for (let y = y0 + hc / 2; y < y1; y += hc) {
+      const p = { x, y };
+      if (isIn(p)) cands.push({ p, d: clearance(p) });
     }
-    if (best && best.w > (y1 - y0) * 0.2) break;
-  }
-  return best?.p ?? outer[0];
+  if (isIn(cen)) cands.push({ p: cen, d: clearance(cen) });
+  if (!cands.length) return outer[0];
+  // Entre os pontos com espessura boa (≥ 80% da máxima), o mais perto do centroide…
+  const dmax = Math.max(...cands.map((c) => c.d));
+  const dist2 = (p: Vec) => (p.x - cen.x) ** 2 + (p.y - cen.y) ** 2;
+  let best = cands.filter((c) => c.d >= dmax * 0.8).sort((a, b) => dist2(a.p) - dist2(b.p))[0];
+  // …e um ajuste local (dentro da célula) para centrar na espessura.
+  let step = hc / 2;
+  for (let it = 0; it < 4; it++, step /= 2)
+    for (let i = -1; i <= 1; i++)
+      for (let j = -1; j <= 1; j++) {
+        const p = { x: best.p.x + i * step, y: best.p.y + j * step };
+        if (!isIn(p)) continue;
+        const d = clearance(p);
+        if (d > best.d + 1e-9 * (1 + d) || (Math.abs(d - best.d) <= 1e-9 * (1 + d) && dist2(p) < dist2(best.p))) best = { p, d };
+      }
+  return best.p;
 }
 
 /** Calcula o arranjo: nós, arestas e regiões (faces limitadas, com furos). */

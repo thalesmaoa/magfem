@@ -45,6 +45,25 @@ test('malha: materiais por região, contornos, tamanho por região e geração c
   await expect(page.getByRole('treeitem', { name: 'Bobina primário' }).first()).toBeVisible();
   expect((await sketch(page)).regionAssigns.some((a: any) => a.name === 'Bobina primário')).toBe(true);
 
+  // Etiqueta da região: arrastar a caixa grava o deslocamento; a bolinha fica no lugar.
+  const hit = await page.evaluate(() => {
+    const ed = (window as any).__magfem;
+    const h = ed.hits.filter((x: any) => x.kind === 'regionLabel').pop(); // a de cima
+    const r = (document.querySelector('canvas.sketch') as HTMLCanvasElement).getBoundingClientRect();
+    return { x: (h.x0 + h.x1) / 2 + r.left, y: (h.y0 + h.y1) / 2 + r.top, index: Number(h.id) };
+  });
+  await page.mouse.move(hit.x, hit.y);
+  await page.mouse.down();
+  await page.mouse.move(hit.x + 60, hit.y + 40, { steps: 6 });
+  await page.mouse.up();
+  const moved = await page.evaluate((i) => {
+    const ed = (window as any).__magfem;
+    const r = ed.arrangement().regions[i];
+    return ed.assignOf({ curves: r.curves, seed: r.label })?.labelOffset;
+  }, hit.index);
+  expect(moved).toBeTruthy();
+  await expect(page.locator('.console .code')).toContainText('label=(');
+
   // 2. Contornos: borda do círculo → novo contorno → Neumann.
   await clickWorld(page, { x: 5, y: 0 });
   await page.getByLabel('Contorno', { exact: true }).selectOption({ label: 'Novo contorno…' });

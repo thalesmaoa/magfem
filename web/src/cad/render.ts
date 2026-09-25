@@ -91,7 +91,7 @@ export interface RenderState {
   dark?: boolean;
   /** Modo malha: regiões preenchidas pelo material e contornos coloridos (sem cotas/símbolos). */
   mesh?: {
-    regions: { outer: Vec[]; holes: Vec[][]; color: string | null; label: string; at: Vec; selected: boolean; hovered: boolean }[];
+    regions: { index: number; outer: Vec[]; holes: Vec[][]; color: string | null; label: string; at: Vec; labelOffset: Vec | null; selected: boolean; hovered: boolean }[];
     boundaryOf: Map<Id, 'dirichlet' | 'neumann' | 'periodic' | 'antiperiodic'>;
     selectedCurves: Set<Id>;
     hoverCurve: Id | null;
@@ -101,6 +101,41 @@ export interface RenderState {
 }
 
 const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
+
+/** Deslocamento padrão da etiqueta (px de tela, para cima e à direita). */
+export const LABEL_DEFAULT_PX = { x: 34, y: -28 };
+
+/** Etiquetas das regiões (estilo desenho técnico): bolinha na região, linha de chamada e caixa com o nome. */
+function drawRegionLabels(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<RenderState['mesh']>, hits: HitRegion[]) {
+  ctx.font = '11.5px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const r of m.regions) {
+    const dot = v.toScreen(r.at);
+    const c = r.labelOffset ? v.toScreen({ x: r.at.x + r.labelOffset.x, y: r.at.y + r.labelOffset.y }) : { x: dot.x + LABEL_DEFAULT_PX.x, y: dot.y + LABEL_DEFAULT_PX.y };
+    const w = ctx.measureText(r.label).width + 12;
+    const h = 18;
+    const box = { x0: c.x - w / 2, y0: c.y - h / 2, x1: c.x + w / 2, y1: c.y + h / 2 };
+    const ink = r.selected || r.hovered ? COLORS.defined : COLORS.dim;
+    // Linha de chamada até a borda da caixa (a caixa fica por cima).
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dot.x, dot.y);
+    ctx.lineTo(Math.min(Math.max(dot.x, box.x0), box.x1), Math.min(Math.max(dot.y, box.y0), box.y1));
+    ctx.stroke();
+    ctx.fillStyle = ink;
+    ctx.beginPath();
+    ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(box.x0, box.y0, w, h);
+    ctx.strokeRect(box.x0 + 0.5, box.y0 + 0.5, w - 1, h - 1);
+    ctx.fillStyle = r.color ? COLORS.dim : COLORS.muted;
+    ctx.fillText(r.label, c.x, c.y + 0.5);
+    hits.push({ id: String(r.index), kind: 'regionLabel', ...box });
+  }
+}
 
 function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<RenderState['mesh']>) {
   let hatch: CanvasPattern | null = null;
@@ -131,8 +166,9 @@ function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<
     ctx.fill('evenodd');
     ctx.globalAlpha = 1;
     if (r.selected || r.hovered) {
-      ctx.strokeStyle = r.selected ? COLORS.selected : COLORS.hover;
-      ctx.lineWidth = r.selected ? 3 : 2;
+      // Seleção no modo malha: contorno branco (escuro) / preto (claro), mais grosso — amarelo confundia com o cobre.
+      ctx.strokeStyle = COLORS.defined;
+      ctx.lineWidth = r.selected ? 4 : 2;
       ctx.stroke();
     }
   }
@@ -162,26 +198,12 @@ function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
-    return; // com a malha à mostra, os rótulos atrapalham
-  }
-  ctx.font = '11px system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  for (const r of m.regions) {
-    const q = v.toScreen(r.at);
-    const w = ctx.measureText(r.label).width + 8;
-    ctx.fillStyle = COLORS.badgeBg;
-    ctx.globalAlpha = 0.85;
-    ctx.fillRect(q.x - w / 2, q.y - 8, w, 16);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = r.color ? COLORS.dim : COLORS.muted;
-    ctx.fillText(r.label, q.x, q.y + 0.5);
   }
 }
 
 export interface HitRegion {
   id: Id;
-  kind: 'dim' | 'badge';
+  kind: 'dim' | 'badge' | 'regionLabel';
   x0: number;
   y0: number;
   x1: number;
@@ -484,9 +506,11 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
       const b = m.boundaryOf.get(e.id);
       const sel = m.selectedCurves.has(e.id);
       const hot = m.hoverCurve === e.id;
-      const color = sel ? COLORS.selected : hot ? COLORS.hover : b ? BOUNDARY_COLORS[b] : e.construction ? COLORS.construction : COLORS.defined;
-      drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: null, related: new Set(), defined: new Set(), colorOverride: color, widthOverride: sel || hot || b ? 3 : 1.4 } as RenderState);
+      const color = sel || hot ? COLORS.defined : b ? BOUNDARY_COLORS[b] : e.construction ? COLORS.construction : COLORS.defined;
+      drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: null, related: new Set(), defined: new Set(), colorOverride: color, widthOverride: sel ? 5 : hot ? 3.5 : b ? 3 : 1.4 } as RenderState);
     }
+    // Etiquetas por último: ficam sobre as linhas (com a malha à mostra, ficam ocultas).
+    if (!m.tri) drawRegionLabels(ctx, v, m, hits);
     return hits;
   }
   for (const e of ents) drawCurve(ctx, v, sk, e, st);

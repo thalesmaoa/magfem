@@ -792,6 +792,7 @@ export class CommandConsole {
         if (kw.current !== undefined) patch.current = kw.current === null ? undefined : String(kw.current);
         if (kw.turns !== undefined) patch.turns = kw.turns === null ? undefined : Number(kw.turns);
         if (kw.angle !== undefined) patch.magnetAngle = kw.angle === null ? undefined : String(kw.angle);
+        if (kw.label !== undefined) patch.labelOffset = kw.label === null ? undefined : this.xy(kw.label);
         if (kw.name !== undefined) patch.name = kw.name === null || !String(kw.name).trim() ? undefined : String(kw.name).trim();
         this.commit(assignRegion(sk, arr, regionKey(r), patch));
         return r.area;
@@ -884,7 +885,7 @@ const NODE_METHODS = {
     remove: 'remove("n1")',
     material: 'material("Cobre", mur=1, sigma=58, br=0, color="#e0914f")',
     del_material: 'del_material("Cobre")',
-    region: 'region((x, y), name="Bobina", material="Cobre", current="10", turns=100, angle="90")',
+    region: 'region((x, y), name="Bobina", material="Cobre", current="10", turns=100, angle="90", label=(dx, dy))',
     boundary: 'boundary(["l1", "l2"], "nome do contorno" | "dirichlet" | "neumann" | "periodic" | "antiperiodic" | None)',
     boundary_def: 'boundary_def("Blindagem", type="dirichlet", value="0")',
     mesh_size: 'mesh_size((x, y), "0.5 mm" | "auto")',

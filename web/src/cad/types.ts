@@ -216,6 +216,8 @@ export interface RegionAssign {
   seed: { x: number; y: number };
   /** Nome dado pelo usuário (ex.: "Bobina primário"); ausente = "Região N". */
   name?: string;
+  /** Posição da etiqueta no desenho: deslocamento (mm) do ponto interno da região; ausente = padrão. */
+  labelOffset?: { x: number; y: number };
   /** Material da região (sem material: não pode resolver). */
   material?: Id;
   /** Tamanho do elemento na região (expressão de comprimento); ausente = o da malha (automático). */
