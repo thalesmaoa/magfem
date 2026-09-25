@@ -61,7 +61,7 @@ test('exportar SVG, DXF, PNG e JPG', async ({ page }) => {
   await clickWorld(page, { x: 70, y: 10 });
   await page.keyboard.press('Escape');
   const exp = async (label: RegExp) => {
-    await page.getByRole('button', { name: 'Exportar' }).click();
+    await page.getByRole('button', { name: 'Exportar', exact: true }).click();
     const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: label }).click()]);
     return { name: dl.suggestedFilename(), data: readFileSync(await dl.path()) };
   };
