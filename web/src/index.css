@@ -580,3 +580,4 @@ body.resizing { cursor: col-resize; user-select: none; }
 .drawer-tab.on { color: var(--accent); background: var(--accent-soft); }
 .mat-search { width: calc(100% - 12px); margin: 4px 6px 6px; box-sizing: border-box; }
 .mat-menu { max-height: 60vh; overflow-y: auto; }
+.fps-pick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }

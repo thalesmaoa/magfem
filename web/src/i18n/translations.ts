@@ -434,6 +434,8 @@ export interface Translations {
     play: string;
     pause: string;
     exportAnim: string;
+    fps: string;
+    fpsHint: (frames: number, fps: number) => string;
     recording: string;
     newtonNote: (n: number) => string;
     failed: (e: string) => string;
@@ -1125,6 +1127,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     play: 'Animar',
     pause: 'Pausar',
     exportAnim: 'Exportar animação (WebM)',
+    fps: 'quadros/s',
+    fpsHint: (n, f) => `Velocidade da animação: ${n} quadros a ${f} por segundo = ${(n / f).toFixed(1)} s por volta`,
     recording: 'Gravando…',
     newtonNote: (n) => `Newton: ${n} iterações (materiais não lineares).`,
     failed: (e) => `Falha ao resolver: ${e}`,
@@ -1831,6 +1835,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     play: 'Animate',
     pause: 'Pause',
     exportAnim: 'Export animation (WebM)',
+    fps: 'frames/s',
+    fpsHint: (n, f) => `Animation speed: ${n} frames at ${f} per second = ${(n / f).toFixed(1)} s per loop`,
     recording: 'Recording…',
     newtonNote: (n) => `Newton: ${n} iterations (nonlinear materials).`,
     failed: (e) => `Solve failed: ${e}`,

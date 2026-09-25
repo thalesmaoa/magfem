@@ -875,3 +875,31 @@ export function frameOf(sol: Solution, k: number): Solution {
   return f;
 }
 const frameCache = new WeakMap<Solution, Map<number, Solution>>();
+
+/**
+ * Faixa (mín., máx.) de uma grandeza em todos os instantes do transitório, para a escala de cores não
+ * mudar a cada quadro da animação. `nodal` usa valores nos nós (contornos); senão, por triângulo.
+ * Solução estática: null (cada mapa usa a própria faixa).
+ */
+export function timeRange(sol: Solution, qty: 'b' | 'h' | 'a' | 'j', comp: 'mag' | 'x' | 'y', nodal = false): [number, number] | null {
+  const parent = sol.frameOf;
+  if (!parent?.times) return null;
+  const key = `${qty}${comp}${nodal ? 'n' : 't'}`;
+  const byKey = rangeCache.get(parent) ?? new Map<string, [number, number]>();
+  rangeCache.set(parent, byKey);
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  let lo = Infinity, hi = -Infinity;
+  for (let k = 0; k < parent.times.length; k++) {
+    const f = frameOf(parent, k);
+    const v = nodal ? nodeValues(f, qty, comp) : triValues(f, qty, comp);
+    for (const x of v) {
+      if (x < lo) lo = x;
+      if (x > hi) hi = x;
+    }
+  }
+  const r: [number, number] = [lo, hi];
+  byKey.set(key, r);
+  return r;
+}
+const rangeCache = new WeakMap<Solution, Map<string, [number, number]>>();

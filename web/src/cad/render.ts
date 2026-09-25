@@ -4,7 +4,7 @@ import { add, arcAngles, mid, mul, norm, perp, pt, sub, type Vec } from './geome
 import { formatValue } from './measure';
 import { isDimension, ORIGIN_ID, type Constraint, type Entity, type Id, PLOT_QUANTITIES, type Colormap, type LegendLayout, type PostNode, type Sketch } from './types';
 import type { View } from './view';
-import { nodeValues, quantityLabel, sampleCurve, triValues, type Solution } from './solve';
+import { nodeValues, quantityLabel, sampleCurve, triValues, type Solution, timeRange } from './solve';
 import type { LengthUnit } from './expr';
 
 const LIGHT = {
@@ -237,10 +237,14 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
     if (plot === 'surface') {
       const mv = { v: triValues(sol, qty, comp), label: quantityLabel(qty, comp, sol.axisymmetric) };
       let lo = Infinity, hi = -Infinity;
-      for (const x of mv.v) {
-        if (x < lo) lo = x;
-        if (x > hi) hi = x;
-      }
+      // Transitório: faixa de todos os instantes (a escala não pula entre quadros da animação).
+      const tr = timeRange(sol, qty, comp);
+      if (tr) [lo, hi] = tr;
+      else
+        for (const x of mv.v) {
+          if (x < lo) lo = x;
+          if (x > hi) hi = x;
+        }
       if ((qty === 'b' || qty === 'h') && comp === 'mag') lo = 0;
       if (layer.range) [lo, hi] = layer.range;
       if (!(hi > lo)) hi = lo + 1e-12;
@@ -266,7 +270,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
       }
       legends.push({ lo, hi, label: mv.label, map: layer.colormap, layer: layer.id });
     } else if (plot === 'contour') {
-      const { segs, lev } = contourSegments(sol, `${qty}${comp}`, nodeValues(sol, qty, comp), layer.nLines ?? 20, layer.range);
+      const { segs, lev } = contourSegments(sol, `${qty}${comp}`, nodeValues(sol, qty, comp), layer.nLines ?? 20, layer.range ?? timeRange(sol, qty, comp, true) ?? undefined);
       const color = layer.color ?? '#0d1319';
       const line = (i: number) => {
         const a = v.toScreen({ x: segs[i], y: segs[i + 1] });
@@ -281,6 +285,8 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
           if (x < lo) lo = x;
           if (x > hi) hi = x;
         }
+        const trc = timeRange(sol, qty, comp, true);
+        if (trc) [lo, hi] = trc;
         if (layer.range) [lo, hi] = layer.range;
         legends.push({ lo, hi, label: quantityLabel(qty, comp, sol.axisymmetric), map: layer.colormap, layer: layer.id });
         // Uma faixa de cor por nível.

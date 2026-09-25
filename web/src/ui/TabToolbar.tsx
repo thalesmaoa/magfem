@@ -37,14 +37,30 @@ function ViewToolbar({ ed, name }: { ed: SketchEditor; name: string }) {
   const n = sol?.times?.length ?? 0;
   const [playing, setPlaying] = useState(false);
   const [recording, setRecording] = useState(false);
+  // Quadros por segundo da animação (e do vídeo exportado); lembrado entre sessões.
+  const [fps, setFpsState] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem('magfem-anim-fps')) || 10;
+    } catch {
+      return 10;
+    }
+  });
+  const setFps = (v: number) => {
+    setFpsState(v);
+    try {
+      localStorage.setItem('magfem-anim-fps', String(v));
+    } catch {
+      // ignora
+    }
+  };
   const timer = useRef<number | null>(null);
   useEffect(() => {
     if (!playing || !n) return;
-    timer.current = window.setInterval(() => ed.setFrame((ed.postFrame + 1) % n), 1000 / 20);
+    timer.current = window.setInterval(() => ed.setFrame((ed.postFrame + 1) % n), 1000 / fps);
     return () => {
       if (timer.current) window.clearInterval(timer.current);
     };
-  }, [playing, n, ed]);
+  }, [playing, n, ed, fps]);
   const fmtT = (s: number) => (s < 1e-3 ? `${(s * 1e6).toPrecision(3)} µs` : s < 1 ? `${(s * 1e3).toPrecision(4)} ms` : `${s.toPrecision(4)} s`);
   const record = async () => {
     // Grava o canvas passo a passo (WebM via MediaRecorder).
@@ -60,7 +76,7 @@ function ViewToolbar({ ed, name }: { ed: SketchEditor; name: string }) {
     rec.start();
     for (let k = 0; k < n; k++) {
       ed.setFrame(k);
-      await new Promise((r) => setTimeout(r, 1000 / 20));
+      await new Promise((r) => setTimeout(r, 1000 / fps));
     }
     rec.stop();
     await done;
@@ -88,6 +104,16 @@ function ViewToolbar({ ed, name }: { ed: SketchEditor; name: string }) {
             onChange={(e) => ed.setFrame(Number(e.target.value))}
           />
           <span className="time-label">{t.solve.frame(Math.min(ed.postFrame, n - 1) + 1, n, fmtT(sol!.times![Math.min(ed.postFrame, n - 1)]))}</span>
+          <label className="fps-pick" title={t.solve.fpsHint(n, fps)}>
+            <select aria-label={t.solve.fps} value={fps} onChange={(e) => setFps(Number(e.target.value))}>
+              {[1, 2, 5, 10, 20, 30, 60].map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+            <span>{t.solve.fps}</span>
+          </label>
           <button className="btn secondary" onClick={() => void record()} disabled={recording}>
             {recording ? t.solve.recording : t.solve.exportAnim}
           </button>
