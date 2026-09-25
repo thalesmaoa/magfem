@@ -2,83 +2,111 @@
 
 # MagFEM
 
-**Elementos finitos magnéticos 2D no navegador** — plano e axissimétrico — com CAD paramétrico
-(estilo Onshape), malha, solver e pós-processamento no estilo do ParaView. Tudo roda localmente no
-browser (WebAssembly): sem instalação, sem servidor, sem login. Os projetos ficam na sua máquina,
-como no draw.io.
+*[Versão em português](README.pt-BR.md)*
 
-*2D magnetic finite elements in the browser (planar and axisymmetric), with a parametric sketcher,
-meshing, solver and ParaView-like post-processing — all local, no install.*
+**2D magnetic finite elements in the browser**, for planar and axisymmetric problems. MagFEM has a
+parametric CAD (in the style of Onshape), meshing, a nonlinear and transient solver with circuit
+coupling, and post-processing in the style of ParaView. It all runs locally in the browser
+(WebAssembly), with no installation, no server and no login. Your projects stay on your machine,
+as in draw.io.
 
-**Use agora / Try it:** <https://thalesmaia.com/tools/magfem-web/>
+**Try it:** <https://thalesmaia.com/tools/magfem-web/>
 
-## O que já faz
+## Focus and roadmap
 
-- **CAD paramétrico:** linhas, arcos, círculos, retângulos; restrições (coincidente, H/V, paralelo,
-  tangente, simetria…), cotas com unidades e expressões ligadas a variáveis; offset, espelho e
-  padrões linear/circular associativos; importação futura de DXF/SVG, exportação SVG/DXF/PNG.
-- **Malha:** regiões detectadas automaticamente, materiais (biblioteca agrupada, curvas B-H),
-  circuitos, contornos (A prescrito, Neumann, periódico, antiperiódico), tamanho por região;
-  gerador Triangle compilado para WebAssembly.
-- **Solver magnetostático** (Eigen/WASM num Web Worker): correntes, ímãs permanentes, circuitos em
-  série; validado contra soluções analíticas.
-- **Resultados em abas:** mapas de campo (|B|, |H|, A, J), contornos (linhas de fluxo), vetores,
-  gráficos sobre linha, interpolação de alta ordem, tabelas (circuitos: λ, L, R, perdas; integrais
-  sobre linha e superfície); exportação PNG/SVG/CSV.
-- **API/console estilo Python:** cada ação vira um comando (`g.line(...)`, `m.region(...)`,
-  `s.solve()`); o botão "exportar código" gera um script que recria o modelo exatamente — base para
-  automação e otimização (ponte local WebSocket planejada).
-- Interface em **português e inglês**, tema claro/escuro, "Cite este trabalho".
+**Bug reports are very welcome.** Please open an issue at
+<https://github.com/thalesmaoa/magfem/issues> (there is also a *Bug reports* link in the app's
+status bar).
 
-Veja [`doc/`](doc/) para o guia de uso, a referência da API e a formulação/validação numérica, e
-[`PLAN.md`](PLAN.md) para o roteiro (transitório, não linear, acoplamento com circuitos e EDOs).
+The current focus is on **non-rotating electrical machines**: inductors, transformers and actuators.
+The work centers on **circuit coupling** and **transient simulation**, with the coupling also
+scriptable from code. After that, **force** and **thermal** physics will allow simulating devices
+such as **contactors**. The final step is **rotating machines**, with a moving air gap.
 
-## Rodar localmente
+## Features
 
-Pré-requisitos: Docker (e `cmake`/`g++` para os testes nativos do núcleo).
+- **Parametric CAD:**
+  - lines, arcs, circles and rectangles;
+  - constraints (coincident, horizontal/vertical, parallel, tangent, symmetric…);
+  - dimensions with units and expressions bound to variables;
+  - associative offset, mirror and linear/circular patterns;
+  - SVG/DXF/PNG export.
+- **Pre-processing:**
+  - regions detected automatically;
+  - materials: grouped library, B-H curves, and a built-in **FEMM 4.2 material library**
+    (245 materials);
+  - circuits and per-region mesh size;
+  - boundary conditions as in FEMM: prescribed A (A0 + A1·x + A2·y), mixed (c0, c1), periodic,
+    anti-periodic and Neumann. The outer border gets Dirichlet A = 0 automatically.
+- **Meshing:** the Triangle mesher compiled to WebAssembly.
+- **Solver** (C++/Eigen compiled to WebAssembly, running in a Web Worker):
+  - magnetostatic, **nonlinear** whenever a material has a B-H curve (Newton-Raphson);
+  - **transient** analysis with eddy currents, where currents can be functions of time;
+  - **"Magnetic field + circuit"**: a schematic editor with R, L, C, V and I parts and FEM coils,
+    solved together with the field in one system;
+  - validated against analytical solutions.
+- **Results in tabs:**
+  - field maps (|B|, |H|, A, J), contours (flux lines), vectors and plots over a line;
+  - high-order interpolation;
+  - result tables: circuits (λ, L, R, losses), line and surface integrals with user-named variables,
+    and formulas;
+  - circuit signals over time;
+  - PNG/SVG/CSV/WebM export.
+- **Python-like API/console:** every action becomes a command (`g.line(...)`, `m.region(...)`,
+  `s.solve()`). "Export code" writes a script that rebuilds the model exactly, which is the basis
+  for automation and optimization.
+- The interface is in **English and Portuguese**, with light and dark themes and "Cite this work".
+
+See [`doc/`](doc/) for the user guide, the API reference and the numerical formulation and
+validation. See [`PLAN.md`](PLAN.md) for the development log.
+
+## Run locally
+
+Requirements: Docker (and `cmake`/`g++` for the native core tests).
 
 ```bash
 git clone git@github.com:thalesmaoa/magfem.git && cd magfem
-./compose-up                  # compila o núcleo WASM e sobe http://localhost:3002/tools/magfem-web/
-./scripts/build-core native   # núcleo C++ nativo + testes contra soluções analíticas
-./scripts/npm test            # testes unitários (vitest)
-./scripts/e2e                 # testes de ponta a ponta (Playwright, headless)
+./compose-up                  # builds the WASM core and serves http://localhost:3002/tools/magfem-web/
+./scripts/build-core native   # native C++ core + tests against analytical solutions
+./scripts/npm test            # unit tests (vitest)
+./scripts/e2e                 # end-to-end tests (Playwright, headless)
 ```
 
-`./scripts/npm run build` gera o site estático em `web/dist` (~1,4 MB). Qualquer servidor de
-arquivos estáticos serve; o CI publica o `dist` na branch `dist`.
+`./scripts/npm run build` writes the static site to `web/dist`. Any static file server can host it;
+CI publishes `dist` to the `dist` branch.
 
-## Estrutura
+## Layout
 
 ```
-core/      núcleo numérico C++17 + Eigen + Triangle → WebAssembly (Emscripten) e nativo (testes)
-web/       interface Vite + React + TypeScript; malha e solver rodam num Web Worker
-doc/       documentação (uso, API, formulação, validação) e logo
-bridge/    (planejado) ponte local WebSocket/REST para scripts de otimização
-clients/   (planejado) clientes Python / Matlab / Julia
+core/      C++17 numerical core + Eigen + Triangle → WebAssembly (Emscripten) and native (tests)
+web/       Vite + React + TypeScript interface; mesher and solver run in a Web Worker
+doc/       documentation (usage, API, formulation, validation) and logo
 ```
 
-## Contribuir
+## Contributing
 
-Issues e pull requests são bem-vindos. Rode `./scripts/npm test`, `./scripts/e2e` e
-`./scripts/build-core native` antes de enviar. O código segue o estilo do entorno (comentários em
-português, TypeScript estrito).
+Issues and pull requests are welcome. Before submitting, run `./scripts/npm test`, `./scripts/e2e`
+and `./scripts/build-core native`. Code follows the surrounding style (comments in Portuguese,
+strict TypeScript).
 
-## Licença
+## License
 
-Código do MagFEM: **MIT** (veja [`LICENSE`](LICENSE)) — use, modifique e redistribua à vontade.
+MagFEM code: **MIT** (see [`LICENSE`](LICENSE)). You may use, modify and redistribute it freely.
 
-Componentes de terceiros baixados no build: **Eigen** (MPL-2.0), **PlaneGCS/FreeCAD** via
-`@salusoft89/planegcs` (LGPL-2.1) e **Triangle 1.6** de J. R. Shewchuk, que é livre para uso
-privado, acadêmico e institucional e para redistribuição **gratuita** (com o aviso de copyright),
-mas **uso comercial exige acordo com o autor**. Se isso for um problema para você, o gerador de malha
-fica isolado em `core/src/mesh2d.cpp` e pode ser trocado.
+Third-party components:
+- **Eigen** (MPL-2.0).
+- **PlaneGCS/FreeCAD** via `@salusoft89/planegcs` (LGPL-2.1).
+- **Triangle 1.6** by J. R. Shewchuk: free for private, academic and institutional use and for
+  **free** redistribution (keeping its copyright notice). **Commercial use requires an arrangement
+  with the author.** The mesher is isolated in `core/src/mesh2d.cpp` and can be replaced.
+- **Material library** (`web/src/data/femm-matlib.json`, 245 materials): converted from the
+  `matlib.dat` of **FEMM 4.2** (David Meeker, [femm.info](https://www.femm.info)), which is
+  distributed under the Aladdin Free Public License (free redistribution, no commercial use).
+  Credit belongs to FEMM. *Materials → Import from FEMM…* can also read the `matlib.dat` of your
+  own installation.
 
-A biblioteca de materiais embutida (`web/src/data/femm-matlib.json`, 245 materiais) foi convertida
-do `matlib.dat` do **FEMM 4.2** (David Meeker, [femm.info](https://www.femm.info)); o crédito é do
-FEMM. Em *Materiais → Importar do FEMM…* também dá para ler o `matlib.dat` da sua instalação.
+## Cite
 
-## Citar
-
-Maia, T. (2026). *MagFEM: A Web-Based Magnetic Finite Element Analysis Tool*. (Use o botão
-"Citar" no app para BibTeX.)
+Maia, T. (2026). *MagFEM: A Web-Based Magnetic Finite Element Analysis Tool* (Version 1.0.0).
+<https://thalesmaia.com/tools/magfem-web/>. The app's "Cite" button gives the full citation and
+BibTeX.
