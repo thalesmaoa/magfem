@@ -15,6 +15,12 @@ self.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
       case 'poisson1dMax':
         res = { id: req.id, ok: true, result: m.poisson1dMax(req.n) };
         break;
+      case 'solveMagnetostatic': {
+        const out = m.solveMagnetostatic(req.input);
+        if (out.error) throw new Error(out.error);
+        res = { id: req.id, ok: true, result: out };
+        break;
+      }
       case 'triangulate': {
         const out = m.triangulate(req.input);
         if (out.error) throw new Error(out.error);

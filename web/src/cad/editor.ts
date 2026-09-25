@@ -36,7 +36,9 @@ import { computeArrangement, findRegion, regionAt, type Arrangement } from './re
 import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './mesh';
 import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
 import { solver } from '../worker/client';
-import type { TriangulateOut } from '../wasm/core';
+import type { MagOut, TriangulateOut } from '../wasm/core';
+import { buildMagInput, depthOf, type Solution } from './solve';
+import { addNode } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern, type MirrorAxis } from './patterns';
@@ -116,7 +118,7 @@ export interface EditorSnapshot {
   editing: { id: Id; x: number; y: number; text: string; angle: boolean } | null;
   enteredGroup: Id | null;
   ruler: { a: Vec; b: Vec | null } | null;
-  mode: 'sketch' | 'mesh';
+  mode: 'sketch' | 'mesh' | 'post';
   meshSel: SketchEditor['meshSel'];
   version: number;
 }
@@ -131,7 +133,7 @@ export class SketchEditor {
   editing: EditorSnapshot['editing'] = null;
   enteredGroup: Id | null = null;
   /** Modo do canvas: desenho (sketch) ou malha (regiões/contornos, sem editar geometria). */
-  mode: 'sketch' | 'mesh' = 'sketch';
+  mode: 'sketch' | 'mesh' | 'post' = 'sketch';
   /** Seleção no modo malha: uma região (pela identidade) ou curvas (para contornos). */
   meshSel: { kind: 'region'; curves: Id[]; seed: Vec } | { kind: 'curves'; ids: Id[] } | null = null;
   meshHover: { kind: 'region'; index: number } | { kind: 'curve'; id: Id } | null = null;
@@ -143,13 +145,13 @@ export class SketchEditor {
     return this.arrCache.arr;
   }
 
-  setMode(m: 'sketch' | 'mesh') {
+  setMode(m: 'sketch' | 'mesh' | 'post') {
     if (this.mode === m) return;
     this.mode = m;
     this.resetToolState();
     this.meshSel = null;
     this.meshHover = null;
-    if (m === 'mesh') {
+    if (m !== 'sketch') {
       this.tool = 'select';
       this.selection = [];
     }
@@ -210,7 +212,7 @@ export class SketchEditor {
       this.flash(T().mesh.noRegions);
       return null;
     }
-    const { input } = buildMeshInput(this.sketch, arr, node);
+    const { input, curveNodes } = buildMeshInput(this.sketch, arr, node);
     this.meshBusy = id;
     this.meshErrors.delete(id);
     this.changed();
@@ -228,6 +230,7 @@ export class SketchEditor {
         elements: out.triangles.length / 3,
         minAngle: minTriangleAngle(out.xy, out.triangles),
         key: inputKey(input),
+        curveNodes,
         ms: performance.now() - t0,
       };
       this.meshes.set(id, res);
@@ -242,6 +245,123 @@ export class SketchEditor {
       this.meshBusy = null;
       this.changed();
     }
+  }
+
+  /** Soluções por nó de física (não salvas; recalculáveis). */
+  solutions = new Map<Id, Solution & { key: string }>();
+  solveBusy: Id | null = null;
+  solveErrors = new Map<Id, string>();
+  /** Solução mostrada no modo resultados e opções de desenho. */
+  shownSolution: Id | null = null;
+  postOpts = { map: true, lines: true, nLines: 20 };
+  /** Ponto da sonda (clique no modo resultados). */
+  probeAt: Vec | null = null;
+
+  showSolution(id: Id | null, opts?: Partial<SketchEditor['postOpts']>) {
+    this.shownSolution = id;
+    if (opts) this.postOpts = { ...this.postOpts, ...opts };
+    this.changed();
+  }
+
+  private solveKeyCache: { version: number; key: string } | null = null;
+
+  /** Assinatura do que afeta a solução (geometria/malha, materiais, regiões, contornos, problema, variáveis). */
+  private solveKey(): string {
+    if (this.solveKeyCache?.version === this.doc.version) return this.solveKeyCache.key;
+    const sk = this.sketch;
+    const meshNode = sk.nodes.find((n) => n.kind === 'mesh');
+    const meshKey = meshNode?.kind === 'mesh' ? inputKey(buildMeshInput(sk, this.arrangement(), meshNode).input) : '';
+    const physics = sk.nodes.map((n) => (n.kind === 'physics' ? [n.analysis, n.frequency, n.dt, n.tEnd] : null)).filter(Boolean);
+    const key = inputKey({
+      meshKey,
+      materials: sk.materials,
+      assigns: sk.regionAssigns.map(({ labelOffset: _l, name: _n, ...rest }) => rest),
+      boundaries: sk.boundaries,
+      problem: [sk.settings.problem, sk.settings.depth, sk.settings.unit],
+      vars: sk.variables,
+      physics,
+    } as never);
+    this.solveKeyCache = { version: this.doc.version, key };
+    return key;
+  }
+
+  /** A solução ficou para trás (algo que a afeta mudou depois de resolver)? */
+  solutionStale(id: Id): boolean {
+    const s = this.solutions.get(id);
+    return !!s && s.key !== this.solveKey();
+  }
+
+  /** Resolve o problema do nó de física: gera a malha se preciso e chama o solver no Worker. */
+  async solve(id: Id): Promise<boolean> {
+    const t = T();
+    const node = this.sketch.nodes.find((n) => n.id === id);
+    if (!node || node.kind !== 'physics') return false;
+    const fail = (msg: string) => {
+      this.solveErrors.set(id, msg);
+      this.flash(msg);
+      this.solveBusy = null;
+      this.changed();
+      return false;
+    };
+    this.solveErrors.delete(id);
+    if (node.analysis !== 'magnetostatic') return fail(t.solve.onlyStatic);
+    this.solveBusy = id;
+    this.changed();
+    let meshId = this.sketch.nodes.find((n) => n.kind === 'mesh')?.id;
+    if (!meshId) {
+      const r = addNode(this.sketch, 'mesh', t.mesh.elementsNode);
+      if (!this.commit(r.sketch, [r.code])) return fail(t.mesh.noRegions);
+      meshId = r.node.id;
+    }
+    const meshNode = { id: meshId };
+    let mesh = this.meshes.get(meshNode.id);
+    if (!mesh || this.meshStale(meshNode.id)) {
+      mesh = (await this.generateMesh(meshNode.id)) ?? undefined;
+      this.solveBusy = id;
+      if (!mesh) return fail(this.meshErrors.get(meshNode.id) ?? t.mesh.noRegions);
+    }
+    const key = this.solveKey();
+    const { input, problems } = buildMagInput(this.sketch, this.arrangement(), mesh, this.defaultOuter());
+    if (problems.length) return fail(problems.join(' · '));
+    const t0 = performance.now();
+    try {
+      const out = await solver.call<MagOut>({ cmd: 'solveMagnetostatic', input });
+      const bmag = new Float64Array(out.bx.length);
+      let bmax = 0;
+      for (let i = 0; i < bmag.length; i++) {
+        bmag[i] = Math.hypot(out.bx[i], out.by[i]);
+        if (bmag[i] > bmax) bmax = bmag[i];
+      }
+      const axisymmetric = input.axisymmetric;
+      this.solutions.set(id, {
+        A: out.A,
+        bx: out.bx,
+        by: out.by,
+        bmag,
+        bmax,
+        energy: axisymmetric ? out.energy : out.energy * depthOf(this.sketch),
+        axisymmetric,
+        mesh,
+        nu: input.nu,
+        brx: input.brx,
+        bry: input.bry,
+        ms: performance.now() - t0,
+        key,
+      });
+      this.shownSolution = id;
+      this.solveBusy = null;
+      this.changed();
+      return true;
+    } catch (e) {
+      return fail(t.solve.failed((e as Error).message));
+    }
+  }
+
+  /** Dados do modo resultados. */
+  private postView(): RenderState['post'] {
+    const sol = this.shownSolution ? this.solutions.get(this.shownSolution) : undefined;
+    if (!sol) return { sol: null, ...this.postOpts, stale: false, probe: null };
+    return { sol, ...this.postOpts, stale: this.solutionStale(this.shownSolution!), probe: this.probeAt };
   }
 
   /** Régua (ferramenta de medir): não altera o desenho. */
@@ -859,6 +979,7 @@ export class SketchEditor {
       measure: this.measureOverlay(),
       dark: isDark(),
       mesh: this.mode === 'mesh' ? this.meshView() : undefined,
+      post: this.mode === 'post' ? this.postView() : undefined,
     };
     this.hits = render(this.ctx, this.view, sk, st);
   }
@@ -1154,6 +1275,11 @@ export class SketchEditor {
       return;
     }
     if (e.button !== 0) return;
+    if (this.mode === 'post') {
+      this.probeAt = w;
+      this.changed();
+      return;
+    }
     if (this.mode === 'mesh') {
       const li = this.regionLabelAt(s);
       if (li !== null) {
@@ -1208,6 +1334,11 @@ export class SketchEditor {
       } else if (d.moved && d.kind === 'label') {
         this.dragLabel(d, w);
       }
+      this.changed();
+      return;
+    }
+    if (this.mode === 'post') {
+      this.canvas.style.cursor = 'crosshair';
       this.changed();
       return;
     }
@@ -1352,12 +1483,13 @@ export class SketchEditor {
       e.preventDefault();
       return;
     }
-    if (e.key === 'Escape' && this.mode === 'mesh') {
+    if (e.key === 'Escape' && this.mode !== 'sketch') {
       this.meshSel = null;
+      this.probeAt = null;
       this.changed();
       return;
     }
-    if (this.mode === 'mesh') return; // atalhos de desenho não valem no modo malha
+    if (this.mode !== 'sketch') return; // atalhos de desenho não valem no modo malha
     if (e.key === 'Escape') {
       if (this.picking) {
         this.pickLine(null);

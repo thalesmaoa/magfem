@@ -348,6 +348,30 @@ export interface Translations {
     minAngleHelp: string;
     nameTaken: (n: string) => string;
   };
+  solve: {
+    noMaterial: (n: number) => string;
+    periodicMismatch: (name: string) => string;
+    negativeR: string;
+    noDirichlet: string;
+    onlyStatic: string;
+    failed: (e: string) => string;
+    run: string;
+    running: string;
+    notSolved: string;
+    stale: string;
+    stats: (el: number, ms: number) => string;
+    bmax: string;
+    energy: string;
+    map: string;
+    lines: string;
+    nLines: string;
+    probeHint: string;
+    probeOut: string;
+    probeRegion: string;
+    noSolution: string;
+    linearNote: string;
+    goResults: string;
+  };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
   expr: {
     badNumber: (s: string) => string;
@@ -720,7 +744,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     region: (n) => `Região ${n}`,
     material: 'Material',
     area: 'Área',
-    current: 'Corrente total (A)',
+    current: 'Corrente por espira (A)',
     turns: 'Espiras',
     magnetAngle: 'Direção da magnetização (°)',
     boundaryType: 'Condição de contorno',
@@ -778,6 +802,30 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     elementsNode: 'Elementos',
     regionName: 'Nome da região',
     minAngleHelp: 'Nenhum triângulo terá ângulo interno menor que este. Triângulos achatados pioram a precisão do campo; valores maiores dão elementos mais regulares, porém mais elementos. 30° é um bom padrão; o máximo aceito é 34°.',
+  },
+  solve: {
+    noMaterial: (n) => `Região ${n} sem material.`,
+    periodicMismatch: (b) => `${b}: as duas curvas precisam do mesmo número de nós (gere a malha de novo).`,
+    negativeR: 'Axissimétrico: há geometria com r < 0 (o eixo é x = 0).',
+    noDirichlet: 'Falta um contorno com A prescrito (sem ele o potencial fica indefinido).',
+    onlyStatic: 'Por enquanto só a análise magnetostática resolve; harmônica e transitória vêm depois.',
+    failed: (e) => `Falha ao resolver: ${e}`,
+    run: 'Resolver',
+    running: 'Resolvendo…',
+    notSolved: 'Ainda não resolvido.',
+    stale: 'O projeto mudou depois da solução: resolva de novo.',
+    stats: (el, ms) => `${el} triângulos · ${Math.round(ms)} ms`,
+    bmax: '|B| máximo',
+    energy: 'Energia magnética',
+    map: 'Mapa de |B|',
+    lines: 'Linhas de fluxo',
+    nLines: 'Número de linhas',
+    probeHint: 'Clique no desenho para ver B, H e A no ponto.',
+    probeOut: 'Ponto fora da malha.',
+    probeRegion: 'Região',
+    noSolution: 'Resolva o problema em Método de resolução (▶).',
+    linearNote: 'Materiais com curva B-H usam o μr linear por enquanto (não linear na próxima etapa).',
+    goResults: 'Ver resultados',
   },
   hist: {
     title: 'Histórico',
@@ -1157,7 +1205,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     region: (n) => `Region ${n}`,
     material: 'Material',
     area: 'Area',
-    current: 'Total current (A)',
+    current: 'Current per turn (A)',
     turns: 'Turns',
     magnetAngle: 'Magnetization direction (°)',
     boundaryType: 'Boundary condition',
@@ -1215,6 +1263,30 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     elementsNode: 'Triangle',
     regionName: 'Region name',
     minAngleHelp: 'No triangle will have an interior angle smaller than this. Flat triangles hurt field accuracy; larger values give more regular elements but more of them. 30° is a good default; the maximum accepted is 34°.',
+  },
+  solve: {
+    noMaterial: (n) => `Region ${n} has no material.`,
+    periodicMismatch: (b) => `${b}: both curves need the same number of nodes (generate the mesh again).`,
+    negativeR: 'Axisymmetric: some geometry has r < 0 (the axis is x = 0).',
+    noDirichlet: 'A boundary with prescribed A is missing (without it the potential is undefined).',
+    onlyStatic: 'Only the magnetostatic analysis solves for now; harmonic and transient come later.',
+    failed: (e) => `Solve failed: ${e}`,
+    run: 'Solve',
+    running: 'Solving…',
+    notSolved: 'Not solved yet.',
+    stale: 'The project changed after solving: solve again.',
+    stats: (el, ms) => `${el} triangles · ${Math.round(ms)} ms`,
+    bmax: 'Max |B|',
+    energy: 'Magnetic energy',
+    map: '|B| map',
+    lines: 'Flux lines',
+    nLines: 'Number of lines',
+    probeHint: 'Click the drawing to see B, H and A at the point.',
+    probeOut: 'Point outside the mesh.',
+    probeRegion: 'Region',
+    noSolution: 'Solve the problem under Solver (▶).',
+    linearNote: 'Materials with a B-H curve use their linear μr for now (nonlinear in the next step).',
+    goResults: 'See results',
   },
   hist: {
     title: 'History',

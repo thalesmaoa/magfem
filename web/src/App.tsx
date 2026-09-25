@@ -62,9 +62,16 @@ export default function App() {
 
   // Malha (seção, material, contorno ou nó de malha) troca o canvas para o modo malha.
   const meshMode = ed ? isMeshSel(treeSel, ed.sketch) : false;
+  // Nó de Resultados: canvas no modo resultados, com as opções do nó.
+  const postNode = ed && treeSel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === treeSel.id && n.kind === 'post') : undefined;
   useEffect(() => {
-    ed?.setMode(meshMode ? 'mesh' : 'sketch');
-  }, [ed, meshMode]);
+    ed?.setMode(postNode ? 'post' : meshMode ? 'mesh' : 'sketch');
+  }, [ed, meshMode, postNode]);
+  useEffect(() => {
+    if (!ed || !postNode || postNode.kind !== 'post') return;
+    const physics = ed.sketch.nodes.find((n) => n.kind === 'physics');
+    ed.showSolution(physics?.id ?? null, { map: postNode.map ?? true, lines: postNode.lines ?? true, nLines: postNode.nLines ?? 20 });
+  }, [ed, postNode]);
   // Nó de malha selecionado: mostra os triângulos dele.
   const shownMesh = ed && treeSel.kind === 'node' && ed.sketch.nodes.some((n) => n.id === treeSel.id && n.kind === 'mesh') ? treeSel.id : null;
   useEffect(() => {
@@ -324,8 +331,8 @@ function StageOverlay({ ed, sel }: { ed: SketchEditor; sel: TreeSel }) {
   useDocVersion(ed.doc);
   if (sel.kind !== 'node') return null;
   const n = ed.sketch.nodes.find((x) => x.id === sel.id);
-  if (!n || n.kind !== 'post') return null;
-  return <div className="overlay soon">{t.bench.soon(t.phase(6))}</div>;
+  if (!n || n.kind !== 'post' || ed.solutions.size) return null;
+  return <div className="overlay soon">{t.solve.noSolution}</div>;
 }
 
 /** Tema: automático (segue o sistema) → claro → escuro. */

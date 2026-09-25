@@ -98,7 +98,16 @@ Limitações conhecidas / ideias para depois:
 - [x] Console: `m.boundary_def`, `m.mesh_size`, `m.settings`, `m.generate`; `m.boundary(ids, "nome" | tipo | None)`.
 - [x] Testes: 40 unitários + 2 nativos + 47 E2E.
 
+### [✅ CONCLUÍDA] Rodada 11 — Solver magnetostático linear (Fase 6, parte 1)
+- [x] Núcleo C++ `solve_magnetostatic`: P1 plano (A_z) e axissimétrico (ψ = r·A_φ), correntes (I por espira × espiras / área), ímãs (Br e direção), A prescrito, Neumann natural, periódico/antiperiódico por eliminação de nós casados; Cholesky esparsa (Eigen); energia. Pilha WASM 8 MB.
+- [x] Testes nativos contra analítica: faixa com corrente (A e energia, < 0,2 %), ímã uniforme (B = Br exato), solenoide infinito axissimétrico (B_z interno), faixa periódica.
+- [x] TS: `cad/solve.ts` monta a entrada (nós por curva vindos da malha, pares periódicos orientados por setor/translação, eixo ψ = 0 no axissimétrico, mensagens claras: região sem material, falta A prescrito…); `editor.solve()` gera a malha se estiver desatualizada; solução desatualizada detectada pela assinatura do que a afeta.
+- [x] Interface: ▶ Resolver na física (árvore e propriedades), Resultados com mapa de |B| (turbo, 64 faixas), linhas de fluxo (curvas de nível de A), legenda, |B| máximo, energia e sonda por clique (B, H, μr, A). Ícone da física: ímã em ferradura.
+- [x] Console: `s.solve("n2")`, `r.show("n3", map=, lines=, n_lines=)`.
+- [x] Testes: 41 unitários + 3 nativos + 51 E2E (inclui faixa com corrente conferida com a analítica pela sonda).
+
 ### Próximo possível
+- Não linear (curvas B-H, Newton-Raphson), força/torque (tensor de Maxwell, Arkkio), fluxo concatenado e indutância por bobina/circuito.
 - Solver magnetostático linear sobre a malha (Fase 6): montagem P1 em C++/Eigen, fontes de corrente, ímãs, Dirichlet/Neumann/(anti)periódico; mapa de |B| e linhas de fluxo.
 - Refinos da malha: tamanho por curva, gradação, visualização da qualidade.
 - Importar DXF/SVG no menu Arquivo; aparar (trim) para fechar regiões.

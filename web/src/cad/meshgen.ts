@@ -27,6 +27,8 @@ export interface MeshResult {
   minAngle: number;
   /** Assinatura da entrada (PSLG + tamanhos); se mudar, a malha está desatualizada. */
   key: string;
+  /** Nós da malha sobre cada curva, na ordem da curva (o Triangle mantém os nós de entrada). */
+  curveNodes: Record<Id, number[]>;
   ms: number;
 }
 
@@ -72,7 +74,7 @@ export function regionSizes(sk: Sketch, arr: Arrangement, node: MeshNode): numbe
   return arr.regions.map((r) => own.get(r.index) ?? Math.min(global, Math.sqrt(Math.abs(r.area)) / 3));
 }
 
-export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { input: MeshInput; curveIds: Id[] } {
+export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { input: MeshInput; curveIds: Id[]; curveNodes: Record<Id, number[]> } {
   const h = regionSizes(sk, arr, node);
   // Arestas → regiões vizinhas (tamanho da aresta = menor tamanho entre as vizinhas).
   const edgeH = new Map<number, number>();
@@ -106,6 +108,7 @@ export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { 
   const segMarkers: number[] = [];
   const curveIds: Id[] = [];
   const curveIdx = new Map<Id, number>();
+  const chains: { curve: Id; t0: number; nodes: number[] }[] = [];
   for (const e of arr.edges) {
     const n = nSeg.get(e.id);
     if (!n) continue; // aresta solta (não delimita região)
@@ -114,6 +117,8 @@ export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { 
       curveIds.push(e.curve);
     }
     let prev = e.a;
+    const chain = [e.a];
+    chains.push({ curve: e.curve, t0: e.t0, nodes: chain });
     for (let k = 1; k <= n; k++) {
       let cur: number;
       if (k === n) cur = e.b;
@@ -123,20 +128,28 @@ export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { 
         xy.push(p.x, p.y);
       }
       segments.push(prev, cur);
+      chain.push(cur);
       segMarkers.push(curveIdx.get(e.curve)!);
       prev = cur;
     }
   }
   const regions: number[] = [];
   for (const r of arr.regions) regions.push(r.label.x, r.label.y, r.index + 1, (Math.sqrt(3) / 4) * h[r.index] * h[r.index]);
+  // Nós por curva: pedaços em ordem de parâmetro, sem repetir o nó da emenda.
+  const curveNodes: Record<Id, number[]> = {};
+  for (const c of [...chains].sort((a, b) => a.t0 - b.t0)) {
+    const list = (curveNodes[c.curve] ??= []);
+    for (const n of c.nodes) if (list[list.length - 1] !== n) list.push(n);
+  }
   return {
     input: { xy, segments, segMarkers, holes: [], regions, minAngle: node.minAngle ?? 30, maxArea: 0, keepBoundary: true },
     curveIds,
+    curveNodes,
   };
 }
 
 /** Assinatura curta da entrada (detecta malha desatualizada). */
-export function inputKey(input: MeshInput): string {
+export function inputKey(input: MeshInput | Record<string, unknown>): string {
   let h = 2166136261;
   const s = JSON.stringify(input);
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);

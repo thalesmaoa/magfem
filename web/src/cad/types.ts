@@ -172,6 +172,12 @@ export interface PostNode {
   id: Id;
   kind: 'post';
   name: string;
+  /** Mostrar o mapa de |B| (padrão sim). */
+  map?: boolean;
+  /** Mostrar as linhas de fluxo (padrão sim). */
+  lines?: boolean;
+  /** Número de linhas de fluxo (padrão 20). */
+  nLines?: number;
 }
 
 /** Nós que o usuário inclui na árvore (o Pré-processador/Geometria é fixo). */

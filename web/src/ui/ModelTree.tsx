@@ -4,6 +4,7 @@ import { entityLabel, type SketchEditor } from '../cad/editor';
 import { evaluate, evaluateVariables, formatLength, formatQ } from '../cad/expr';
 import { addNode, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
 import { MeshProps, MeshTree } from './MeshPanel';
+import { PostProps, SolveButton, SolveSection } from './PostPanel';
 import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type TreeNode } from '../cad/types';
 import { deleteVariable, nextVarName, renameVariable, setVariable } from '../cad/vars';
 import { groupOf } from '../cad/ops';
@@ -89,7 +90,7 @@ function AddMenu({ ed, kinds, label, onAdded }: { ed: SketchEditor; kinds: AddKi
   );
 }
 
-function NodeRow({ ed, node, active, onSelect }: { ed: SketchEditor; node: TreeNode; active: boolean; onSelect: () => void }) {
+function NodeRow({ ed, node, active, onSelect, onTreeSelect }: { ed: SketchEditor; node: TreeNode; active: boolean; onSelect: () => void; onTreeSelect: (s: TreeSel) => void }) {
   const t = useT();
   const [renaming, setRenaming] = useState(false);
   return (
@@ -110,6 +111,7 @@ function NodeRow({ ed, node, active, onSelect }: { ed: SketchEditor; node: TreeN
         </span>
       )}
       {node.kind === 'physics' && <span className="crefs">{t.problem[node.analysis]}</span>}
+      {node.kind === 'physics' && <SolveButton ed={ed} id={node.id} onSelect={onTreeSelect} />}
       <button
         className="x"
         title={t.tree.remove}
@@ -125,7 +127,7 @@ function NodeRow({ ed, node, active, onSelect }: { ed: SketchEditor; node: TreeN
   );
 }
 
-function PhysicsProps({ ed, node }: { ed: SketchEditor; node: PhysicsNode }) {
+function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsNode; onSelect: (s: TreeSel) => void }) {
   const t = useT();
   const sk = ed.sketch;
   const { values } = evaluateVariables(sk.variables, sk.settings.unit);
@@ -171,6 +173,7 @@ function PhysicsProps({ ed, node }: { ed: SketchEditor; node: PhysicsNode }) {
           </>
         )}
       </section>
+      <SolveSection ed={ed} node={node} onSelect={onSelect} />
     </div>
   );
 }
@@ -641,7 +644,7 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
               {!closed.has(sec.key) && sec.key !== 'mesh' && (
                 <ul role="group">
                   {nodes.filter(sec.match).map((n) => (
-                    <NodeRow key={n.id} ed={ed} node={n} active={isOn(n.id)} onSelect={() => onSelect({ kind: 'node', id: n.id })} />
+                    <NodeRow key={n.id} ed={ed} node={n} active={isOn(n.id)} onSelect={() => onSelect({ kind: 'node', id: n.id })} onTreeSelect={onSelect} />
                   ))}
                 </ul>
               )}
@@ -653,16 +656,9 @@ export function ModelTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSe
         <h3 className="props-title">{t.tree.props}</h3>
         {sel.kind === 'geometry' && <GeometryProps ed={ed} />}
         {sel.kind === 'var' && <VariableProps ed={ed} name={sel.name} onRenamed={(n) => onSelect(n ? { kind: 'var', name: n } : { kind: 'geometry' })} />}
-        {current?.kind === 'physics' && <PhysicsProps ed={ed} node={current} />}
+        {current?.kind === 'physics' && <PhysicsProps ed={ed} node={current} onSelect={onSelect} />}
         {isMeshSel(sel, ed.sketch) && <MeshProps ed={ed} sel={sel} onSelect={onSelect} />}
-        {current && current.kind === 'post' && (
-          <div className="props-body">
-            <section>
-              <h3>{t.tree.postProps}</h3>
-              <p className="muted">{t.bench.soon(t.phase(6))}</p>
-            </section>
-          </div>
-        )}
+        {current && current.kind === 'post' && <PostProps ed={ed} node={current} />}
       </div>
     </aside>
   );

@@ -4,6 +4,7 @@ import { add, arcAngles, mid, mul, norm, perp, pt, sub, type Vec } from './geome
 import { formatValue } from './measure';
 import { isDimension, ORIGIN_ID, type Constraint, type Entity, type Id, type Sketch } from './types';
 import type { View } from './view';
+import type { Solution } from './solve';
 import type { LengthUnit } from './expr';
 
 const LIGHT = {
@@ -98,6 +99,139 @@ export interface RenderState {
     /** Malha gerada (triângulos); `stale` = o desenho mudou depois. */
     tri?: { xy: Float64Array; triangles: Int32Array; stale: boolean };
   };
+  /** Modo resultados: mapa de |B|, linhas de fluxo, sonda. */
+  post?: { sol: Solution | null; map: boolean; lines: boolean; nLines: number; stale: boolean; probe: Vec | null };
+}
+
+/** Mapa de cores "turbo" (aproximação polinomial), t ∈ [0, 1] → rgb. */
+export function turbo(t: number): [number, number, number] {
+  t = Math.min(1, Math.max(0, t));
+  const r = 0.13572138 + t * (4.6153926 + t * (-42.66032258 + t * (132.13108234 + t * (-152.94239396 + t * 59.28637943))));
+  const g = 0.09140261 + t * (2.19418839 + t * (4.84296658 + t * (-14.18503333 + t * (4.27729857 + t * 2.82956604))));
+  const b = 0.1066733 + t * (12.64194608 + t * (-60.58204836 + t * (110.36276771 + t * (-89.90310912 + t * 27.34824973))));
+  const c = (v: number) => Math.round(255 * Math.min(1, Math.max(0, v)));
+  return [c(r), c(g), c(b)];
+}
+
+/** Segmentos das linhas de fluxo (curvas de nível de A), em mm; guardados por solução. */
+const contourCache = new WeakMap<Solution, { n: number; segs: Float64Array }>();
+function fluxSegments(sol: Solution, n: number): Float64Array {
+  const hit = contourCache.get(sol);
+  if (hit && hit.n === n) return hit.segs;
+  const { xy, triangles } = sol.mesh;
+  const A = sol.A;
+  let lo = Infinity, hi = -Infinity;
+  for (const a of A) {
+    if (a < lo) lo = a;
+    if (a > hi) hi = a;
+  }
+  const out: number[] = [];
+  if (hi - lo > 0) {
+    const step = (hi - lo) / n;
+    for (let t = 0; t < triangles.length; t += 3) {
+      const v = [triangles[t], triangles[t + 1], triangles[t + 2]];
+      const a = v.map((i) => A[i]);
+      const amin = Math.min(a[0], a[1], a[2]), amax = Math.max(a[0], a[1], a[2]);
+      const k0 = Math.ceil((amin - lo) / step - 0.5), k1 = Math.floor((amax - lo) / step - 0.5);
+      for (let k = k0; k <= k1; k++) {
+        const L = lo + (k + 0.5) * step;
+        const pts: number[] = [];
+        for (let e = 0; e < 3; e++) {
+          const i = e, j = (e + 1) % 3;
+          if ((a[i] - L) * (a[j] - L) < 0) {
+            const f = (L - a[i]) / (a[j] - a[i]);
+            pts.push(xy[2 * v[i]] + f * (xy[2 * v[j]] - xy[2 * v[i]]), xy[2 * v[i] + 1] + f * (xy[2 * v[j] + 1] - xy[2 * v[i] + 1]));
+          }
+        }
+        if (pts.length === 4) out.push(...pts);
+      }
+    }
+  }
+  const segs = new Float64Array(out);
+  contourCache.set(sol, { n, segs });
+  return segs;
+}
+
+function drawPost(ctx: CanvasRenderingContext2D, v: View, p: NonNullable<RenderState['post']>) {
+  const sol = p.sol;
+  if (!sol) return;
+  const { xy, triangles } = sol.mesh;
+  const nn = xy.length / 2;
+  const sx = new Float64Array(nn), sy = new Float64Array(nn);
+  for (let i = 0; i < nn; i++) {
+    const q = v.toScreen({ x: xy[2 * i], y: xy[2 * i + 1] });
+    sx[i] = q.x;
+    sy[i] = q.y;
+  }
+  if (p.map && sol.bmax > 0) {
+    // Um caminho por faixa de cor (64 faixas): muito mais rápido que um fill por triângulo.
+    const BUCKETS = 64;
+    const paths: Path2D[] = Array.from({ length: BUCKETS }, () => new Path2D());
+    for (let t = 0; t < triangles.length; t += 3) {
+      const k = Math.min(BUCKETS - 1, Math.floor((sol.bmag[t / 3] / sol.bmax) * BUCKETS));
+      const a = triangles[t], b = triangles[t + 1], c = triangles[t + 2];
+      const P = paths[k];
+      P.moveTo(sx[a], sy[a]);
+      P.lineTo(sx[b], sy[b]);
+      P.lineTo(sx[c], sy[c]);
+      P.closePath();
+    }
+    for (let k = 0; k < BUCKETS; k++) {
+      const [r, g, b] = turbo((k + 0.5) / BUCKETS);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.strokeStyle = ctx.fillStyle; // cobre as frestas entre triângulos
+      ctx.lineWidth = 0.5;
+      ctx.fill(paths[k]);
+      ctx.stroke(paths[k]);
+    }
+  }
+  if (p.lines) {
+    const segs = fluxSegments(sol, p.nLines);
+    ctx.beginPath();
+    for (let i = 0; i < segs.length; i += 4) {
+      const a = v.toScreen({ x: segs[i], y: segs[i + 1] });
+      const b = v.toScreen({ x: segs[i + 2], y: segs[i + 3] });
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+    }
+    ctx.strokeStyle = p.map ? 'rgba(10,14,20,0.8)' : COLORS.dim;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  if (p.probe) {
+    const q = v.toScreen(p.probe);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#0d1319';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+/** Barra de cores de |B| (canto superior direito). */
+function drawLegend(ctx: CanvasRenderingContext2D, v: View, bmax: number) {
+  const x = v.w - 64, y = 16, w = 14, h = 180;
+  for (let i = 0; i < h; i++) {
+    const [r, g, b] = turbo(1 - i / h);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(x, y + i, w, 1);
+  }
+  ctx.strokeStyle = COLORS.dim;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, w, h);
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = COLORS.dim;
+  for (let k = 0; k <= 4; k++) {
+    const val = bmax * (1 - k / 4);
+    ctx.fillText(val >= 0.01 ? val.toFixed(val >= 1 ? 2 : 3) : val.toExponential(1), x + w + 4, y + (h * k) / 4);
+  }
+  ctx.textAlign = 'center';
+  ctx.fillText('|B| (T)', x + w / 2 + 8, y + h + 14);
 }
 
 const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
@@ -497,6 +631,16 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
   if (!st.plain) drawGrid(ctx, v, st.axisymmetric);
 
   const ents = Object.values(sk.entities).filter((e) => !st.hidden.has(e.id) && !(e.type !== 'circle' && e.type !== 'arc' && e.aux));
+  if (st.post) {
+    // Modo resultados: campo por baixo, contorno das peças por cima.
+    drawPost(ctx, v, st.post);
+    for (const e of ents) {
+      if (e.type === 'point' || e.construction) continue;
+      drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: null, related: new Set(), defined: new Set(), colorOverride: st.post.sol && st.post.map ? 'rgba(10,14,20,0.9)' : COLORS.defined, widthOverride: 1.4 } as RenderState);
+    }
+    if (st.post.sol && st.post.map) drawLegend(ctx, v, st.post.sol.bmax);
+    return hits;
+  }
   if (st.mesh) {
     // Modo malha: regiões, contornos coloridos e nada de cotas/símbolos.
     drawMeshRegions(ctx, v, st.mesh);

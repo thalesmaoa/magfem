@@ -3,6 +3,7 @@
 #include <string>
 
 #include "magfem.h"
+#include "magstatic.h"
 #include "mesh2d.h"
 
 using namespace emscripten;
@@ -36,10 +37,36 @@ val triangulate(val in) {
   r.set("nodeMarkers", toTyped(o.nodeMarkers, "Int32Array"));
   return r;
 }
+// Entrada: ver MagInput (magstatic.h), com os mesmos nomes em camelCase.
+val solveMagnetostatic(val in) {
+  magfem::MagInput m;
+  m.xy = convertJSArrayToNumberVector<double>(in["xy"]);
+  m.triangles = convertJSArrayToNumberVector<int>(in["triangles"]);
+  m.triRegion = convertJSArrayToNumberVector<int>(in["triRegion"]);
+  m.nu = convertJSArrayToNumberVector<double>(in["nu"]);
+  m.J = convertJSArrayToNumberVector<double>(in["J"]);
+  m.brx = convertJSArrayToNumberVector<double>(in["brx"]);
+  m.bry = convertJSArrayToNumberVector<double>(in["bry"]);
+  m.axisymmetric = in["axisymmetric"].as<bool>();
+  m.dirichletNodes = convertJSArrayToNumberVector<int>(in["dirichletNodes"]);
+  m.dirichletValues = convertJSArrayToNumberVector<double>(in["dirichletValues"]);
+  m.periodicSlave = convertJSArrayToNumberVector<int>(in["periodicSlave"]);
+  m.periodicMaster = convertJSArrayToNumberVector<int>(in["periodicMaster"]);
+  m.periodicSign = convertJSArrayToNumberVector<int>(in["periodicSign"]);
+  magfem::MagOutput o = magfem::solve_magnetostatic(m);
+  val r = val::object();
+  r.set("error", o.error);
+  r.set("A", toTyped(o.A, "Float64Array"));
+  r.set("bx", toTyped(o.bx, "Float64Array"));
+  r.set("by", toTyped(o.by, "Float64Array"));
+  r.set("energy", o.energy);
+  return r;
+}
 }  // namespace
 
 EMSCRIPTEN_BINDINGS(magfem) {
   function("version", optional_override([]() { return std::string(magfem::version()); }));
   function("poisson1dMax", &magfem::poisson1d_max);
   function("triangulate", &triangulate);
+  function("solveMagnetostatic", &solveMagnetostatic);
 }

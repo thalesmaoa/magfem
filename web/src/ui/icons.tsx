@@ -116,8 +116,12 @@ export const Icons = {
     </S>
   ),
   treePhysics: (
+    // Ímã em ferradura (campo magnético).
     <S>
-      <path d="M11 2L5 11h5l-1 7 6-9h-5z" />
+      <path d="M5 3v7a5 5 0 0 0 10 0V3" />
+      <path d="M8 3v7a2 2 0 0 0 4 0V3" />
+      <path d="M5 3h3M12 3h3" />
+      <path d="M5 6h3M12 6h3" strokeWidth="2.4" />
     </S>
   ),
   treeMesh: (

@@ -225,6 +225,8 @@ export interface ConsoleHost {
   redo?: () => void;
   /** Gera a malha do nó (assíncrono, no Worker). */
   mesh?: (id: string) => void;
+  /** Resolve a física do nó (assíncrono). */
+  solve?: (id: string) => void;
 }
 
 export interface RunResult {
@@ -836,6 +838,21 @@ export class CommandConsole {
         this.commit(updateNode(sk, id, patch));
         return null;
       }
+      case 'solve': {
+        const id = a.length ? String(a[0]) : sk.nodes.find((n) => n.kind === 'physics')?.id;
+        if (!id || !this.host.solve) throw new ConsoleError(t.notFound(String(a[0] ?? 'physics')));
+        this.host.solve(id);
+        return null;
+      }
+      case 'post_show': {
+        need(1);
+        const patch: Record<string, unknown> = {};
+        if (kw.map !== undefined) patch.map = !!kw.map;
+        if (kw.lines !== undefined) patch.lines = !!kw.lines;
+        if (kw.n_lines !== undefined) patch.nLines = Number(kw.n_lines);
+        this.commit(updateNode(sk, String(a[0]), patch));
+        return null;
+      }
       case 'generate': {
         const id = a.length ? String(a[0]) : sk.nodes.find((n) => n.kind === 'mesh')?.id;
         if (!id || !this.host.mesh) throw new ConsoleError(t.notFound(String(a[0] ?? 'mesh')));
@@ -873,7 +890,7 @@ export const NAMESPACES = ['g', 'd', 'm', 's', 'r'] as const;
 function resolveMethod(obj: string | null, fn: string): string {
   if (obj === null || obj === 'g' || obj === 'd') return fn;
   if (obj === 'm') return fn === 'add' ? 'add_mesh' : fn;
-  if (obj === 'r') return fn === 'add' ? 'add_post' : fn;
+  if (obj === 'r') return fn === 'add' ? 'add_post' : fn === 'show' ? 'post_show' : fn;
   if (obj === 's') return fn === 'add' ? 'add_physics' : fn; // e comandos de geometria antigos com s. (compatibilidade)
   throw new ConsoleError(T().consoleCmd.unknownObject(obj));
 }
@@ -897,8 +914,9 @@ const NODE_METHODS = {
     add_physics: 'add_physics(name="Campo magnético")',
       rename: 'rename("n2", "...")',
     remove: 'remove("n2")',
+    solve: 'solve("n2")',
   },
-  r: { add: 'add(name="Resultado")', rename: 'rename("n3", "...")', remove: 'remove("n3")' },
+  r: { add: 'add(name="Resultado")', rename: 'rename("n3", "...")', remove: 'remove("n3")', show: 'show("n3", map=True, lines=True, n_lines=20)' },
 };
 
 /** Assinaturas da API de geometria (autocompletar e dicas). */
