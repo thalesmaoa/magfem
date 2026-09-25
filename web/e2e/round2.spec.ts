@@ -226,7 +226,7 @@ test('árvore: física com análise, várias físicas, remover e desfazer', asyn
   await expect(page.getByRole('menuitem', { name: /Resultado/ })).toHaveCount(0);
   await page.getByRole('menuitem', { name: /Campo magnético/ }).click();
   await page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético', exact: true }).last().getByRole('button', { name: 'Nova vista (aba) com…' }).click();
-  await page.getByRole('menuitem', { name: /Superfície/ }).click();
+  await page.getByRole('menuitem', { name: /Mapa de campo/ }).click();
   sk = await sketch(page);
   expect(sk.nodes.map((n: any) => n.kind)).toEqual(['mesh', 'physics', 'physics', 'view', 'post']);
   await page.getByRole('button', { name: /Remover Vista 1/ }).click();

@@ -205,8 +205,12 @@ export interface PostNode {
   /** Vetores: espaçamento (mm; ausente = automático) e escala (1 = padrão). */
   spacing?: number;
   scale?: number;
-  /** Gráfico sobre curva: a curva do desenho. */
+  /** Gráfico sobre curva / integral sobre linha: a curva do desenho. */
   curve?: Id;
+  /** Item de tabela de resultados (quando o pai é uma tabela). */
+  item?: TableItem;
+  /** Integral de superfície: regiões escolhidas (identidade pelas curvas + ponto interno). */
+  regions?: { curves: Id[]; seed: { x: number; y: number } }[];
   /** Cor sólida (contorno, glifos, curva). */
   color?: string;
   /** Contorno/glifos coloridos pela grandeza (mapa de cores) em vez da cor sólida. */
@@ -227,8 +231,20 @@ export interface ViewNode {
   legend?: { x: number; y: number; s: number };
 }
 
+/** Itens de uma tabela de resultados. */
+export type TableItem = 'circuits' | 'lineint' | 'surfint';
+export const TABLE_ITEMS: TableItem[] = ['circuits', 'lineint', 'surfint'];
+
+/** Tabela de resultados: uma aba com itens numéricos (circuitos, integrais). */
+export interface TableNode {
+  id: Id;
+  kind: 'table';
+  name: string;
+  physics: Id;
+}
+
 /** Nós que o usuário inclui na árvore (o Pré-processador/Geometria é fixo). */
-export type TreeNode = PhysicsNode | MeshNode | PostNode | ViewNode;
+export type TreeNode = PhysicsNode | MeshNode | PostNode | ViewNode | TableNode;
 
 export const newPhysics = (id: Id, name: string): PhysicsNode => ({
   id,

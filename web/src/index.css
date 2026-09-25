@@ -480,3 +480,11 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .script-modal .modal-actions { align-items: center; }
 .script-modal .modal-actions .btn { margin-left: 6px; }
 .canvas-fit { position: absolute; left: 10px; top: 10px; z-index: 4; width: 30px; height: 30px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.table-pane { max-width: 900px; }
+.table-pane h3 { margin: 0 0 8px; }
+.table-item { margin: 10px 0 16px; }
+.table-item h4 { margin: 0 0 4px; font-size: 13px; color: var(--accent); }
+.circ-table.kv th { width: 45%; }
+.region-pick { border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; margin: 6px 0; }
+.region-pick legend { font-size: 11px; color: var(--muted); }
+.region-pick .field.check { margin: 2px 0; }

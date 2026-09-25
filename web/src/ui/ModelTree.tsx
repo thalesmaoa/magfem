@@ -4,7 +4,7 @@ import { entityLabel, type SketchEditor } from '../cad/editor';
 import { evaluate, evaluateVariables, formatLength, formatQ } from '../cad/expr';
 import { addNode, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
 import { MeshProps, MeshTree } from './MeshPanel';
-import { InterpSection, PlotProps, ResultsProps, ResultsTree, SolveButton, SolveSection } from './PostPanel';
+import { InterpSection, PlotProps, TableItemProps, ResultsProps, ResultsTree, SolveButton, SolveSection } from './PostPanel';
 import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type TreeNode } from '../cad/types';
 import { deleteVariable, nextVarName, renameVariable, setVariable } from '../cad/vars';
 import { groupOf } from '../cad/ops';
@@ -662,7 +662,9 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
         {sel.kind === 'var' && <VariableProps ed={ed} name={sel.name} onRenamed={(n) => onSelect(n ? { kind: 'var', name: n } : { kind: 'geometry' })} />}
         {current?.kind === 'physics' && <PhysicsProps ed={ed} node={current} onSelect={onSelect} />}
         {isMeshSel(sel, ed.sketch) && <MeshProps ed={ed} sel={sel} onSelect={onSelect} />}
-        {current && current.kind === 'post' && <PlotProps ed={ed} node={current} />}
+        {current && current.kind === 'post' && !current.item && <PlotProps ed={ed} node={current} />}
+        {current && current.kind === 'post' && current.item && <TableItemProps ed={ed} node={current} />}
+        {current?.kind === 'table' && <ResultsProps ed={ed} id={current.physics} onSelect={onSelect} />}
         {sel.kind === 'results' && <ResultsProps ed={ed} id={sel.id} onSelect={onSelect} />}
         {current?.kind === 'view' && <InterpSection ed={ed} view={current} />}
         {current?.kind === 'view' && <ResultsProps ed={ed} id={current.physics} onSelect={onSelect} />}

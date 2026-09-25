@@ -466,6 +466,27 @@ export interface Translations {
     empty: string;
   };
   script: { button: string; title: string; help: string; copy: string; copied: string; download: string; close: string; lines: (n: number) => string };
+  table: {
+    name: string;
+    newView: string;
+    newViewNote: string;
+    newInterp: string;
+    newInterpNote: string;
+    newLine: string;
+    newLineNote: string;
+    lineViewName: string;
+    newTable: string;
+    newTableNote: string;
+    resultsName: string;
+    addItem: string;
+    items: Record<'circuits' | 'lineint' | 'surfint', string>;
+    itemHelp: Record<'circuits' | 'lineint' | 'surfint', string>;
+    pickRegions: string;
+    noRegions: string;
+    line: { length: string; flux: string; intB: string; intBn: string; mmf: string; bAvg: string };
+    surf: { area: string; volume: string; current: string; energy: string; bAvg: string; b2: string; bmean: string };
+    empty: string;
+  };
   hist: { title: string; empty: string; copy: string; copied: string; help: string };
   expr: {
     badNumber: (s: string) => string;
@@ -1023,6 +1044,27 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     download: 'Baixar .py',
     close: 'Fechar',
     lines: (n) => `${n} comandos`,
+  },
+  table: {
+    name: 'Tabela',
+    newView: 'Mapa de campo',
+    newViewNote: 'superfície, contorno, glifos no plano',
+    newInterp: 'Mapa interpolado',
+    newInterpNote: 'o mesmo, com os dados suavizados',
+    newLine: 'Gráfico sobre linha',
+    newLineNote: 'grandeza ao longo de uma curva',
+    lineViewName: 'Gráfico',
+    newTable: 'Resultados (valores)',
+    newTableNote: 'integrais sobre linha e de superfície',
+    resultsName: 'Resultados',
+    addItem: 'Incluir na tabela',
+    items: { circuits: 'Circuitos', lineint: 'Integral sobre linha', surfint: 'Integral de superfície' },
+    itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'corrente, energia, |B| médio' },
+    pickRegions: 'Regiões da integral',
+    noRegions: 'Marque ao menos uma região.',
+    line: { length: 'Comprimento', flux: 'Fluxo Φ', intB: '∫|B| dl', intBn: '∫B·n dl', mmf: '∫H·dl (FMM)', bAvg: '|B| médio' },
+    surf: { area: 'Área', volume: 'Volume', current: 'Corrente ∫J dA', energy: 'Energia ½∫B·H dV', bAvg: '|B| médio', b2: '∫|B|² dV', bmean: 'B médio (x, y)' },
+    empty: 'Tabela vazia: use o + para incluir circuitos ou integrais.',
   },
   hist: {
     title: 'Histórico',
@@ -1587,6 +1629,27 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     download: 'Download .py',
     close: 'Close',
     lines: (n) => `${n} commands`,
+  },
+  table: {
+    name: 'Table',
+    newView: 'Field map',
+    newViewNote: 'surface, contour, glyphs on the plane',
+    newInterp: 'Interpolated map',
+    newInterpNote: 'the same, with smoothed data',
+    newLine: 'Plot over line',
+    newLineNote: 'a quantity along a curve',
+    lineViewName: 'Plot',
+    newTable: 'Results (values)',
+    newTableNote: 'line and surface integrals',
+    resultsName: 'Results',
+    addItem: 'Add to table',
+    items: { circuits: 'Circuits', lineint: 'Line integral', surfint: 'Surface integral' },
+    itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'current, energy, mean |B|' },
+    pickRegions: 'Integration regions',
+    noRegions: 'Check at least one region.',
+    line: { length: 'Length', flux: 'Flux Φ', intB: '∫|B| dl', intBn: '∫B·n dl', mmf: '∫H·dl (MMF)', bAvg: 'Mean |B|' },
+    surf: { area: 'Area', volume: 'Volume', current: 'Current ∫J dA', energy: 'Energy ½∫B·H dV', bAvg: 'Mean |B|', b2: '∫|B|² dV', bmean: 'Mean B (x, y)' },
+    empty: 'Empty table: use + to add circuits or integrals.',
   },
   hist: {
     title: 'History',

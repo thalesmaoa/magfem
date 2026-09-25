@@ -3,14 +3,16 @@ import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { lineProfile, probe, quantityLabel, type Solution } from '../cad/solve';
-import { addPlot, addView, duplicateNode, movePlot, removeNode, updateNode, type TreeSel } from '../cad/tree';
-import { COLORMAPS, PLOT_KINDS, PLOT_QUANTITIES, type Colormap, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
+import { addPlot, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode, type TreeSel } from '../cad/tree';
+import { COLORMAPS, PLOT_KINDS, PLOT_QUANTITIES, type Colormap, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode, type TableNode, type TableItem, TABLE_ITEMS } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { Icons } from './icons';
 import { useEditor } from './useStore';
 import { openTab } from './tabsStore';
-import { CircuitTable } from './CanvasTabs';
+import { CircuitTable, tableItemRows } from './CanvasTabs';
+import { findRegion as findRegionP } from '../cad/regions';
+import { pointCode } from '../cad/mesh';
 
 const PLOT_ICON: Record<PlotKind, JSX.Element> = {
   surface: <span className="plot-ico map" />,
@@ -20,6 +22,45 @@ const PLOT_ICON: Record<PlotKind, JSX.Element> = {
 };
 
 const FILTER_ICON = <span className="plot-ico iso">∿</span>;
+const TABLE_ICON = <span className="plot-ico iso">▦</span>;
+const ITEM_ICON: Record<TableItem, JSX.Element> = { circuits: Icons.circuit, lineint: <span className="plot-ico iso">∫ℓ</span>, surfint: <span className="plot-ico iso">∬</span> };
+
+/** Botão (+) com uma lista de escolhas. */
+function ChoiceMenu({ label, items }: { label: string; items: { icon: JSX.Element; label: string; note?: string; onClick: () => void }[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener('mousedown', close);
+    return () => window.removeEventListener('mousedown', close);
+  }, [open]);
+  return (
+    <div className="add-menu" ref={ref} onClick={(e) => e.stopPropagation()}>
+      <button className="icon-btn tadd" title={label} aria-label={label} aria-expanded={open} onClick={() => setOpen(!open)}>
+        +
+      </button>
+      {open && (
+        <div className="menu" role="menu">
+          <div className="menu-label">{label}</div>
+          {items.map((it) => (
+            <button
+              key={it.label}
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                it.onClick();
+              }}
+            >
+              <span className="ticon">{it.icon}</span> {it.label}
+              {it.note && <span className="menu-note-inline">{it.note}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Nome padrão da camada: tipo + grandeza (ex.: "Superfície: B"). */
 export const plotName = (plot: PlotKind, qty: PlotQuantity) => {
@@ -90,7 +131,7 @@ export function SolveSection({ ed, node, onSelect }: { ed: SketchEditor; node: P
 }
 
 /** (+) de resultados: escolhe o tipo de gráfico. */
-function PlotAddMenu({ label, onPick, onFilter, onCircuits }: { label: string; onPick: (k: PlotKind) => void; onFilter?: () => void; onCircuits?: () => void }) {
+function PlotAddMenu({ label, onPick, onFilter, onCircuits, showLine = false }: { label: string; onPick: (k: PlotKind) => void; onFilter?: () => void; onCircuits?: () => void; showLine?: boolean }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -108,7 +149,7 @@ function PlotAddMenu({ label, onPick, onFilter, onCircuits }: { label: string; o
       {open && (
         <div className="menu" role="menu">
           <div className="menu-label">{label}</div>
-          {PLOT_KINDS.map((k) => (
+          {PLOT_KINDS.filter((k) => k !== 'line' || showLine).map((k) => (
             <button
               key={k}
               role="menuitem"
@@ -285,27 +326,77 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
               extra={
                 <>
                   <span className={`crefs${sol && ed.solutionStale(ph.id) ? ' bad' : ''}`}>{sol ? `${sol.bmax.toPrecision(3)} T` : '—'}</span>
-                  <PlotAddMenu
+                  <ChoiceMenu
                     label={t.post.newView}
-                    onCircuits={() => openTab({ kind: 'circuits', physics: ph.id })}
-                    onFilter={() => {
-                      // Vista interpolada (pai): já vem com superfície B e contorno A.
-                      const v = addView(ed.sketch, ph.id, undefined, 3);
-                      const a = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
-                      const b = addPlot(a.sketch, v.node.id, 'contour', plotName('contour', 'a'), 'a');
-                      if (ed.commit(b.sketch, [v.code, a.code, b.code])) {
-                        openRow(ph.id);
-                        onSelect({ kind: 'node', id: v.node.id });
-                      }
-                    }}
-                    onPick={(k) => {
-                      const v = addView(ed.sketch, ph.id);
-                      const p = addPlot(v.sketch, v.node.id, k, plotName(k, PLOT_QUANTITIES[k][0]));
-                      if (ed.commit(p.sketch, [v.code, p.code])) {
-                        openRow(ph.id);
-                        onSelect({ kind: 'node', id: p.node.id });
-                      }
-                    }}
+                    items={[
+                      {
+                        icon: <span className="plot-ico map" />,
+                        label: t.table.newView,
+                        note: t.table.newViewNote,
+                        onClick: () => {
+                          const v = addView(ed.sketch, ph.id);
+                          const p = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
+                          if (ed.commit(p.sketch, [v.code, p.code])) {
+                            openRow(ph.id);
+                            onSelect({ kind: 'node', id: v.node.id });
+                          }
+                        },
+                      },
+                      {
+                        icon: FILTER_ICON,
+                        label: t.table.newInterp,
+                        note: t.table.newInterpNote,
+                        onClick: () => {
+                          // Vista interpolada (pai): já vem com superfície B e contorno A.
+                          const v = addView(ed.sketch, ph.id, undefined, 3);
+                          const a = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
+                          const b = addPlot(a.sketch, v.node.id, 'contour', plotName('contour', 'a'), 'a');
+                          if (ed.commit(b.sketch, [v.code, a.code, b.code])) {
+                            openRow(ph.id);
+                            onSelect({ kind: 'node', id: v.node.id });
+                          }
+                        },
+                      },
+                      {
+                        icon: Icons.line,
+                        label: t.table.newLine,
+                        note: t.table.newLineNote,
+                        onClick: () => {
+                          // Gráfico sobre linha: vista própria com a camada de linha (a curva é escolhida nas propriedades).
+                          const v = addView(ed.sketch, ph.id, t.table.lineViewName);
+                          const p = addPlot(v.sketch, v.node.id, 'line', plotName('line', 'b'), 'b');
+                          if (ed.commit(p.sketch, [v.code, p.code])) {
+                            openRow(ph.id);
+                            onSelect({ kind: 'node', id: p.node.id });
+                          }
+                        },
+                      },
+                      {
+                        icon: TABLE_ICON,
+                        label: t.table.newTable,
+                        note: t.table.newTableNote,
+                        onClick: () => {
+                          const tb = addTable(ed.sketch, ph.id, t.table.resultsName);
+                          if (ed.commit(tb.sketch, [tb.code])) {
+                            openRow(ph.id);
+                            onSelect({ kind: 'node', id: tb.node.id });
+                          }
+                        },
+                      },
+                      {
+                        icon: Icons.circuit,
+                        label: t.circuit.title,
+                        note: t.table.itemHelp.circuits,
+                        onClick: () => {
+                          const tb = addTable(ed.sketch, ph.id, t.circuit.title);
+                          const it = addTableItem(tb.sketch, tb.node.id, 'circuits', t.circuit.title);
+                          if (ed.commit(it.sketch, [tb.code, it.code])) {
+                            openRow(ph.id);
+                            onSelect({ kind: 'node', id: tb.node.id });
+                          }
+                        },
+                      },
+                    ]}
                   />
                 </>
               }
@@ -384,6 +475,69 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                     </li>
                   );
                 })}
+                {sk.nodes
+                  .filter((n): n is TableNode => n.kind === 'table' && n.physics === ph.id)
+                  .map((tb) => {
+                    const items = sk.nodes.filter((n): n is PostNode => n.kind === 'post' && n.view === tb.id);
+                    return (
+                      <li key={tb.id}>
+                        <Row
+                          icon={TABLE_ICON}
+                          label={tb.name}
+                          selected={sel.kind === 'node' && sel.id === tb.id}
+                          toggle={{ open: !closed.has(tb.id), onToggle: () => toggle(tb.id) }}
+                          onClick={() => onSelect({ kind: 'node', id: tb.id })}
+                          onRename={rename(tb.id)}
+                          onDropPlot={(pid) => {
+                            if (ed.commit(movePlot(ed.sketch, pid, tb.id), [`r.move(${q(pid)}, ${q(tb.id)})`])) onSelect({ kind: 'node', id: pid });
+                          }}
+                          extra={
+                            <>
+                              <ChoiceMenu
+                                label={t.table.addItem}
+                                items={TABLE_ITEMS.filter((k) => k !== 'circuits' || !items.some((x) => x.item === 'circuits')).map((k) => ({
+                                  icon: ITEM_ICON[k],
+                                  label: t.table.items[k],
+                                  note: t.table.itemHelp[k],
+                                  onClick: () => {
+                                    const r = addTableItem(ed.sketch, tb.id, k, t.table.items[k]);
+                                    if (ed.commit(r.sketch, [r.code])) {
+                                      openRow(tb.id);
+                                      onSelect({ kind: 'node', id: r.node.id });
+                                    }
+                                  },
+                                }))}
+                              />
+                              {copyBtn(tb.id, tb.name)}
+                              {removeBtn(tb.id, tb.name)}
+                            </>
+                          }
+                        />
+                        {!closed.has(tb.id) && (
+                          <ul role="group">
+                            {items.map((it) => (
+                              <li key={it.id}>
+                                <Row
+                                  icon={ITEM_ICON[it.item ?? 'circuits']}
+                                  label={it.name}
+                                  selected={sel.kind === 'node' && sel.id === it.id}
+                                  onClick={() => onSelect({ kind: 'node', id: it.id })}
+                                  onRename={rename(it.id)}
+                                  drag={it.id}
+                                  extra={
+                                    <>
+                                      {copyBtn(it.id, it.name)}
+                                      {removeBtn(it.id, it.name)}
+                                    </>
+                                  }
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
               </ul>
             )}
           </li>
@@ -783,6 +937,96 @@ export function InterpSection({ ed, view }: { ed: SketchEditor; view: ViewNode }
         </label>
         {sol && <p className="muted">{t.post.filterStats(sol.mesh.elements * n * n)}</p>}
         <p className="help-line">{t.post.interpHelp}</p>
+      </section>
+    </div>
+  );
+}
+
+/** Propriedades de um item de tabela (curva da integral de linha, regiões da integral de superfície). */
+export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
+  const t = useT();
+  useEditor(ed);
+  const sk = ed.sketch;
+  const [picking, setPicking] = useState(false);
+  useEffect(() => () => ed.pickLine(null), [ed]);
+  const set = (patch: Partial<PostNode>, code: string) => ed.commit(updateNode(sk, node.id, patch), [code]);
+  const arr = ed.arrangement();
+  const chosen = new Set((node.regions ?? []).map((k) => findRegionP(arr, k)?.index).filter((x): x is number => x !== undefined));
+  const rows = tableItemRows(ed, node);
+  return (
+    <div className="props-body">
+      <section>
+        <h3>{t.table.items[node.item ?? 'circuits']}</h3>
+        {node.item === 'lineint' && (
+          <>
+            <label className="field">
+              <span>{t.post.curve}</span>
+              <span className="cval">{node.curve && sk.entities[node.curve] ? entityLabel(sk, node.curve) : '—'}</span>
+            </label>
+            <button
+              className={`btn${picking ? ' secondary' : ''}`}
+              onClick={() => {
+                if (picking) {
+                  ed.pickLine(null);
+                  setPicking(false);
+                  return;
+                }
+                // A escolha acontece no desenho de uma vista: abre a primeira vista da física.
+                const v = sk.nodes.find((n) => n.kind === 'view' && n.physics === node.physics);
+                if (v) openTab({ kind: 'view', id: v.id });
+                setPicking(true);
+                ed.pickLine((id) => {
+                  setPicking(false);
+                  set({ curve: id }, `r.show(${q(node.id)}, curve=${q(id)})`);
+                  openTab({ kind: 'table', id: node.view! });
+                });
+              }}
+            >
+              {picking ? t.post.picking : t.post.pickCurve}
+            </button>
+          </>
+        )}
+        {node.item === 'surfint' && (
+          <fieldset className="region-pick">
+            <legend>{t.table.pickRegions}</legend>
+            {arr.regions.map((r) => {
+              const a = ed.assignOf({ curves: r.curves, seed: r.label });
+              const label = a?.name ?? t.mesh.region(r.index + 1);
+              return (
+                <label key={r.index} className="field check">
+                  <input
+                    type="checkbox"
+                    checked={chosen.has(r.index)}
+                    onChange={(e) => {
+                      const keys = arr.regions.filter((x) => (x.index === r.index ? e.target.checked : chosen.has(x.index))).map((x) => ({ curves: x.curves, seed: x.label }));
+                      set({ regions: keys }, `r.show(${q(node.id)}, regions=[${keys.map((k) => pointCode(k.seed)).join(', ')}])`);
+                    }}
+                  />
+                  <span>{label}</span>
+                </label>
+              );
+            })}
+          </fieldset>
+        )}
+        {node.item === 'circuits' && <p className="help-line">{t.circuit.help}</p>}
+        {rows.msg && <p className="muted">{rows.msg}</p>}
+        {rows.rows.length > 0 && (
+          <table className="circ-table kv">
+            <tbody>
+              {rows.rows.map(([k, v]) => (
+                <tr key={k}>
+                  <th>{k}</th>
+                  <td>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {node.view && (
+          <button className="btn secondary" onClick={() => openTab({ kind: 'table', id: node.view! })}>
+            {t.circuit.openTable}
+          </button>
+        )}
       </section>
     </div>
   );

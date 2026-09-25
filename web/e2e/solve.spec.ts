@@ -79,7 +79,7 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
   // Nova vista (outra aba) pelo + da física; Desenho continua lá e nada se perde.
   const grp = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
   await grp.getByRole('button', { name: 'Nova vista (aba) com…' }).click();
-  await page.getByRole('menuitem', { name: /Superfície/ }).click();
+  await page.getByRole('menuitem', { name: /Mapa de campo/ }).click();
   await expect(page.getByRole('tab', { name: /Vista 2/ })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('tab', { name: 'Desenho' }).click();
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).not.toBe('post');
@@ -89,7 +89,7 @@ test('magnetostático: faixa com corrente bate com a solução analítica e most
   // Gráfico sobre curva: linha de construção horizontal em y = 25 de x = 0 a 50.
   await run('g.line((0, 25), (50, 25), construction=True)');
   const results = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
-  await view.getByRole('button', { name: 'Incluir nesta vista' }).click();
+  await grp.getByRole('button', { name: 'Nova vista (aba) com…' }).click();
   await page.getByRole('menuitem', { name: /Gráfico sobre linha/ }).click();
   await page.getByRole('button', { name: 'Escolher curva no desenho' }).click();
   await clickWorld(page, { x: 40, y: 25 });

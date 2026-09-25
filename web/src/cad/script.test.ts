@@ -8,7 +8,7 @@ import { Draft } from './ops';
 import { computeArrangement } from './regions';
 import { generateScript } from './script';
 import { initSolver, solve } from './solver';
-import { addPlot, addView } from './tree';
+import { addPlot, addTable, addTableItem, addView } from './tree';
 import { emptySketch, ORIGIN_ID, type Sketch } from './types';
 
 beforeAll(async () => {
@@ -49,6 +49,10 @@ function model(): Sketch {
   const v2 = addView(pl.sketch, phys.id, undefined, 4);
   const p2 = addPlot(v2.sketch, v2.node.id, 'contour', 'Contorno: A', 'a');
   sk = { ...p2.sketch, nodes: p2.sketch.nodes.map((n) => (n.id === p2.node.id ? { ...n, nLines: 33, color: '#112233' } : n)) };
+  const tb = addTable(sk, phys.id, 'Resultados');
+  const li = addTableItem(tb.sketch, tb.node.id, 'lineint', 'Linha');
+  const si = addTableItem(li.sketch, tb.node.id, 'surfint', 'Área');
+  sk = { ...si.sketch, nodes: si.sketch.nodes.map((n) => (n.id === li.node.id ? { ...n, curve: c } : n.id === si.node.id ? { ...n, regions: [regionKey(hole)] } : n)) };
   return sk;
 }
 

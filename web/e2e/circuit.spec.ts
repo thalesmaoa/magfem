@@ -48,7 +48,18 @@ test('circuito: λ, L = λ/I (½LI² = energia), R e perdas; tabela nos resultad
   // Tabela em aba pelo + da física.
   const grp = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
   await grp.getByRole('button', { name: 'Nova vista (aba) com…' }).click();
-  await page.getByRole('menuitem', { name: /Circuitos \(tabela\)/ }).click();
-  await expect(page.getByRole('tab', { name: /Circuitos: Campo magnético/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('menuitem', { name: /^Circuitos/ }).click();
+  await expect(page.getByRole('tab', { name: /Circuitos/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.chart-pane .circ-table')).toContainText('Bobina');
+
+  // Resultados (valores): integral de superfície na região da bobina e integral sobre linha.
+  await grp.getByRole('button', { name: 'Nova vista (aba) com…' }).click();
+  await page.getByRole('menuitem', { name: /Resultados \(valores\)/ }).click();
+  const tbl = page.getByRole('treeitem', { name: 'Resultados', exact: true });
+  await tbl.getByRole('button', { name: 'Incluir na tabela' }).click();
+  await page.getByRole('menuitem', { name: /Integral de superfície/ }).click();
+  await page.locator('.region-pick input[type=checkbox]').first().check();
+  // Corrente total = I × espiras (a região é a única).
+  await expect(page.locator('.props .circ-table')).toContainText('1.000 kA');
+  await expect(page.locator('.chart-pane .table-item')).toContainText('Energia');
 });

@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { updateMaterial } from '../cad/mesh';
-import { circuitResults, lineProfile, quantityLabel } from '../cad/solve';
+import { circuitResults, lineIntegrals, lineProfile, quantityLabel, surfaceIntegrals } from '../cad/solve';
+import { findRegion } from '../cad/regions';
 import type { TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode } from '../cad/types';
-import { useT } from '../i18n';
+import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { useDocVersion, useEditor } from './useStore';
 import { activateTab, closeTab, tabKey, useTabs, type CanvasTab } from './tabsStore';
@@ -24,6 +25,7 @@ export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s:
       return v ? `${ph?.name ?? ''} · ${v.name}` : '?';
     }
     if (tab.kind === 'chart') return `${t.post.chart}: ${sk.nodes.find((n) => n.id === tab.plot)?.name ?? '?'}`;
+    if (tab.kind === 'table') return sk.nodes.find((n) => n.id === tab.id)?.name ?? '?';
     if (tab.kind === 'circuits') return `${t.circuit.title}: ${sk.nodes.find((n) => n.id === tab.physics)?.name ?? '?'}`;
     return `${t.post.bhTab}: ${sk.materials.find((m) => m.id === tab.material)?.name ?? '?'}`;
   };
@@ -160,6 +162,12 @@ export function ChartPane({ ed, tab }: { ed: SketchEditor; tab: string }) {
   const [lx, ly] = logs[tab] ?? [false, false];
   const setLog = (x: boolean, y: boolean) => setLogs((l) => ({ ...l, [tab]: [x, y] }));
   if (tab.startsWith('chart:')) return <LinePane ed={ed} id={tab.slice(6)} lx={lx} ly={ly} setLog={setLog} />;
+  if (tab.startsWith('table:'))
+    return (
+      <div className="chart-pane">
+        <TablePane ed={ed} id={tab.slice(6)} />
+      </div>
+    );
   if (tab.startsWith('circuits:'))
     return (
       <div className="chart-pane">
@@ -348,10 +356,12 @@ export function LegendModal({ ed }: { ed: SketchEditor }) {
 const eng = (v: number | null, unit: string) => {
   if (v === null || !Number.isFinite(v)) return '—';
   if (v === 0) return `0 ${unit}`;
-  const e = Math.floor(Math.log10(Math.abs(v)) / 3) * 3;
+  // Unidades compostas (m², T²·m³…): prefixo confundiria (mm² ≠ milésimo de m²) → notação científica.
+  if (/[²³·]/.test(unit)) return `${Number(v.toPrecision(4)).toExponential(3)} ${unit}`;
+  const r = Number(v.toPrecision(4)); // arredonda antes de escolher o prefixo (999,9999 → 1000 → 1 k)
+  const e = Math.max(-12, Math.min(9, Math.floor(Math.log10(Math.abs(r)) / 3) * 3));
   const pre: Record<number, string> = { [-12]: 'p', [-9]: 'n', [-6]: 'µ', [-3]: 'm', 0: '', 3: 'k', 6: 'M', 9: 'G' };
-  const p = pre[Math.max(-12, Math.min(9, e))];
-  return `${(v / Math.pow(10, Math.max(-12, Math.min(9, e)))).toPrecision(4)} ${p}${unit}`;
+  return `${(r / Math.pow(10, e)).toPrecision(4)} ${pre[e]}${unit}`;
 };
 
 /** Tabela de circuitos (I, espiras, λ, L, R, V, perdas) de uma física resolvida. */
@@ -395,6 +405,93 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
         </tbody>
       </table>
       <p className="help-line">{t.circuit.note}</p>
+    </div>
+  );
+}
+
+/** Linhas (rótulo, valor) de um item de tabela, ou uma mensagem. */
+export function tableItemRows(ed: SketchEditor, it: PostNode): { rows: [string, string][]; msg?: string } {
+  const t = T();
+  const sol = it.physics ? ed.solutions.get(it.physics) : undefined;
+  if (!sol) return { rows: [], msg: t.solve.noSolution };
+  const sk = ed.sketch;
+  if (it.item === 'lineint') {
+    if (!it.curve) return { rows: [], msg: t.post.noCurve };
+    const li = lineIntegrals(sol, sk, it.curve);
+    if (!li) return { rows: [], msg: t.post.outside };
+    const L = t.table.line;
+    return {
+      rows: [
+        [L.length, `${li.length.toPrecision(5)} mm`],
+        [L.flux, eng(li.flux, 'Wb')],
+        [L.intBn, eng(li.intBn, 'T·m')],
+        [L.intB, eng(li.intB, 'T·m')],
+        [L.mmf, eng(li.mmf, 'A')],
+        [L.bAvg, eng(li.bAvg, 'T')],
+      ],
+    };
+  }
+  if (it.item === 'surfint') {
+    const arr = ed.arrangement();
+    const set = new Set<number>();
+    for (const k of it.regions ?? []) {
+      const r = findRegion(arr, k);
+      if (r) set.add(r.index);
+    }
+    if (!set.size) return { rows: [], msg: t.table.noRegions };
+    const si = surfaceIntegrals(sol, sk, set);
+    const S = t.table.surf;
+    return {
+      rows: [
+        [S.area, `${Number((si.area * 1e6).toPrecision(5))} mm²`],
+        [S.volume, `${Number((si.volume * 1e9).toPrecision(5))} mm³`],
+        [S.current, eng(si.current, 'A')],
+        [S.energy, eng(si.energy, 'J')],
+        [S.bAvg, eng(si.bAvg, 'T')],
+        [S.b2, eng(si.b2, 'T²·m³')],
+        [S.bmean, `${si.bx.toPrecision(4)}, ${si.by.toPrecision(4)} T`],
+      ],
+    };
+  }
+  return { rows: [] };
+}
+
+/** Aba de uma tabela de resultados: um bloco por item. */
+function TablePane({ ed, id }: { ed: SketchEditor; id: string }) {
+  const t = useT();
+  const tb = ed.sketch.nodes.find((n) => n.id === id);
+  if (!tb || tb.kind !== 'table') return null;
+  const items = ed.sketch.nodes.filter((n): n is PostNode => n.kind === 'post' && n.view === id);
+  return (
+    <div className="table-pane">
+      <h3>{tb.name}</h3>
+      {!items.length && <p className="muted">{t.table.empty}</p>}
+      {items.map((it) => (
+        <section key={it.id} className="table-item">
+          <h4>{it.name}</h4>
+          {it.item === 'circuits' ? (
+            <CircuitTable ed={ed} physics={tb.physics} big />
+          ) : (
+            (() => {
+              const r = tableItemRows(ed, it);
+              return r.msg ? (
+                <p className="muted">{r.msg}</p>
+              ) : (
+                <table className="circ-table kv">
+                  <tbody>
+                    {r.rows.map(([k, v]) => (
+                      <tr key={k}>
+                        <th>{k}</th>
+                        <td>{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()
+          )}
+        </section>
+      ))}
     </div>
   );
 }

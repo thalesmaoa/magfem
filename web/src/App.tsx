@@ -72,8 +72,11 @@ export default function App() {
     if (!ed) return;
     const node = treeSel.kind === 'node' ? ed.sketch.nodes.find((n) => n.id === treeSel.id) : undefined;
     const view =
-      node?.kind === 'view' ? node.id : node?.kind === 'post' ? node.view : treeSel.kind === 'results' ? ed.sketch.nodes.find((n) => n.kind === 'view' && n.physics === treeSel.id)?.id : undefined;
-    if (view) openTab({ kind: 'view', id: view });
+      node?.kind === 'view' ? node.id : node?.kind === 'post' && !node.item ? node.view : treeSel.kind === 'results' ? ed.sketch.nodes.find((n) => n.kind === 'view' && n.physics === treeSel.id)?.id : undefined;
+    // Tabela de resultados (ou item dela): aba da tabela.
+    const table = node?.kind === 'table' ? node.id : node?.kind === 'post' && node.item ? node.view : undefined;
+    if (table) openTab({ kind: 'table', id: table });
+    else if (view) openTab({ kind: 'view', id: view });
     else if (!(treeSel.kind === 'results')) activateTab('draw');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ed, treeSel]);
@@ -81,7 +84,7 @@ export default function App() {
   useEffect(() => {
     if (!ed) return;
     pruneTabs((t) =>
-      t.kind === 'view' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'view') : t.kind === 'chart' ? ed.sketch.nodes.some((n) => n.id === t.plot) : t.kind === 'bh' ? ed.sketch.materials.some((m) => m.id === t.material && m.bh) : t.kind === 'circuits' ? ed.sketch.nodes.some((n) => n.id === t.physics) : true,
+      t.kind === 'view' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'view') : t.kind === 'chart' ? ed.sketch.nodes.some((n) => n.id === t.plot) : t.kind === 'bh' ? ed.sketch.materials.some((m) => m.id === t.material && m.bh) : t.kind === 'circuits' ? ed.sketch.nodes.some((n) => n.id === t.physics) : t.kind === 'table' ? ed.sketch.nodes.some((n) => n.id === t.id && n.kind === 'table') : true,
     );
   }, [ed, version]);
   const activeView = tabs.active.startsWith('view:') ? tabs.active.slice(5) : null;
@@ -262,7 +265,7 @@ export default function App() {
           {ed && <CanvasTabBar ed={ed} onSelect={setTreeSel} />}
           <div className="canvas-wrap">
             <canvas ref={canvasRef} className="sketch" tabIndex={0} />
-            {ed && (tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:') || tabs.active.startsWith('circuits:')) && <ChartPane ed={ed} tab={tabs.active} />}
+            {ed && (tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:') || tabs.active.startsWith('circuits:') || tabs.active.startsWith('table:')) && <ChartPane ed={ed} tab={tabs.active} />}
             {ed && <LegendModal ed={ed} />}
             {ed && tabs.active.startsWith('view:') && (
               <button className="canvas-fit icon-btn" title={t.tools.fit} aria-label={t.tools.fit} onClick={() => ed.fit()}>

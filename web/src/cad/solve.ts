@@ -285,6 +285,8 @@ export interface LineProfile {
   bn: number[];
   bt: number[];
   h: number[];
+  /** H tangencial (A/m), para ∮H·dl. */
+  ht: number[];
   a: number[];
   /** Fluxo que atravessa a curva (Wb), no sentido da normal à esquerda do percurso. */
   flux: number;
@@ -300,7 +302,7 @@ export interface LineProfile {
 export function lineProfile(sol: Solution, sk: Sketch, id: Id, n = 200, smooth = false): LineProfile | null {
   const smp = sampleCurve(sk, id, n);
   if (!smp) return null;
-  const out: LineProfile = { s: [], b: [], bn: [], bt: [], h: [], a: [], flux: 0, bAvg: 0, bMax: 0, length: smp.s[smp.s.length - 1] };
+  const out: LineProfile = { s: [], b: [], bn: [], bt: [], h: [], ht: [], a: [], flux: 0, bAvg: 0, bMax: 0, length: smp.s[smp.s.length - 1] };
   for (let i = 0; i < smp.pts.length; i++) {
     const pr = smooth ? probeSmooth(sol, smp.pts[i]) : probe(sol, smp.pts[i]);
     if (!pr) continue;
@@ -310,6 +312,7 @@ export function lineProfile(sol: Solution, sk: Sketch, id: Id, n = 200, smooth =
     out.bt.push(pr.bx * t.x + pr.by * t.y);
     out.bn.push(-pr.bx * t.y + pr.by * t.x);
     out.h.push(pr.h);
+    out.ht.push(pr.hx * t.x + pr.hy * t.y);
     out.a.push(pr.A);
   }
   if (out.s.length < 2) return null;
@@ -625,4 +628,71 @@ export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): Cir
     const Rv = rOk && regions ? R : null;
     return { id: c.id, name: c.name, I, lambda, L: I ? lambda / I : null, R: Rv, V: Rv !== null ? Rv * I : null, P: Rv !== null ? Rv * I * I : null, regions, turns };
   });
+}
+
+// ---------- Integrais (tabelas de resultados) ----------
+
+const trapz = (s: number[], y: number[]) => {
+  let v = 0;
+  for (let i = 1; i < s.length; i++) v += ((y[i] + y[i - 1]) / 2) * (s[i] - s[i - 1]);
+  return v;
+};
+
+export interface LineIntegrals {
+  length: number; // mm
+  flux: number; // Wb (plano: × profundidade)
+  intB: number; // ∫|B| dl (T·m)
+  intBn: number; // ∫B·n dl (T·m) = fluxo por metro no plano
+  mmf: number; // ∫H·dl (A)
+  bAvg: number;
+}
+
+export function lineIntegrals(sol: Solution, sk: Sketch, curve: Id, smooth = false): LineIntegrals | null {
+  const p = lineProfile(sol, sk, curve, 400, smooth);
+  if (!p) return null;
+  const sm = p.s.map((x) => x * 1e-3);
+  return { length: p.length, flux: p.flux, intB: trapz(sm, p.b), intBn: trapz(sm, p.bn), mmf: trapz(sm, p.ht), bAvg: p.bAvg };
+}
+
+export interface SurfaceIntegrals {
+  area: number; // m²
+  volume: number; // m³ (plano: área × profundidade; axissimétrico: ∫2πr dA)
+  current: number; // ∫J dA (A)
+  energy: number; // ½∫ν|B−Br|² dV (J)
+  bAvg: number; // média de |B| na área (T)
+  b2: number; // ∫|B|² dV (T²·m³)
+  bx: number; // média de B_x (ou B_r) (T)
+  by: number; // média de B_y (ou B_z) (T)
+}
+
+/** Integrais sobre as regiões dadas (índices do arranjo). */
+export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>): SurfaceIntegrals {
+  const { xy, triangles, triRegion } = sol.mesh;
+  const depth = depthOf(sk);
+  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0 };
+  for (let t = 0; t < triangles.length / 3; t++) {
+    const r = triRegion[t];
+    if (!regions.has(r)) continue;
+    const a = triangles[3 * t], b = triangles[3 * t + 1], c = triangles[3 * t + 2];
+    const ar = (Math.abs((xy[2 * b] - xy[2 * a]) * (xy[2 * c + 1] - xy[2 * a + 1]) - (xy[2 * c] - xy[2 * a]) * (xy[2 * b + 1] - xy[2 * a + 1])) / 2) * 1e-6;
+    const rc = ((xy[2 * a] + xy[2 * b] + xy[2 * c]) / 3) * 1e-3;
+    const dV = sol.axisymmetric ? 2 * Math.PI * Math.max(rc, 0) * ar : ar * depth;
+    const bx = sol.bx[t], by = sol.by[t], bb = bx * bx + by * by;
+    const nu = r >= 0 ? sol.nu[r] : 1 / MU0;
+    const hx = bx - (r >= 0 ? sol.brx[r] : 0), hy = by - (r >= 0 ? sol.bry[r] : 0);
+    out.area += ar;
+    out.volume += dV;
+    out.current += (r >= 0 ? sol.J[r] : 0) * ar;
+    out.energy += 0.5 * nu * (hx * hx + hy * hy) * dV;
+    out.bAvg += Math.sqrt(bb) * ar;
+    out.b2 += bb * dV;
+    out.bx += bx * ar;
+    out.by += by * ar;
+  }
+  if (out.area > 0) {
+    out.bAvg /= out.area;
+    out.bx /= out.area;
+    out.by /= out.area;
+  }
+  return out;
 }

@@ -19,7 +19,7 @@ test('vista interpolada (pai), legenda com limites e duplicar gráfico', async (
   // Nova vista interpolada pelo + da física: vira uma aba própria com superfície e contorno.
   const grp = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
   await grp.getByRole('button', { name: 'Nova vista (aba) com…' }).click();
-  await page.getByRole('menuitem', { name: /Nova vista interpolada/ }).click();
+  await page.getByRole('menuitem', { name: /Mapa interpolado/ }).click();
   await expect(page.getByRole('tab', { name: /Interpolação 1/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByLabel('Subdivisões por aresta')).toHaveValue('3');
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.postLevel)).toBe(3);

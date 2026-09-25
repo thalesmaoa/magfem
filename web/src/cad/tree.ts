@@ -1,7 +1,7 @@
 // Árvore do modelo: Pré-processador (Geometria + físicas), Malha e Pós-processador.
 import { T } from '../i18n';
 import { q } from './code';
-import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type Sketch, type TreeNode } from './types';
+import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type Sketch, type TableItem, type TreeNode } from './types';
 
 export type AddKind = 'physics-magnetic' | 'mesh' | 'post';
 
@@ -50,6 +50,22 @@ export function addPlot(sk: Sketch, view: Id, plot: PlotKind, name: string, quan
   return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.plot(${q(view)}, ${q(plot)}, quantity=${q(qty)})` };
 }
 
+/** Nova tabela de resultados (aba) de uma física. */
+export function addTable(sk: Sketch, physics: Id, name?: string): { sketch: Sketch; node: TreeNode; code: string } {
+  const id = `n${sk.nextId}`;
+  const n = name ?? `${T().table.name} ${sk.nodes.filter((x) => x.kind === 'table' && x.physics === physics).length + 1}`;
+  const node: TreeNode = { id, kind: 'table', name: n, physics };
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.table(${q(physics)}, name=${q(n)})` };
+}
+
+/** Novo item numa tabela de resultados. */
+export function addTableItem(sk: Sketch, table: Id, item: TableItem, name: string): { sketch: Sketch; node: TreeNode; code: string } {
+  const tb = sk.nodes.find((n) => n.id === table && n.kind === 'table');
+  const id = `n${sk.nextId}`;
+  const node: TreeNode = { id, kind: 'post', name, physics: tb?.kind === 'table' ? tb.physics : undefined, view: table, item };
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.item(${q(table)}, ${q(item)}, name=${q(name)})` };
+}
+
 /** Nova vista (aba) de resultados de uma física. */
 export function addView(sk: Sketch, physics: Id, name?: string, level?: number): { sketch: Sketch; node: TreeNode; code: string } {
   const id = `n${sk.nextId}`;
@@ -81,7 +97,9 @@ export function duplicateNode(sk: Sketch, id: Id): { sketch: Sketch; node: TreeN
 export function movePlot(sk: Sketch, id: Id, viewId: Id): Sketch {
   const p = sk.nodes.find((n) => n.id === id);
   const v = sk.nodes.find((n) => n.id === viewId);
-  if (p?.kind !== 'post' || v?.kind !== 'view' || p.view === viewId) return sk;
+  if (p?.kind !== 'post' || !v || p.view === viewId) return sk;
+  if (p.item ? v.kind !== 'table' : v.kind !== 'view') return sk;
+  if (v.kind !== 'table' && v.kind !== 'view') return sk;
   const moved: TreeNode = { ...p, view: viewId, physics: v.physics };
   const rest = sk.nodes.filter((n) => n.id !== id);
   const last = Math.max(rest.indexOf(v), ...rest.map((n, i) => (n.kind === 'post' && n.view === viewId ? i : -1)));
@@ -96,10 +114,10 @@ export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch
 export function removeNode(sk: Sketch, id: Id): Sketch {
   // Remover uma vista leva junto as camadas dela; remover uma física leva vistas e camadas.
   const gone = new Set([id]);
-  for (const n of sk.nodes) if ((n.kind === 'view' && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
+  for (const n of sk.nodes) if (((n.kind === 'view' || n.kind === 'table') && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
   for (const n of sk.nodes) if (n.kind === 'post' && n.view && gone.has(n.view)) gone.add(n.id);
   return { ...sk, nodes: sk.nodes.filter((n) => !gone.has(n.id)) };
 }
 
 /** Objeto da API de cada seção da árvore: g (geometria), m (malha), s (solucionador), r (resultados). */
-export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r' };
+export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r', table: 'r' };

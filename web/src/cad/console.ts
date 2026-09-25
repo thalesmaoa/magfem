@@ -24,10 +24,10 @@ import {
   ungroup,
   updateGroup,
 } from './ops';
-import { addNode, addPlot, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
+import { addNode, addPlot, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { TABLE_ITEMS, type TableItem, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
 import { computeArrangement } from './regions';
 import { addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
@@ -1016,6 +1016,18 @@ export class CommandConsole {
         this.commit(movePlot(sk, String(a[0]), String(a[1])));
         return null;
       }
+      case 'table': {
+        need(1);
+        const r = addTable(sk, String(a[0]), kw.name ? String(kw.name) : undefined);
+        return this.commitWithId(r.sketch, r.node.id, kw.id);
+      }
+      case 'item': {
+        need(2);
+        const kind = String(a[1]) as TableItem;
+        if (!TABLE_ITEMS.includes(kind)) throw new ConsoleError(t.notFound(kind));
+        const r = addTableItem(sk, String(a[0]), kind, kw.name ? String(kw.name) : T().table.items[kind]);
+        return this.commitWithId(r.sketch, r.node.id, kw.id);
+      }
       case 'duplicate': {
         need(1);
         const r = duplicateNode(sk, String(a[0]));
@@ -1047,6 +1059,10 @@ export class CommandConsole {
         if (kw.color !== undefined) patch.color = kw.color === null ? undefined : String(kw.color);
         if (kw.color_by_value !== undefined) patch.colorByValue = !!kw.color_by_value;
         if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
+        if (kw.regions !== undefined) {
+          const arr = computeArrangement(sk);
+          patch.regions = (seq(kw.regions) ?? []).map((p) => regionKey(regionAtOrThrow(arr, this.xy(p))));
+        }
         if (kw.legend !== undefined) {
           const L = seq(kw.legend);
           patch.legend = kw.legend === null || !L ? undefined : { x: Number(L[0]), y: Number(L[1]), s: Number(L[2] ?? 1) };
@@ -1129,6 +1145,8 @@ const NODE_METHODS = {
   r: {
     view: 'view("n2", name="Vista 2")',
     duplicate: 'duplicate("n5")  # camada ou vista',
+    table: 'table("n2", name="Resultados")',
+    item: 'item("n6", "lineint" | "surfint" | "circuits", name="...")',
     move: 'move("n5", "n7")  # camada para outra vista',
     plot: 'plot("n4 (vista) | n2 (física)", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
     show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn", color="#1f6fd1", color_by_value=False, colormap="viridis")',

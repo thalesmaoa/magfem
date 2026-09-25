@@ -127,6 +127,21 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       if (p.legend) add(`r.show(${q(p.id)}, legend=(${n(p.legend.x)}, ${n(p.legend.y)}, ${n(p.legend.s)}))`);
       continue;
     }
+    if (p.kind === 'table') {
+      add(`r.table(${q(p.physics)}, name=${q(p.name)}, id=${q(p.id)})`);
+      continue;
+    }
+    if (p.kind === 'post' && p.item && p.view) {
+      add(`r.item(${q(p.view)}, ${q(p.item)}, name=${q(p.name)}, id=${q(p.id)})`);
+      const kw: string[] = [];
+      if (p.curve) kw.push(`curve=${q(p.curve)}`);
+      if (p.regions?.length) {
+        const pts = p.regions.map((k) => findRegion(arr, k)).filter((r) => r).map((r) => xy(r!.label));
+        kw.push(`regions=[${pts.join(', ')}]`);
+      }
+      if (kw.length) add(`r.show(${q(p.id)}, ${kw.join(', ')})`);
+      continue;
+    }
     if (p.kind !== 'post' || !p.view || !p.plot) continue;
     add(`r.plot(${q(p.view)}, ${q(p.plot)}, quantity=${q(p.quantity ?? 'b')}, name=${q(p.name)}, id=${q(p.id)})`);
     const kw: string[] = [];
