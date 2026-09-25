@@ -578,3 +578,5 @@ body.resizing { cursor: col-resize; user-select: none; }
 .about-panel { padding: 10px 12px; font-size: 13px; }
 .about-panel h2 { margin: 0; font-size: 16px; }
 .drawer-tab.on { color: var(--accent); background: var(--accent-soft); }
+.mat-search { width: calc(100% - 12px); margin: 4px 6px 6px; box-sizing: border-box; }
+.mat-menu { max-height: 60vh; overflow-y: auto; }

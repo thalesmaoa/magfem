@@ -335,6 +335,8 @@ export interface Translations {
     boundaryHelp: Record<BoundaryType, string>;
     addMaterial: string;
     femmImport: string;
+    searchMaterial: string;
+    fromFemm: string;
     femmHint: string;
     femmEmpty: string;
     femmTitle: (n: number) => string;
@@ -832,7 +834,7 @@ const PT: Translations = {
     analysis: 'Análise',
     magnetostatic: 'Magnetostática',
     harmonic: 'Harmônica (AC)',
-    transient: 'Transitória (correntes em função de t)',
+    transient: 'Transitória',
     circuit: 'Transitória com circuito',
     frequency: 'Frequência (Hz)',
     dt: 'Passo de tempo (s)',
@@ -1024,6 +1026,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     },
     addMaterial: 'Novo material',
     femmImport: 'Importar do FEMM…',
+    searchMaterial: 'Buscar material (também na biblioteca do FEMM)',
+    fromFemm: 'Da biblioteca do FEMM (importa ao escolher)',
     femmHint: 'Biblioteca de materiais do FEMM 4.2 (245 materiais); também lê um matlib.dat seu (femm42/bin/matlib.dat)',
     femmEmpty: 'Nenhum material encontrado — o arquivo é um matlib.dat do FEMM?',
     femmTitle: (n) => `Biblioteca do FEMM (${n} materiais)`,
@@ -1536,7 +1540,7 @@ const EN: Translations = {
     analysis: 'Analysis',
     magnetostatic: 'Magnetostatic',
     harmonic: 'Harmonic (AC)',
-    transient: 'Transient (currents as functions of t)',
+    transient: 'Transient',
     circuit: 'Transient with circuit',
     frequency: 'Frequency (Hz)',
     dt: 'Time step (s)',
@@ -1728,6 +1732,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     },
     addMaterial: 'New material',
     femmImport: 'Import from FEMM…',
+    searchMaterial: 'Search material (also in the FEMM library)',
+    fromFemm: 'From the FEMM library (imported when picked)',
     femmHint: 'FEMM 4.2 material library (245 materials); can also read your own matlib.dat (femm42/bin/matlib.dat)',
     femmEmpty: 'No materials found — is this a FEMM matlib.dat?',
     femmTitle: (n) => `FEMM library (${n} materials)`,

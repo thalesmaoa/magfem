@@ -179,3 +179,24 @@ test('malha grande (muitos elementos) gera sem estourar a pilha do WASM', async 
   const m = await page.evaluate(() => [...(window as any).__magfem.meshes.values()][0]);
   expect(m.elements).toBeGreaterThan(30000);
 });
+
+test('busca de material: filtra o projeto e importa da biblioteca do FEMM ao escolher', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  await box.fill('g.rectangle((-20, -10), (20, 10))');
+  await box.press('Enter');
+  await page.getByRole('treeitem', { name: 'Malha', exact: true }).click();
+  await expect.poll(() => mode(page)).toBe('mesh');
+  await clickWorld(page, { x: 0, y: 0 });
+  await page.locator('.props').getByRole('button', { name: 'Escolher material', exact: true }).click();
+  const search = page.getByRole('textbox', { name: /Buscar material/ });
+  await search.fill('cobre');
+  await expect(page.getByRole('menuitemradio', { name: /Cobre/ })).toBeVisible();
+  await expect(page.getByRole('menuitemradio', { name: /Aço 1010/ })).toHaveCount(0);
+  await search.fill('M-19');
+  await page.getByRole('menuitem', { name: /M-19 Steel/ }).first().click();
+  const sk = await sketch(page);
+  const m = sk.materials.find((x: any) => x.name === 'M-19 Steel');
+  expect(m).toBeTruthy();
+  expect(m.bh.length).toBeGreaterThan(10);
+  expect(sk.regionAssigns[0].material).toBe(m.id);
+});

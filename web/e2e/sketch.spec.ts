@@ -224,3 +224,30 @@ test('retângulo preso à origem: aviso ao arrastar, "Soltar da origem" e então
   const code = await page.locator('.console .code').innerText();
   expect(code).toMatch(/p\d+ = g\.detach\("O", \["l\d+", "l\d+"\]\)/);
 });
+
+test('caixa como nos CADs: para a direita só o que está dentro, para a esquerda o que cruza', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  for (const c of ['a = g.line((0, 0), (20, 0))', 'b = g.line((0, 10), (50, 10))']) {
+    await box.fill(c);
+    await box.press('Enter');
+  }
+  const ids = async () => {
+    const sk = await sketch(page);
+    const lines = Object.values(sk.entities).filter((e: any) => e.type === 'line') as any[];
+    return lines;
+  };
+  const [la, lb] = await ids();
+  const sel = () => page.evaluate(() => (window as any).__magfem.selection as string[]);
+  // Janela (esquerda → direita) de -5 a 30: só a linha curta cabe inteira.
+  await dragWorld(page, { x: -5, y: -5 }, { x: 30, y: 15 });
+  expect(await sel()).toContain(la.id);
+  expect(await sel()).not.toContain(lb.id);
+  await page.keyboard.press('Escape');
+  // Cruzamento (direita → esquerda) no mesmo retângulo: as duas tocam a caixa.
+  await dragWorld(page, { x: 30, y: 15 }, { x: -5, y: -5 });
+  expect(await sel()).toEqual(expect.arrayContaining([la.id, lb.id]));
+  // Cruzamento que só toca o meio da linha longa, sem pegar extremidades.
+  await page.keyboard.press('Escape');
+  await dragWorld(page, { x: 40, y: 12 }, { x: 35, y: 8 });
+  expect(await sel()).toEqual([lb.id]);
+});

@@ -134,6 +134,49 @@ export function entityBBox(sk: Sketch, e: Entity): { x0: number; y0: number; x1:
   };
 }
 
+/** A entidade toca a caixa (seleção por cruzamento, arrastando para a esquerda como nos CADs)? */
+export function entityTouchesBox(sk: Sketch, e: Entity, box: { x0: number; y0: number; x1: number; y1: number }): boolean {
+  const bb = entityBBox(sk, e);
+  if (bb.x1 < box.x0 || bb.x0 > box.x1 || bb.y1 < box.y0 || bb.y0 > box.y1) return false;
+  const inBox = (p: { x: number; y: number }) => p.x >= box.x0 && p.x <= box.x1 && p.y >= box.y0 && p.y <= box.y1;
+  // Segmento × retângulo (Liang-Barsky).
+  const segHits = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    if (inBox(a) || inBox(b)) return true;
+    let t0 = 0, t1 = 1;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const clip = (p: number, q: number) => {
+      if (p === 0) return q >= 0;
+      const r = q / p;
+      if (p < 0) {
+        if (r > t1) return false;
+        if (r > t0) t0 = r;
+      } else {
+        if (r < t0) return false;
+        if (r < t1) t1 = r;
+      }
+      return true;
+    };
+    return clip(-dx, a.x - box.x0) && clip(dx, box.x1 - a.x) && clip(-dy, a.y - box.y0) && clip(dy, box.y1 - a.y) && t0 <= t1;
+  };
+  if (e.type === 'point') return inBox(e);
+  if (e.type === 'line') return segHits(pt(sk, e.p1), pt(sk, e.p2));
+  // Círculo/arco: polilinha fina.
+  let c: { x: number; y: number }, start: number, end: number;
+  if (e.type === 'circle') (c = pt(sk, e.c)), (start = 0), (end = 2 * Math.PI);
+  else ({ c, start, end } = arcAngles(sk, e));
+  let sweep = end - start;
+  while (sweep <= 0) sweep += 2 * Math.PI;
+  const n = Math.max(16, Math.ceil(sweep / (Math.PI / 90)));
+  let prev = { x: c.x + e.r * Math.cos(start), y: c.y + e.r * Math.sin(start) };
+  for (let k = 1; k <= n; k++) {
+    const t = start + (sweep * k) / n;
+    const q = { x: c.x + e.r * Math.cos(t), y: c.y + e.r * Math.sin(t) };
+    if (segHits(prev, q)) return true;
+    prev = q;
+  }
+  return false;
+}
+
 export function sketchBBox(sk: Sketch) {
   let b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
   for (const e of Object.values(sk.entities)) {

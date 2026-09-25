@@ -3,7 +3,7 @@ import { constraintCode, creationCode, q, xy } from './code';
 import type { SketchDoc } from './doc';
 import { dimAnchor, dimDrawing } from './dimgeom';
 import { asLength, evaluate, evaluateVariables, formatLength } from './expr';
-import { circleFrom3, closestOnCurve, cross, curvePoints, dist, dot, entityBBox, norm, normAngle, pt, sketchBBox, sub, type Vec } from './geometry';
+import { circleFrom3, closestOnCurve, cross, curvePoints, dist, dot, entityBBox, entityTouchesBox, norm, normAngle, pt, sketchBBox, sub, type Vec } from './geometry';
 import { angleSectorAt, dimPointIds, lineDir, measure } from './measure';
 import {
   adaptOrientationConstraints,
@@ -1739,11 +1739,15 @@ export class SketchEditor {
     const y1 = Math.max(A.y, B.y);
     const sk = this.sketch;
     const hidden = this.hiddenSet();
+    // Como nos CADs: para a direita (janela) só o que está inteiro dentro; para a esquerda
+    // (cruzamento) tudo o que toca a caixa.
+    const crossing = b.x < a.x;
     const inside = new Set<Id>();
     for (const e of Object.values(sk.entities)) {
       if (e.id === ORIGIN_ID || hidden.has(e.id)) continue;
       const bb = entityBBox(sk, e);
-      if (bb.x0 >= x0 && bb.x1 <= x1 && bb.y0 >= y0 && bb.y1 <= y1) inside.add(this.topGroup(e.id)?.id ?? e.id);
+      const hit = crossing ? entityTouchesBox(sk, e, { x0, y0, x1, y1 }) : bb.x0 >= x0 && bb.x1 <= x1 && bb.y0 >= y0 && bb.y1 <= y1;
+      if (hit) inside.add(this.topGroup(e.id)?.id ?? e.id);
     }
     this.select(add ? [...new Set([...this.selection, ...inside])] : [...inside]);
   }

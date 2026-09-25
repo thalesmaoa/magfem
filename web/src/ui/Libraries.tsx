@@ -44,11 +44,27 @@ export function MaterialPicker({ ed, value, onPick, label }: { ed: SketchEditor;
       window.removeEventListener('keydown', esc);
     };
   }, [open]);
+  const [query, setQuery] = useState('');
+  const [femm, setFemm] = useState<FemmMaterial[] | null>(null);
+  useEffect(() => {
+    if (!open) setQuery('');
+    else if (!femm) void import('../data/femm-matlib.json').then((m) => setFemm(m.default as FemmMaterial[]));
+  }, [open, femm]);
   const sk = ed.sketch;
   const cur = value ? sk.materials.find((m) => m.id === value) : undefined;
   const pick = (id: Id) => {
     setOpen(false);
     onPick(id);
+  };
+  const qn = query.trim().toLowerCase();
+  const matches = (name: string, extra = '') => !qn || name.toLowerCase().includes(qn) || extra.toLowerCase().includes(qn);
+  const have = new Set(sk.materials.map((m) => m.name));
+  // Da biblioteca do FEMM (ainda não no projeto): aparecem ao buscar; escolher importa e atribui.
+  const femmHits = qn.length >= 2 && femm ? femm.filter((f) => !have.has(f.material.name) && matches(f.material.name, f.path.join(' '))).slice(0, 30) : [];
+  const importFemm = (f: FemmMaterial) => {
+    const { name, ...src } = f.material;
+    const r = addMaterial(ed.sketch, name, { ...src, color: GROUP_COLOR[src.group ?? 'custom'] }, src.group);
+    if (ed.commit(r.sketch, [materialLine(r.material)])) pick(r.material.id);
   };
   return (
     <div className="mat-picker" ref={ref} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
@@ -59,7 +75,21 @@ export function MaterialPicker({ ed, value, onPick, label }: { ed: SketchEditor;
       </button>
       {open && (
         <div className="menu mat-menu" role="menu">
-          {groupedMaterials(sk.materials).map(([g, list]) => (
+          <input
+            className="mat-search"
+            autoFocus
+            placeholder={t.mesh.searchMaterial}
+            aria-label={t.mesh.searchMaterial}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              const first = sk.materials.find((m) => matches(m.name));
+              if (first) pick(first.id);
+              else if (femmHits[0]) importFemm(femmHits[0]);
+            }}
+          />
+          {groupedMaterials(sk.materials.filter((m) => matches(m.name, t.mesh.groups[m.group ?? 'custom']))).map(([g, list]) => (
             <div key={g} role="group" aria-label={t.mesh.groups[g]}>
               <div className="menu-label">{t.mesh.groups[g]}</div>
               {list.map((m) => (
@@ -70,6 +100,17 @@ export function MaterialPicker({ ed, value, onPick, label }: { ed: SketchEditor;
               ))}
             </div>
           ))}
+          {femmHits.length > 0 && (
+            <div role="group" aria-label={t.mesh.fromFemm}>
+              <div className="menu-label">{t.mesh.fromFemm}</div>
+              {femmHits.map((f) => (
+                <button key={f.path.join('/') + f.material.name} role="menuitem" title={f.path.join(' / ')} onClick={() => importFemm(f)}>
+                  <Swatch color={GROUP_COLOR[f.material.group ?? 'custom']} /> {f.material.name}
+                  <span className="crefs">{materialSummary(f.material as Material)}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="menu-sep" />
           <button
             role="menuitem"

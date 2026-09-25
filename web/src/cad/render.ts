@@ -963,11 +963,15 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
   }
   if (st.box) {
     const { a, b } = st.box;
-    ctx.fillStyle = 'rgba(67,160,255,0.08)';
-    ctx.strokeStyle = COLORS.hover;
+    // Janela (para a direita): azul contínua; cruzamento (para a esquerda): verde tracejada.
+    const crossing = b.x < a.x;
+    ctx.fillStyle = crossing ? 'rgba(46,160,67,0.10)' : 'rgba(67,160,255,0.08)';
+    ctx.strokeStyle = crossing ? '#2ea043' : COLORS.hover;
     ctx.lineWidth = 1;
+    ctx.setLineDash(crossing ? [6, 4] : []);
     ctx.fillRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
     ctx.strokeRect(Math.min(a.x, b.x) + 0.5, Math.min(a.y, b.y) + 0.5, Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+    ctx.setLineDash([]);
   }
   return hits;
 }
