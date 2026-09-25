@@ -392,6 +392,12 @@ export interface Translations {
     component: string;
     comps: Record<'mag' | 'x' | 'y', string>;
     view: string;
+    copy: string;
+    duplicate: string;
+    rangeMin: string;
+    rangeMax: string;
+    rangeInvalid: string;
+    rangeAutoBtn: string;
     interp: string;
     interpMenu: string;
     interpHelp: string;
@@ -907,9 +913,15 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     component: 'Componente',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'Vista',
+    copy: 'cópia',
+    duplicate: 'Duplicar',
+    rangeMin: 'Limite inferior',
+    rangeMax: 'Limite superior',
+    rangeInvalid: 'O superior precisa ser maior que o inferior.',
+    rangeAutoBtn: 'Automático',
     interp: 'Interpolação',
-    interpMenu: 'Filtro: interpolação (suavizar)',
-    interpHelp: 'Interpolante de 2º grau por triângulo (gradiente recuperado nos nós, sem misturar materiais) e subdivisão: contornos curvos e transições suaves. Nos gráficos, escolha esta fonte em "Dados".',
+    interpMenu: 'Nova vista interpolada (suavizar)',
+    interpHelp: 'Interpolante de 2º grau por triângulo (gradiente recuperado nos nós, sem misturar materiais) e subdivisão: contornos curvos e transições suaves. Todos os gráficos desta vista usam os dados interpolados.',
     level: 'Subdivisões por aresta',
     source: 'Dados',
     sourceSolution: 'Solução (malha)',
@@ -1428,9 +1440,15 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     component: 'Component',
     comps: { mag: 'Magnitude', x: 'X (r)', y: 'Y (z)' },
     view: 'View',
+    copy: 'copy',
+    duplicate: 'Duplicate',
+    rangeMin: 'Lower limit',
+    rangeMax: 'Upper limit',
+    rangeInvalid: 'The upper limit must be greater than the lower.',
+    rangeAutoBtn: 'Automatic',
     interp: 'Interpolation',
-    interpMenu: 'Filter: interpolation (smooth)',
-    interpHelp: 'Second-order interpolant per triangle (gradient recovered at nodes, without mixing materials) plus subdivision: curved contours and smooth transitions. In plots, pick this source under "Data".',
+    interpMenu: 'New interpolated view (smooth)',
+    interpHelp: 'Second-order interpolant per triangle (gradient recovered at nodes, without mixing materials) plus subdivision: curved contours and smooth transitions. All plots in this view use the interpolated data.',
     level: 'Subdivisions per edge',
     source: 'Data',
     sourceSolution: 'Solution (mesh)',

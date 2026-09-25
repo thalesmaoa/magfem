@@ -264,10 +264,21 @@ export class SketchEditor {
   postLayers: PostNode[] = [];
   /** Ponto da sonda (clique no modo resultados). */
   probeAt: Vec | null = null;
+  /** Legenda clicada: camada e limites atuais (a interface abre o ajuste). */
+  legendEdit: { layer: Id; lo: number; hi: number } | null = null;
 
-  showSolution(id: Id | null, layers: PostNode[] = []) {
+  /** Subdivisões da vista interpolada mostrada (0 = solução da malha). */
+  postLevel = 0;
+
+  closeLegend() {
+    this.legendEdit = null;
+    this.changed();
+  }
+
+  showSolution(id: Id | null, layers: PostNode[] = [], level = 0) {
     this.shownSolution = id;
     this.postLayers = layers;
+    this.postLevel = level;
     this.changed();
   }
 
@@ -370,13 +381,12 @@ export class SketchEditor {
   /** Dados do modo resultados. */
   private postView(): RenderState['post'] {
     const sol = this.shownSolution ? this.solutions.get(this.shownSolution) : undefined;
-    // Camadas com fonte interpolada usam a solução refinada do filtro.
+    // Vista interpolada: todas as camadas usam a solução refinada.
     const layerSols = new Map<Id, Solution>();
-    if (sol)
-      for (const l of this.postLayers) {
-        const f = l.source ? this.sketch.nodes.find((n) => n.id === l.source && n.kind === 'filter') : undefined;
-        if (f?.kind === 'filter') layerSols.set(l.id, smoothSolution(sol, f.level));
-      }
+    if (sol && this.postLevel) {
+      const fine = smoothSolution(sol, this.postLevel);
+      for (const l of this.postLayers) layerSols.set(l.id, fine);
+    }
     return { sol: sol ?? null, layers: this.postLayers, layerSols, stale: sol ? this.solutionStale(this.shownSolution!) : false, probe: this.probeAt };
   }
 
@@ -1230,7 +1240,7 @@ export class SketchEditor {
     if (!opts.entitiesOnly) {
       for (let i = this.hits.length - 1; i >= 0; i--) {
         const h = this.hits[i];
-        if (h.kind !== 'regionLabel' && s.x >= h.x0 && s.x <= h.x1 && s.y >= h.y0 && s.y <= h.y1) return { kind: h.kind, id: h.id };
+        if (h.kind !== 'regionLabel' && h.kind !== 'legend' && s.x >= h.x0 && s.x <= h.x1 && s.y >= h.y0 && s.y <= h.y1) return { kind: h.kind, id: h.id };
       }
     }
     for (const e of Object.values(sk.entities)) {
@@ -1327,6 +1337,12 @@ export class SketchEditor {
         }
         return;
       }
+      const lg = this.hits.find((h) => h.kind === 'legend' && s.x >= h.x0 && s.x <= h.x1 && s.y >= h.y0 && s.y <= h.y1);
+      if (lg) {
+        this.legendEdit = { layer: lg.id, lo: lg.data![0], hi: lg.data![1] };
+        this.changed();
+        return;
+      }
       this.probeAt = w;
       this.changed();
       return;
@@ -1391,7 +1407,8 @@ export class SketchEditor {
     if (this.mode === 'post') {
       const h = this.picking ? this.hitTest(s, { entitiesOnly: true }) : null;
       this.hover = h?.kind === 'curve' ? h : null;
-      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : 'crosshair';
+      const onLegend = this.hits.some((x) => x.kind === 'legend' && s.x >= x.x0 && s.x <= x.x1 && s.y >= x.y0 && s.y <= x.y1);
+      this.canvas.style.cursor = this.picking ? (this.hover ? 'pointer' : 'default') : onLegend ? 'pointer' : 'crosshair';
       this.changed();
       return;
     }

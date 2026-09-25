@@ -22,7 +22,7 @@ import { ModelTree } from './ui/ModelTree';
 import { RightDrawer } from './ui/RightDrawer';
 import { setDrawer, useDrawer } from './ui/drawerStore';
 import { activateTab, openTab, pruneTabs, useTabs } from './ui/tabsStore';
-import { CanvasTabBar, ChartPane } from './ui/CanvasTabs';
+import { CanvasTabBar, ChartPane, LegendModal } from './ui/CanvasTabs';
 import { Toolbar } from './ui/Toolbar';
 import { LazyInput } from './ui/common';
 import { useDocVersion, useEditor } from './ui/useStore';
@@ -85,14 +85,14 @@ export default function App() {
   }, [ed, version]);
   const activeView = tabs.active.startsWith('view:') ? tabs.active.slice(5) : null;
   const viewNode = ed && activeView ? ed.sketch.nodes.find((n) => n.id === activeView && n.kind === 'view') : undefined;
-  const layersKey = ed && activeView ? JSON.stringify(ed.sketch.nodes.filter((n) => n.kind === 'post' && n.view === activeView)) : '';
+  const layersKey = ed && activeView ? JSON.stringify([viewNode, ed.sketch.nodes.filter((n) => n.kind === 'post' && n.view === activeView)]) : '';
   useEffect(() => {
     ed?.setMode(activeView ? 'post' : meshMode ? 'mesh' : 'sketch');
   }, [ed, meshMode, activeView]);
   useEffect(() => {
     if (!ed || !viewNode || viewNode.kind !== 'view') return;
     const layers = ed.sketch.nodes.filter((n): n is PostNode => n.kind === 'post' && n.view === viewNode.id && !n.hidden);
-    ed.showSolution(viewNode.physics, layers);
+    ed.showSolution(viewNode.physics, layers, viewNode.level ?? 0);
   }, [ed, viewNode, layersKey]);
   // Nó de malha selecionado: mostra os triângulos dele.
   const shownMesh = ed && treeSel.kind === 'node' && ed.sketch.nodes.some((n) => n.id === treeSel.id && n.kind === 'mesh') ? treeSel.id : null;
@@ -262,6 +262,7 @@ export default function App() {
           <div className="canvas-wrap">
             <canvas ref={canvasRef} className="sketch" tabIndex={0} />
             {ed && (tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:')) && <ChartPane ed={ed} tab={tabs.active} />}
+            {ed && <LegendModal ed={ed} />}
             {ed && <DimInput ed={ed} />}
             {ready !== 'ok' && <div className="overlay">{ready === 'loading' ? t.app.loading : ready}</div>}
             {ed && <StageOverlay ed={ed} sel={treeSel} />}

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { lineProfile, probe, quantityLabel, type Solution } from '../cad/solve';
-import { addFilter, addPlot, addView, removeNode, updateNode, type TreeSel } from '../cad/tree';
-import { COLORMAPS, PLOT_KINDS, PLOT_QUANTITIES, type Colormap, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode, type FilterNode } from '../cad/types';
+import { addPlot, addView, duplicateNode, removeNode, updateNode, type TreeSel } from '../cad/tree';
+import { COLORMAPS, PLOT_KINDS, PLOT_QUANTITIES, type Colormap, type Id, type PhysicsNode, type PlotKind, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { Icons } from './icons';
@@ -211,6 +211,20 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
       ×
     </button>
   );
+  const copyBtn = (id: Id, name: string) => (
+    <button
+      className="icon-btn"
+      title={t.post.duplicate}
+      aria-label={`${t.post.duplicate} ${name}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        const r = duplicateNode(ed.sketch, id);
+        if (r && ed.commit(r.sketch, [r.code])) onSelect({ kind: 'node', id: r.node.id });
+      }}
+    >
+      {Icons.copy}
+    </button>
+  );
   const rename = (id: Id) => (n: string) => n.trim() && ed.commit(updateNode(ed.sketch, id, { name: n.trim() }), [`r.rename(${q(id)}, ${q(n.trim())})`]);
   return (
     <ul role="group">
@@ -231,10 +245,13 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                   <PlotAddMenu
                     label={t.post.newView}
                     onFilter={() => {
-                      const f = addFilter(ed.sketch, ph.id);
-                      if (ed.commit(f.sketch, [f.code])) {
+                      // Vista interpolada (pai): já vem com superfície B e contorno A.
+                      const v = addView(ed.sketch, ph.id, undefined, 3);
+                      const a = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
+                      const b = addPlot(a.sketch, v.node.id, 'contour', plotName('contour', 'a'), 'a');
+                      if (ed.commit(b.sketch, [v.code, a.code, b.code])) {
                         openRow(ph.id);
-                        onSelect({ kind: 'node', id: f.node.id });
+                        onSelect({ kind: 'node', id: v.node.id });
                       }
                     }}
                     onPick={(k) => {
@@ -251,31 +268,12 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
             />
             {!closed.has(ph.id) && (
               <ul role="group">
-                {sk.nodes
-                  .filter((n): n is FilterNode => n.kind === 'filter' && n.physics === ph.id)
-                  .map((f) => (
-                    <li key={f.id}>
-                      <Row
-                        icon={FILTER_ICON}
-                        label={f.name}
-                        selected={sel.kind === 'node' && sel.id === f.id}
-                        onClick={() => onSelect({ kind: 'node', id: f.id })}
-                        onRename={rename(f.id)}
-                        extra={
-                          <>
-                            <span className="crefs">×{f.level}</span>
-                            {removeBtn(f.id, f.name)}
-                          </>
-                        }
-                      />
-                    </li>
-                  ))}
                 {views.map((v) => {
                   const plots = sk.nodes.filter((n): n is PostNode => n.kind === 'post' && n.view === v.id);
                   return (
                     <li key={v.id}>
                       <Row
-                        icon={<span className="plot-ico tab" />}
+                        icon={v.level ? FILTER_ICON : <span className="plot-ico tab" />}
                         label={v.name}
                         selected={sel.kind === 'node' && sel.id === v.id}
                         toggle={{ open: !closed.has(v.id), onToggle: () => toggle(v.id) }}
@@ -283,6 +281,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                         onRename={rename(v.id)}
                         extra={
                           <>
+                            {v.level ? <span className="crefs">×{v.level}</span> : null}
                             <PlotAddMenu
                               label={t.post.addToView}
                               onPick={(k) => {
@@ -293,6 +292,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                                 }
                               }}
                             />
+                            {copyBtn(v.id, v.name)}
                             {removeBtn(v.id, v.name)}
                           </>
                         }
@@ -321,6 +321,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                                     >
                                       {p.hidden ? Icons.eyeOff : Icons.eye}
                                     </button>
+                                    {copyBtn(p.id, p.name)}
                                     {removeBtn(p.id, p.name)}
                                   </>
                                 }
@@ -524,8 +525,7 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
   const plot = node.plot ?? 'surface';
   const [picking, setPicking] = useState(false);
   useEffect(() => () => ed.pickLine(null), [ed]);
-  const filters = sk.nodes.filter((n): n is FilterNode => n.kind === 'filter' && n.physics === node.physics);
-  const smooth = !!node.source && filters.some((f) => f.id === node.source);
+  const smooth = sk.nodes.some((n) => n.id === node.view && n.kind === 'view' && !!n.level);
   const prof = plot === 'line' && sol && node.curve ? lineProfile(sol, sk, node.curve, 200, smooth) : null;
   const quantity = node.quantity ?? PLOT_QUANTITIES[plot][0];
   const comp = node.component ?? 'mag';
@@ -543,19 +543,6 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
           {t.post.plots[plot]} <span className="muted">— {t.post.plotHelp[plot]}</span>
         </h3>
         {!sol && <p className="muted">{t.solve.noSolution}</p>}
-        {filters.length > 0 && (
-          <label className="field">
-            <span>{t.post.source}</span>
-            <select aria-label={t.post.source} value={node.source ?? ''} onChange={(e) => set({ source: e.target.value || undefined }, `r.show(${q(node.id)}, source=${e.target.value ? q(e.target.value) : 'None'})`)}>
-              <option value="">{t.post.sourceSolution}</option>
-              {filters.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name} (×{f.level})
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
         <label className="field">
           <span>{t.post.by[plot]}</span>
           <select aria-label={t.post.by[plot]} value={quantity} onChange={(e) => setQuantity(e.target.value as PlotQuantity)}>
@@ -695,16 +682,17 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
   );
 }
 
-/** Propriedades do filtro de interpolação. */
-export function FilterProps({ ed, node }: { ed: SketchEditor; node: FilterNode }) {
+/** Vista interpolada: subdivisões por aresta. */
+export function InterpSection({ ed, view }: { ed: SketchEditor; view: ViewNode }) {
   const t = useT();
   useEditor(ed);
-  const sol = ed.solutions.get(node.physics);
-  const n = node.level;
+  if (!view.level) return null;
+  const sol = ed.solutions.get(view.physics);
+  const n = view.level;
   return (
     <div className="props-body">
       <section>
-        <h3>{node.name}</h3>
+        <h3>{view.name}</h3>
         <label className="field">
           <span>{t.post.level}</span>
           <LazyInput
@@ -713,7 +701,7 @@ export function FilterProps({ ed, node }: { ed: SketchEditor; node: FilterNode }
             onCommit={(v) => {
               const k = Math.round(Number(v));
               if (!(k >= 1 && k <= 6)) return ed.flash('1 – 6');
-              ed.commit(updateNode(ed.sketch, node.id, { level: k }), [`r.show(${q(node.id)}, level=${k})`]);
+              ed.commit(updateNode(ed.sketch, view.id, { level: k }), [`r.show(${q(view.id)}, level=${k})`]);
             }}
           />
         </label>

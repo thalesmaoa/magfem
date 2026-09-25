@@ -222,10 +222,10 @@ function vectorSamples(sol: Solution, h: number, q: 'b' | 'h'): { v: Float64Arra
   return res;
 }
 
-function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNullable<RenderState['post']>, slot = 0): number {
+function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNullable<RenderState['post']>, slot = 0, hits: HitRegion[] = []): number {
   const base = p.sol;
   if (!base) return 0;
-  const legends: { lo: number; hi: number; label: string; map?: Colormap }[] = [];
+  const legends: { lo: number; hi: number; label: string; map?: Colormap; layer: Id }[] = [];
   for (const layer of p.layers) {
     const sol = p.layerSols?.get(layer.id) ?? base;
     const { xy, triangles } = sol.mesh;
@@ -270,7 +270,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
         ctx.fill(paths[k]);
         ctx.stroke(paths[k]);
       }
-      legends.push({ lo, hi, label: mv.label, map: layer.colormap });
+      legends.push({ lo, hi, label: mv.label, map: layer.colormap, layer: layer.id });
     } else if (plot === 'contour') {
       const { segs, lev } = contourSegments(sol, `${qty}${comp}`, nodeValues(sol, qty, comp), layer.nLines ?? 20, layer.range);
       const color = layer.color ?? '#0d1319';
@@ -288,7 +288,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
           if (x > hi) hi = x;
         }
         if (layer.range) [lo, hi] = layer.range;
-        legends.push({ lo, hi, label: quantityLabel(qty, comp, sol.axisymmetric), map: layer.colormap });
+        legends.push({ lo, hi, label: quantityLabel(qty, comp, sol.axisymmetric), map: layer.colormap, layer: layer.id });
         // Uma faixa de cor por nível.
         const byLevel = new Map<number, number[]>();
         for (let i = 0, j = 0; i < segs.length; i += 4, j++) {
@@ -318,7 +318,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
     } else if (plot === 'arrow') {
       const h = layer.spacing && layer.spacing > 0 ? layer.spacing : Math.max(sol.meshSize, 1e-6) * 1.5;
       const { v: vs, max: vmax } = vectorSamples(sol, h, qty === 'h' ? 'h' : 'b');
-      if (layer.colorByValue) legends.push({ lo: 0, hi: vmax, label: quantityLabel(qty, 'mag', sol.axisymmetric), map: layer.colormap });
+      if (layer.colorByValue) legends.push({ lo: 0, hi: vmax, label: quantityLabel(qty, 'mag', sol.axisymmetric), map: layer.colormap, layer: layer.id });
       const scale = (layer.scale ?? 1) * 0.9 * h;
       const solid = layer.color ?? (legends.length ? '#0d1319' : COLORS.dim);
       ctx.strokeStyle = solid;
@@ -373,7 +373,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
   }
   // Superfícies: só a de cima (é a que aparece); contornos/glifos coloridos: uma cada.
   const shown = p.layers.every((l) => l.plot === 'surface') ? legends.slice(-1) : legends;
-  shown.forEach((lg, i) => drawLegend(ctx, v, lg, slot + i));
+  shown.forEach((lg, i) => hits.push(drawLegend(ctx, v, lg, slot + i)));
   if (p.probe) {
     const q = v.toScreen(p.probe);
     ctx.strokeStyle = '#ffffff';
@@ -394,7 +394,7 @@ const tick = (val: number) => {
 };
 
 /** Barra de cores (canto superior direito; várias legendas lado a lado). */
-function drawLegend(ctx: CanvasRenderingContext2D, v: View, lg: { lo: number; hi: number; label: string; map?: Colormap }, index: number) {
+function drawLegend(ctx: CanvasRenderingContext2D, v: View, lg: { lo: number; hi: number; label: string; map?: Colormap; layer: Id }, index: number): HitRegion {
   const x = v.w - 72 - index * 84, y = 16, w = 14, h = 180;
   for (let i = 0; i < h; i++) {
     const [r, g, b] = colormap(lg.map, 1 - i / h);
@@ -411,6 +411,8 @@ function drawLegend(ctx: CanvasRenderingContext2D, v: View, lg: { lo: number; hi
   for (let k = 0; k <= 4; k++) ctx.fillText(tick(lg.hi - ((lg.hi - lg.lo) * k) / 4), x + w + 4, y + (h * k) / 4);
   ctx.textAlign = 'center';
   ctx.fillText(lg.label, x + w / 2 + 10, y + h + 14);
+  // Área clicável (barra + números): abre o ajuste de limites.
+  return { id: lg.layer, kind: 'legend', x0: x - 4, y0: y - 8, x1: x + 70, y1: y + h + 22, data: [lg.lo, lg.hi] };
 }
 
 const BOUNDARY_COLORS = { dirichlet: '#d93025', neumann: '#2e8b57', periodic: '#8e44ad', antiperiodic: '#d4880f' } as const;
@@ -516,7 +518,9 @@ function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<
 
 export interface HitRegion {
   id: Id;
-  kind: 'dim' | 'badge' | 'regionLabel';
+  kind: 'dim' | 'badge' | 'regionLabel' | 'legend';
+  /** Dados extras (legenda: [mín, máx] atuais). */
+  data?: number[];
   x0: number;
   y0: number;
   x1: number;
@@ -816,13 +820,13 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
     // Superfícies primeiro; o contorno das peças fica entre elas e as linhas/vetores/curvas.
     const maps = st.post.layers.filter((l) => l.plot === 'surface');
     const rest = st.post.layers.filter((l) => !maps.includes(l));
-    const nLegends = drawPost(ctx, v, sk, { ...st.post, layers: maps, probe: null });
+    const nLegends = drawPost(ctx, v, sk, { ...st.post, layers: maps, probe: null }, 0, hits);
     for (const e of ents) {
       if (e.type === 'point') continue;
       const color = e.construction ? COLORS.construction : hasMap ? 'rgba(10,14,20,0.9)' : COLORS.defined;
       drawCurve(ctx, v, sk, e, { ...st, selection: new Set(), hover: st.hover, related: new Set(), defined: new Set(), colorOverride: st.hover === e.id ? COLORS.hover : color, widthOverride: st.hover === e.id ? 3 : 1.4 } as RenderState);
     }
-    drawPost(ctx, v, sk, { ...st.post, layers: rest }, nLegends);
+    drawPost(ctx, v, sk, { ...st.post, layers: rest }, nLegends, hits);
     return hits;
   }
   if (st.mesh) {

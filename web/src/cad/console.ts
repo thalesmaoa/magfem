@@ -24,7 +24,7 @@ import {
   ungroup,
   updateGroup,
 } from './ops';
-import { addFilter, addNode, addPlot, removeNode, updateNode } from './tree';
+import { addNode, addPlot, addView, duplicateNode, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
 import { isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
@@ -857,19 +857,40 @@ export class CommandConsole {
       }
       case 'plot': {
         need(2);
-        const phys = String(a[0]);
+        // Alvo: uma vista, ou uma física (usa a primeira vista dela; cria uma se não houver).
+        const target = sk.nodes.find((n) => n.id === String(a[0]));
         const kind = String(a[1]) as PlotKind;
-        if (!sk.nodes.some((n) => n.id === phys && n.kind === 'physics')) throw new ConsoleError(t.notFound(phys));
+        if (!target || (target.kind !== 'view' && target.kind !== 'physics')) throw new ConsoleError(t.notFound(String(a[0])));
         if (!PLOT_KINDS.includes(kind)) throw new ConsoleError(t.notFound(kind));
         const qty = kw.quantity !== undefined ? (String(kw.quantity) as PlotQuantity) : PLOT_QUANTITIES[kind][0];
         if (!PLOT_QUANTITIES[kind].includes(qty)) throw new ConsoleError(t.notFound(qty));
-        const r = addPlot(sk, phys, kind, kw.name ? String(kw.name) : `${T().post.plots[kind]}: ${T().post.qty[qty].split(' —')[0]}`, qty);
+        let base = sk;
+        let viewId = target.kind === 'view' ? target.id : sk.nodes.find((n) => n.kind === 'view' && n.physics === target.id && !n.level)?.id;
+        if (!viewId) {
+          const v = addView(sk, target.id);
+          base = v.sketch;
+          viewId = v.node.id;
+        }
+        const r = addPlot(base, viewId, kind, kw.name ? String(kw.name) : `${T().post.plots[kind]}: ${T().post.qty[qty].split(' —')[0]}`, qty);
+        this.commit(r.sketch);
+        return r.node.id;
+      }
+      case 'duplicate': {
+        need(1);
+        const r = duplicateNode(sk, String(a[0]));
+        if (!r) throw new ConsoleError(t.notFound(String(a[0])));
+        this.commit(r.sketch);
+        return r.node.id;
+      }
+      case 'view': {
+        need(1);
+        const r = addView(sk, String(a[0]), kw.name ? String(kw.name) : undefined);
         this.commit(r.sketch);
         return r.node.id;
       }
       case 'interpolate': {
         need(1);
-        const r = addFilter(sk, String(a[0]), kw.level !== undefined ? Number(kw.level) : 3);
+        const r = addView(sk, String(a[0]), kw.name ? String(kw.name) : undefined, Math.max(1, Math.min(6, Math.round(kw.level !== undefined ? Number(kw.level) : 3))));
         this.commit(r.sketch);
         return r.node.id;
       }
@@ -887,7 +908,6 @@ export class CommandConsole {
         if (kw.color !== undefined) patch.color = kw.color === null ? undefined : String(kw.color);
         if (kw.color_by_value !== undefined) patch.colorByValue = !!kw.color_by_value;
         if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
-        if (kw.source !== undefined) patch.source = kw.source === null ? undefined : String(kw.source);
         if (kw.level !== undefined) patch.level = Math.max(1, Math.min(6, Math.round(Number(kw.level))));
         this.commit(updateNode(sk, String(a[0]), patch));
         return null;
@@ -956,9 +976,11 @@ const NODE_METHODS = {
     solve: 'solve("n2")',
   },
   r: {
-    plot: 'plot("n2", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
+    view: 'view("n2", name="Vista 2")',
+    duplicate: 'duplicate("n5")  # camada ou vista',
+    plot: 'plot("n4 (vista) | n2 (física)", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
     show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn", color="#1f6fd1", color_by_value=False, colormap="viridis")',
-    interpolate: 'interpolate("n2", level=3)',
+    interpolate: 'interpolate("n2", level=3)  # vista interpolada',
     rename: 'rename("n5", "...")',
     remove: 'remove("n5")',
   },

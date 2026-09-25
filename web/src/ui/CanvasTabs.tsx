@@ -168,7 +168,7 @@ function LinePane({ ed, id, lx, ly, setLog }: { ed: SketchEditor; id: string; lx
   const node = ed.sketch.nodes.find((n): n is PostNode => n.id === id && n.kind === 'post');
   const sol = node?.physics ? ed.solutions.get(node.physics) : undefined;
   if (!node) return null;
-  const smooth = !!node.source && ed.sketch.nodes.some((n) => n.id === node.source && n.kind === 'filter');
+  const smooth = ed.sketch.nodes.some((n) => n.id === node.view && n.kind === 'view' && !!n.level);
   const prof = sol && node.curve ? lineProfile(sol, ed.sketch, node.curve, 400, smooth) : null;
   const qty = (node.quantity ?? 'b') as 'b' | 'bn' | 'bt' | 'h' | 'a';
   return (
@@ -269,6 +269,71 @@ function BHPane({ ed, m, lx, ly, setLog }: { ed: SketchEditor; m: Material; lx: 
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Modal da legenda: limites inferior e superior da faixa de cores (ou automático). */
+export function LegendModal({ ed }: { ed: SketchEditor }) {
+  const t = useT();
+  useEditor(ed);
+  const le = ed.legendEdit;
+  const [lo, setLo] = useState('');
+  const [hi, setHi] = useState('');
+  const [key, setKey] = useState('');
+  const k = le ? `${le.layer}:${le.lo}:${le.hi}` : '';
+  if (le && k !== key) {
+    // Abriu (ou trocou de legenda): preenche com os limites atuais.
+    const f = (v: number) => String(Number(v.toPrecision(5)));
+    setKey(k);
+    setLo(f(le.lo));
+    setHi(f(le.hi));
+  }
+  if (!le) return null;
+  const node = ed.sketch.nodes.find((n) => n.id === le.layer);
+  const close = () => {
+    setKey('');
+    ed.closeLegend();
+  };
+  const apply = (range: [number, number] | undefined) => {
+    const code = `r.show(${q(le.layer)}, range=${range ? `(${range[0]}, ${range[1]})` : 'None'})`;
+    if (ed.commit({ ...ed.sketch, nodes: ed.sketch.nodes.map((n) => (n.id === le.layer ? { ...n, range } : n)) }, [code])) close();
+  };
+  const a = Number(lo.replace(',', '.')), b = Number(hi.replace(',', '.'));
+  const valid = Number.isFinite(a) && Number.isFinite(b) && b > a;
+  return (
+    <div className="modal-back" onClick={close}>
+      <form
+        className="modal"
+        role="dialog"
+        aria-label={t.post.range}
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (valid) apply([a, b]);
+        }}
+      >
+        <h3>
+          {t.post.range}: {node?.name}
+        </h3>
+        <label className="field">
+          <span>{t.post.rangeMax}</span>
+          <input autoFocus aria-label={t.post.rangeMax} value={hi} onChange={(e) => setHi(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>{t.post.rangeMin}</span>
+          <input aria-label={t.post.rangeMin} value={lo} onChange={(e) => setLo(e.target.value)} />
+        </label>
+        {!valid && <p className="err-text">{t.post.rangeInvalid}</p>}
+        <div className="modal-actions">
+          <button type="button" className="btn secondary" onClick={() => apply(undefined)}>
+            {t.post.rangeAutoBtn}
+          </button>
+          <button type="submit" className="btn" disabled={!valid}>
+            OK
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

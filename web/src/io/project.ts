@@ -66,6 +66,16 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
   // Tipos de gráfico anteriores (grandeza embutida no tipo) → tipo + grandeza.
   const OLD: Record<string, [PlotKind, PlotQuantity]> = { bmap: ['surface', 'b'], hmap: ['surface', 'h'], amap: ['surface', 'a'], flux: ['contour', 'a'], vectors: ['arrow', 'b'] };
   sk.nodes = sk.nodes.map((n) => (n.kind === 'post' && n.plot && OLD[n.plot as string] ? { ...n, plot: OLD[n.plot as string][0], quantity: OLD[n.plot as string][1] } : n));
+  // Filtros de interpolação (versão anterior) viram vistas interpoladas; a fonte por camada some.
+  sk.nodes = sk.nodes.map((n) => {
+    const raw = n as unknown as { kind: string; id: string; name: string; physics: string; level?: number; source?: string };
+    if (raw.kind === 'filter') return { id: raw.id, kind: 'view', name: raw.name, physics: raw.physics, level: raw.level ?? 3 };
+    if (raw.kind === 'post' && raw.source !== undefined) {
+      const { source: _s, ...rest } = raw;
+      return rest as unknown as typeof n;
+    }
+    return n;
+  });
   // Camadas cuja "vista" é na verdade uma física (versão intermediária): corrige.
   sk.nodes = sk.nodes.map((n) => {
     if (n.kind !== 'post' || !n.view) return n;

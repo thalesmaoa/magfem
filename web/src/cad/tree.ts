@@ -49,20 +49,31 @@ export function addPlot(sk: Sketch, view: Id, plot: PlotKind, name: string, quan
   return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.plot(${q(view)}, ${q(plot)}, quantity=${q(qty)})` };
 }
 
-/** Novo filtro de interpolação (suavizar) para os resultados de uma física. */
-export function addFilter(sk: Sketch, physics: Id, level = 3): { sketch: Sketch; node: TreeNode; code: string } {
+/** Nova vista (aba) de resultados de uma física. */
+export function addView(sk: Sketch, physics: Id, name?: string, level?: number): { sketch: Sketch; node: TreeNode; code: string } {
   const id = `n${sk.nextId}`;
-  const name = `${T().post.interp} ${sk.nodes.filter((x) => x.kind === 'filter' && x.physics === physics).length + 1}`;
-  const node: TreeNode = { id, kind: 'filter', name, physics, level };
-  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.interpolate(${q(physics)}, level=${level})` };
+  const count = (interp: boolean) => sk.nodes.filter((x) => x.kind === 'view' && x.physics === physics && !!x.level === interp).length + 1;
+  const n = name ?? (level ? `${T().post.interp} ${count(true)}` : `${T().post.view} ${count(false)}`);
+  const node: TreeNode = level ? { id, kind: 'view', name: n, physics, level } : { id, kind: 'view', name: n, physics };
+  const code = level ? `${id} = r.interpolate(${q(physics)}, level=${level})` : `${id} = r.view(${q(physics)}, name=${q(n)})`;
+  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code };
 }
 
-/** Nova vista (aba) de resultados de uma física. */
-export function addView(sk: Sketch, physics: Id, name?: string): { sketch: Sketch; node: TreeNode; code: string } {
-  const id = `n${sk.nextId}`;
-  const n = name ?? `${T().post.view} ${sk.nodes.filter((x) => x.kind === 'view' && x.physics === physics).length + 1}`;
-  const node: TreeNode = { id, kind: 'view', name: n, physics };
-  return { sketch: { ...sk, nodes: [...sk.nodes, node], nextId: sk.nextId + 1 }, node, code: `${id} = r.view(${q(physics)}, name=${q(n)})` };
+/** Duplica uma camada (na mesma vista) ou uma vista inteira com as camadas dela. */
+export function duplicateNode(sk: Sketch, id: Id): { sketch: Sketch; node: TreeNode; code: string } | null {
+  const src = sk.nodes.find((n) => n.id === id);
+  if (!src || (src.kind !== 'post' && src.kind !== 'view')) return null;
+  let nextId = sk.nextId;
+  const copyName = `${src.name} (${T().post.copy})`;
+  const copy = { ...src, id: `n${nextId++}`, name: copyName } as TreeNode;
+  const added: TreeNode[] = [copy];
+  if (src.kind === 'view')
+    for (const p of sk.nodes) if (p.kind === 'post' && p.view === src.id) added.push({ ...p, id: `n${nextId++}`, view: copy.id });
+  // A cópia entra logo depois do original (e das camadas dele, se for vista).
+  const nodes = [...sk.nodes];
+  const lastIdx = Math.max(nodes.indexOf(src), ...nodes.map((n, i) => (n.kind === 'post' && n.view === src.id ? i : -1)));
+  nodes.splice(lastIdx + 1, 0, ...added);
+  return { sketch: { ...sk, nodes, nextId }, node: copy, code: `${copy.id} = r.duplicate(${q(id)})` };
 }
 
 export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch {
@@ -72,10 +83,10 @@ export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch
 export function removeNode(sk: Sketch, id: Id): Sketch {
   // Remover uma vista leva junto as camadas dela; remover uma física leva vistas e camadas.
   const gone = new Set([id]);
-  for (const n of sk.nodes) if (((n.kind === 'view' || n.kind === 'filter') && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
+  for (const n of sk.nodes) if ((n.kind === 'view' && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
   for (const n of sk.nodes) if (n.kind === 'post' && n.view && gone.has(n.view)) gone.add(n.id);
   return { ...sk, nodes: sk.nodes.filter((n) => !gone.has(n.id)) };
 }
 
 /** Objeto da API de cada seção da árvore: g (geometria), m (malha), s (solucionador), r (resultados). */
-export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r', filter: 'r' };
+export const NS: Record<TreeNode['kind'], string> = { mesh: 'm', physics: 's', post: 'r', view: 'r' };
