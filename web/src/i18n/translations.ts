@@ -554,6 +554,9 @@ export interface Translations {
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
     varName: string;
     show: string;
+    fx: string;
+    fy: string;
+    torque: string;
     curve: string;
     instant: (t: string) => string;
     outputs: string;
@@ -1259,6 +1262,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'área, ∫A dS, corrente, energia', formula: 'expressão com variáveis de resultado' },
     varName: 'Nome (variáveis)',
     show: 'Mostrar',
+    fx: 'Força F_x (tensor de Maxwell)',
+    fy: 'Força F_y (F_z no axissimétrico)',
+    torque: 'Torque (em torno da origem)',
     curve: 'Curva no tempo',
     instant: (t) => `Tabela em t = ${t}`,
     outputs: 'Grandezas e nomes das variáveis',
@@ -1970,6 +1976,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'area, ∫A dS, current, energy', formula: 'expression with result variables' },
     varName: 'Name (variables)',
     show: 'Show',
+    fx: 'Force F_x (Maxwell stress)',
+    fy: 'Force F_y (F_z if axisymmetric)',
+    torque: 'Torque (about the origin)',
     curve: 'Curve over time',
     instant: (t) => `Table at t = ${t}`,
     outputs: 'Quantities and variable names',

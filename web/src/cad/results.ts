@@ -31,6 +31,9 @@ export const SURF_Q = [
   { q: 'energy', unit: 'J' },
   { q: 'bavg', unit: 'T' },
   { q: 'b2', unit: 'T²·m³' },
+  { q: 'fx', unit: 'N' },
+  { q: 'fy', unit: 'N' },
+  { q: 'torque', unit: 'N·m' },
 ] as const;
 export const LINE_Q = [
   { q: 'length', unit: 'm' },
@@ -39,6 +42,9 @@ export const LINE_Q = [
   { q: 'intB', unit: 'T·m' },
   { q: 'intBn', unit: 'T·m' },
   { q: 'bavg', unit: 'T' },
+  { q: 'fx', unit: 'N' },
+  { q: 'fy', unit: 'N' },
+  { q: 'torque', unit: 'N·m' },
 ] as const;
 
 /** Saídas escolhidas de um item (padrão: todas, com nome prefixo_grandeza). */
@@ -91,10 +97,10 @@ export function resultVars(sk: Sketch, arr: Arrangement, sol: Solution, physics:
         }
         if (!set.size) continue;
         const si = surfaceIntegrals(sol, sk, set);
-        vals = { area: si.area, volume: si.volume, intA: si.intA, current: si.current, energy: si.energy, bavg: si.bAvg, b2: si.b2 };
+        vals = { area: si.area, volume: si.volume, intA: si.intA, current: si.current, energy: si.energy, bavg: si.bAvg, b2: si.b2, fx: si.fx, fy: si.fy, torque: si.torque };
       } else if (it.curve) {
         const li = lineIntegrals(sol, sk, it.curve);
-        if (li) vals = { length: li.length * 1e-3, flux: li.flux, mmf: li.mmf, intB: li.intB, intBn: li.intBn, bavg: li.bAvg };
+        if (li) vals = { length: li.length * 1e-3, flux: li.flux, mmf: li.mmf, intB: li.intB, intBn: li.intBn, bavg: li.bAvg, fx: li.fx, fy: li.fy, torque: li.torque };
       }
       if (!vals) continue;
       const units = new Map<string, string>([...SURF_Q, ...LINE_Q].map((x) => [x.q, x.unit]));

@@ -651,6 +651,9 @@ export function qLabel(q: string): string {
     mmf: t.table.line.mmf,
     intB: t.table.line.intB,
     intBn: t.table.line.intBn,
+    fx: t.table.fx,
+    fy: t.table.fy,
+    torque: t.table.torque,
   };
   return m[q] ?? q;
 }

@@ -347,7 +347,7 @@ export function SchematicPane({ ed, id }: { ed: SketchEditor; id: Id }) {
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   setSel({ type: 'wire', id: w.id });
-                  if (ui.wireMode) return;
+                  // Também no modo fio: clicar num fio (fora dos terminais) só o arrasta.
                   (e.target as Element).setPointerCapture?.(e.pointerId);
                   const p0 = toSvg(e);
                   wireDrag.current = { id: w.id, moved: false, x0: p0.x, y0: p0.y, axis: null };

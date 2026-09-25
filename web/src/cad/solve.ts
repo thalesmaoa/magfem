@@ -788,13 +788,56 @@ export interface LineIntegrals {
   intBn: number; // ∫B·n dl (T·m) = fluxo por metro no plano
   mmf: number; // ∫H·dl (A)
   bAvg: number;
+  fx: number; // força pelo tensor de Maxwell na curva (N); curva fechada: sobre o que está dentro
+  fy: number;
+  torque: number; // N·m, em torno da origem
 }
 
 export function lineIntegrals(sol: Solution, sk: Sketch, curve: Id, smooth = false): LineIntegrals | null {
   const p = lineProfile(sol, sk, curve, 400, smooth);
   if (!p) return null;
   const sm = p.s.map((x) => x * 1e-3);
-  return { length: p.length, flux: p.flux, intB: trapz(sm, p.b), intBn: trapz(sm, p.bn), mmf: trapz(sm, p.ht), bAvg: p.bAvg };
+  const f = stressOnCurve(sol, sk, curve);
+  return { length: p.length, flux: p.flux, intB: trapz(sm, p.b), intBn: trapz(sm, p.bn), mmf: trapz(sm, p.ht), bAvg: p.bAvg, fx: f.fx, fy: f.fy, torque: f.torque };
+}
+
+/**
+ * Força pelo tensor de Maxwell numa curva (no ar): F = ∮ T·n dl × profundidade, T = (B Bᵀ − ½|B|² I)/μ0.
+ * Curva fechada: n aponta para fora (a força é a do que está dentro). Aberta: n à esquerda do sentido da curva.
+ * Torque em torno da origem. Axissimétrico: só F_z (= ∮ 2πr (T·n)_z dl).
+ */
+function stressOnCurve(sol: Solution, sk: Sketch, curve: Id): { fx: number; fy: number; torque: number } {
+  const smp = sampleCurve(sk, curve, 800);
+  const out = { fx: 0, fy: 0, torque: 0 };
+  if (!smp || smp.pts.length < 3) return out;
+  const P = smp.pts;
+  const closed = Math.hypot(P[0].x - P[P.length - 1].x, P[0].y - P[P.length - 1].y) < 1e-6 * (smp.s[smp.s.length - 1] || 1);
+  let area2 = 0;
+  for (let i = 0; i + 1 < P.length; i++) area2 += P[i].x * P[i + 1].y - P[i + 1].x * P[i].y;
+  // Normal à esquerda (−t_y, t_x); numa curva fechada anti-horária a de fora é a da direita.
+  const sgn = closed && area2 > 0 ? -1 : 1;
+  const depth = depthOf(sk);
+  // B suavizado nos nós: o B por elemento (constante) dá uma integral ruidosa.
+  const vals = P.map((pt, i) => {
+    const pr = probeSmooth(sol, pt);
+    if (!pr) return null;
+    const t = smp.tan[i];
+    const nx = -t.y * sgn, ny = t.x * sgn;
+    const bx = pr.bx, by = pr.by, b2 = bx * bx + by * by;
+    const tx = ((bx * bx - b2 / 2) * nx + bx * by * ny) / MU0;
+    const ty = (bx * by * nx + (by * by - b2 / 2) * ny) / MU0;
+    const x = pt.x * 1e-3, y = pt.y * 1e-3;
+    return sol.axisymmetric ? { fx: 0, fy: 2 * Math.PI * x * ty, tq: 0 } : { fx: tx * depth, fy: ty * depth, tq: (x * ty - y * tx) * depth };
+  });
+  for (let i = 1; i < P.length; i++) {
+    const a = vals[i - 1], b = vals[i];
+    if (!a || !b) continue;
+    const ds = (smp.s[i] - smp.s[i - 1]) * 1e-3;
+    out.fx += ((a.fx + b.fx) / 2) * ds;
+    out.fy += ((a.fy + b.fy) / 2) * ds;
+    out.torque += ((a.tq + b.tq) / 2) * ds;
+  }
+  return out;
 }
 
 export interface SurfaceIntegrals {
@@ -807,13 +850,16 @@ export interface SurfaceIntegrals {
   bx: number; // média de B_x (ou B_r) (T)
   by: number; // média de B_y (ou B_z) (T)
   intA: number; // ∫A dS (Wb·m no plano; ∫ψ dS no axissimétrico)
+  fx: number; // força (N) pelo tensor de Maxwell ponderado sobre o corpo formado pelas regiões
+  fy: number; // (axissimétrico: F_z em fy)
+  torque: number; // torque em torno da origem (N·m)
 }
 
 /** Integrais sobre as regiões dadas (índices do arranjo). */
 export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>): SurfaceIntegrals {
   const { xy, triangles, triRegion } = sol.mesh;
   const depth = depthOf(sk);
-  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0, intA: 0 };
+  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0, intA: 0, fx: 0, fy: 0, torque: 0 };
   for (let t = 0; t < triangles.length / 3; t++) {
     const r = triRegion[t];
     if (!regions.has(r)) continue;
@@ -838,6 +884,36 @@ export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>
     out.bAvg /= out.area;
     out.bx /= out.area;
     out.by /= out.area;
+  }
+  // Força pelo tensor de Maxwell ponderado (como o bloco do FEMM): g = 1 nos nós do corpo e 0 fora;
+  // F = −∫ T·∇g dV. Só os elementos em volta do corpo (∇g ≠ 0) contribuem; eles devem ser de ar (T com μ0).
+  const nn = xy.length / 2;
+  const g = new Uint8Array(nn);
+  for (let t = 0; t < triangles.length / 3; t++)
+    if (regions.has(triRegion[t])) for (let k = 0; k < 3; k++) g[triangles[3 * t + k]] = 1;
+  for (let t = 0; t < triangles.length / 3; t++) {
+    const v = [triangles[3 * t], triangles[3 * t + 1], triangles[3 * t + 2]];
+    const s = g[v[0]] + g[v[1]] + g[v[2]];
+    if (s === 0 || s === 3) continue;
+    const x = v.map((j) => xy[2 * j] * 1e-3), y = v.map((j) => xy[2 * j + 1] * 1e-3);
+    const a2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
+    let gx = 0, gy = 0;
+    for (let q = 0; q < 3; q++) {
+      const j = (q + 1) % 3, l = (q + 2) % 3;
+      gx += ((y[j] - y[l]) * g[v[q]]) / a2;
+      gy += ((x[l] - x[j]) * g[v[q]]) / a2;
+    }
+    const bx = sol.bx[t], by = sol.by[t], b2 = bx * bx + by * by;
+    const tx = ((bx * bx - b2 / 2) * gx + bx * by * gy) / MU0;
+    const ty = (bx * by * gx + (by * by - b2 / 2) * gy) / MU0;
+    const ar = Math.abs(a2) / 2;
+    const xc = (x[0] + x[1] + x[2]) / 3, yc = (y[0] + y[1] + y[2]) / 3;
+    if (sol.axisymmetric) out.fy -= ty * 2 * Math.PI * Math.max(xc, 0) * ar;
+    else {
+      out.fx -= tx * ar * depth;
+      out.fy -= ty * ar * depth;
+      out.torque -= (xc * ty - yc * tx) * ar * depth;
+    }
   }
   return out;
 }
