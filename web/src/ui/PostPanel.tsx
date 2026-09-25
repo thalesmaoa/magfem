@@ -611,7 +611,7 @@ export function ResultsProps({ ed, id, onSelect }: { ed: SketchEditor; id: Id; o
   const t = useT();
   useEditor(ed);
   const ph = ed.sketch.nodes.find((n): n is PhysicsNode => n.id === id && n.kind === 'physics');
-  const sol = ed.solutions.get(id);
+  const sol = ed.shownSol(id);
   if (!ph) return null;
   return (
     <div className="props-body">
@@ -734,7 +734,7 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
   const t = useT();
   useEditor(ed);
   const sk = ed.sketch;
-  const sol = node.physics ? ed.solutions.get(node.physics) : undefined;
+  const sol = node.physics ? ed.shownSol(node.physics) : undefined;
   const set = (patch: Partial<PostNode>, code: string) => ed.commit(updateNode(sk, node.id, patch), [code]);
   const plot = node.plot ?? 'surface';
   const [picking, setPicking] = useState(false);

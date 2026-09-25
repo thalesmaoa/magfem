@@ -37,7 +37,7 @@ import { assignOf, assignRegion, pointCode, regionKey, type RegionKey } from './
 import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult } from './meshgen';
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
-import { buildMagInput, depthOf, smoothSolution, typicalSize, type Solution } from './solve';
+import { buildMagInput, depthOf, frameOf, smoothSolution, typicalSize, type Solution } from './solve';
 import type { LegendLayout, PostNode } from './types';
 import { addNode } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
@@ -331,7 +331,7 @@ export class SketchEditor {
       return false;
     };
     this.solveErrors.delete(id);
-    if (node.analysis !== 'magnetostatic') return fail(t.solve.onlyStatic);
+    if (node.analysis === 'harmonic') return fail(t.solve.onlyStatic);
     this.solveBusy = id;
     this.changed();
     let meshId = this.sketch.nodes.find((n) => n.kind === 'mesh')?.id;
@@ -350,6 +350,20 @@ export class SketchEditor {
     const key = this.solveKey();
     const { input, problems } = buildMagInput(this.sketch, this.arrangement(), mesh, this.defaultOuter());
     if (problems.length) return fail(problems.join(' · '));
+    // Transitório: fonte senoidal na frequência da física, passo dt até t_final (A(0) = 0).
+    if (node.analysis === 'transient') {
+      try {
+        const { values } = evaluateVariables(this.sketch.variables, this.sketch.settings.unit);
+        const ev = (e: string) => evaluate(e, { env: values, unit: this.sketch.settings.unit }).v;
+        const f = ev(node.frequency), dt = ev(node.dt), tEnd = ev(node.tEnd);
+        if (!(dt > 0) || !(tEnd > dt)) return fail(t.solve.badTime);
+        input.freq = f > 0 ? f : 0;
+        input.dt = dt;
+        input.steps = Math.min(2000, Math.round(tEnd / dt));
+      } catch (e) {
+        return fail((e as Error).message);
+      }
+    }
     const t0 = performance.now();
     try {
       const out = await solver.call<MagOut>({ cmd: 'solveMagnetostatic', input });
@@ -376,7 +390,13 @@ export class SketchEditor {
         meshSize: typicalSize(mesh),
         ms: performance.now() - t0,
         key,
+        iterations: out.iterations,
+        At: out.times.length ? out.At : undefined,
+        times: out.times.length ? out.times : undefined,
+        freq: input.freq,
+        jPhase: input.jPhase,
       });
+      this.postFrame = out.times.length ? out.times.length - 1 : 0;
       this.shownSolution = id;
       this.solveBusy = null;
       this.changed();
@@ -387,8 +407,20 @@ export class SketchEditor {
   }
 
   /** Dados do modo resultados. */
+  /** Passo de tempo mostrado (transitório). */
+  postFrame = 0;
+  setFrame(k: number) {
+    this.postFrame = k;
+    this.changed();
+  }
+  /** Solução mostrada (no passo atual, se for transitória). */
+  shownSol(id: Id | null = this.shownSolution): Solution | undefined {
+    const s = id ? this.solutions.get(id) : undefined;
+    return s?.times ? frameOf(s, this.postFrame) : s;
+  }
+
   private postView(): RenderState['post'] {
-    const sol = this.shownSolution ? this.solutions.get(this.shownSolution) : undefined;
+    const sol = this.shownSol();
     // Vista interpolada: todas as camadas usam a solução refinada.
     const layerSols = new Map<Id, Solution>();
     if (sol && this.postLevel) {

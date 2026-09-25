@@ -152,5 +152,102 @@ int main() {
     }
     check(o.error.empty() && err / amax < 0.01, "periódico: erro relativo máx. de A", err / amax, 0);
   }
+  // 5) Não linear: faixa com J entre A = 0 em x = 0 e x = L. H(x) = J (L/2 − x) vale para qualquer
+  //    material; H(B do elemento) deve convergir para J (L/2 − x) com o refino (aço M400-50A).
+  {
+    const double L = 0.1, H0 = 0.05, J = 2e5;
+    const std::vector<double> bB = {0.5, 1.0, 1.3, 1.5, 1.6, 1.7, 1.8, 2.0};
+    const std::vector<double> bH = {60, 120, 220, 480, 900, 2000, 5000, 20000};
+    auto run = [&](int nx, double area, double& bmax, int& its) {
+      MeshOutput m = rectMesh(0, 0, L, H0, nx, 8, area);
+      MagInput in;
+      in.xy = m.xy;
+      in.triangles = m.triangles;
+      in.triRegion.assign(m.triangles.size() / 3, 0);
+      in.nu = {1 / (MU0 * 4000)};
+      in.J = {J};
+      in.bhStart = {0, static_cast<int>(bB.size())};
+      in.bhB = bB;
+      in.bhH = bH;
+      for (size_t i = 0; i < m.xy.size() / 2; ++i)
+        if (m.xy[2 * i] < 1e-12 || m.xy[2 * i] > L - 1e-12) in.dirichletNodes.push_back(static_cast<int>(i)), in.dirichletValues.push_back(0);
+      MagOutput o = solve_magnetostatic(in);
+      double errH = 0;
+      bmax = 0;
+      its = o.iterations;
+      for (size_t t = 0; t < o.bx.size(); ++t) {
+        const int* v = &m.triangles[3 * t];
+        const double xc = (m.xy[2 * v[0]] + m.xy[2 * v[1]] + m.xy[2 * v[2]]) / 3;
+        const double b = std::hypot(o.bx[t], o.by[t]);
+        bmax = std::max(bmax, b);
+        errH = std::max(errH, std::fabs(bh_curve_h(bB, bH, b) - std::fabs(J * (L / 2 - xc))) / (J * L / 2));
+      }
+      return errH;
+    };
+    double bmax1, bmax2;
+    int it1, it2;
+    const double e1 = run(20, 2e-5, bmax1, it1), e2 = run(80, 1.2e-6, bmax2, it2);
+    check(e2 < 0.02 && e2 < 0.6 * e1, "não linear: erro de H cai com o refino (grossa → fina)", e2, e1);
+    check(bmax2 < 2.2 && bmax2 > 1.5, "não linear: satura (|B| máx. entre 1,5 e 2,2 T)", bmax2, 1.9);
+    std::printf("      (Newton: %d e %d iterações)\n", it1, it2);
+  }
+  // 6) Transitório sem condutividade: A(t) = A_estático · sen(ωt).
+  {
+    const double L = 0.1, H0 = 0.05, J = 1e6, f = 50;
+    MeshOutput m = rectMesh(0, 0, L, H0, 10, 5, 4e-5);
+    MagInput in;
+    in.xy = m.xy;
+    in.triangles = m.triangles;
+    in.triRegion.assign(m.triangles.size() / 3, 0);
+    in.nu = {1 / MU0};
+    in.J = {J};
+    for (size_t i = 0; i < m.xy.size() / 2; ++i)
+      if (m.xy[2 * i] < 1e-12 || m.xy[2 * i] > L - 1e-12) in.dirichletNodes.push_back(static_cast<int>(i)), in.dirichletValues.push_back(0);
+    MagInput st = in;
+    MagOutput s0 = solve_magnetostatic(st);
+    in.freq = f;
+    in.dt = 1.0 / f / 40;
+    in.steps = 40;
+    MagOutput o = solve_magnetostatic(in);
+    const int nn = static_cast<int>(m.xy.size() / 2);
+    double err = 0, amax = 0;
+    for (int k = 0; k < in.steps; ++k)
+      for (int i = 0; i < nn; ++i) {
+        const double want = s0.A[i] * std::sin(2 * M_PI * f * o.times[k]);
+        err = std::max(err, std::fabs(o.At[static_cast<size_t>(k) * nn + i] - want));
+        amax = std::max(amax, std::fabs(s0.A[i]));
+      }
+    check(o.error.empty() && err / amax < 1e-9, "transitório σ = 0: A(t) = A_est · sen(ωt)", err / amax, 0);
+  }
+  // 7) Difusão numa placa condutora: A = A0 nas faces x = 0 e x = L a partir de t = 0.
+  //    A/A0 = 1 − (4/π) Σ_{n ímpar} sen(nπx/L)/n · exp(−n²π² t / (μσL²)).
+  {
+    const double L = 0.01, H0 = 0.004, sigma = 5.8e7, A0 = 1e-3;
+    const double tau = MU0 * sigma * L * L / (M_PI * M_PI);
+    MeshOutput m = rectMesh(0, 0, L, H0, 40, 8, 2e-8);
+    MagInput in;
+    in.xy = m.xy;
+    in.triangles = m.triangles;
+    in.triRegion.assign(m.triangles.size() / 3, 0);
+    in.nu = {1 / MU0};
+    in.J = {0};
+    in.sigma = {sigma};
+    for (size_t i = 0; i < m.xy.size() / 2; ++i)
+      if (m.xy[2 * i] < 1e-12 || m.xy[2 * i] > L - 1e-12) in.dirichletNodes.push_back(static_cast<int>(i)), in.dirichletValues.push_back(A0);
+    in.steps = 400;
+    in.dt = 0.5 * tau / in.steps;  // até t = τ/2
+    MagOutput o = solve_magnetostatic(in);
+    const int nn = static_cast<int>(m.xy.size() / 2);
+    const double t = in.steps * in.dt;
+    double err = 0;
+    for (int i = 0; i < nn; ++i) {
+      const double x = m.xy[2 * i];
+      double s = 0;
+      for (int k = 1; k < 200; k += 2) s += std::sin(k * M_PI * x / L) / k * std::exp(-k * k * t / tau);
+      const double want = A0 * (1 - 4 / M_PI * s);
+      err = std::max(err, std::fabs(o.At[static_cast<size_t>(in.steps - 1) * nn + i] - want) / A0);
+    }
+    check(o.error.empty() && err < 0.02, "difusão (correntes parasitas) vs série analítica em t = τ/2", err, 0);
+  }
   return fails ? 1 : 0;
 }

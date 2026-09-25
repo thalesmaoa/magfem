@@ -370,6 +370,13 @@ export interface Translations {
     negativeR: string;
     noDirichlet: string;
     onlyStatic: string;
+    badTime: string;
+    frame: (k: number, n: number, t: string) => string;
+    play: string;
+    pause: string;
+    exportAnim: string;
+    recording: string;
+    newtonNote: (n: number) => string;
     failed: (e: string) => string;
     run: string;
     running: string;
@@ -925,7 +932,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     bhAdd: 'Incluir curva B-H (não linear)',
     turnsNonZero: 'Espiras: qualquer número diferente de zero (negativo inverte o sentido).',
     bhPoint: 'Ponto',
-    bhClickHint: 'Clique num ponto para editar.',
+    bhClickHint: 'Arraste um ponto para mover; clique para editar os valores.',
     bhOpen: 'Ver curva B-H (aba)',
     bhAddPoint: 'Ponto',
     bhRemove: 'Remover curva (usar μr linear)',
@@ -941,7 +948,14 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     periodicMismatch: (b) => `${b}: as duas curvas precisam do mesmo número de nós (gere a malha de novo).`,
     negativeR: 'Axissimétrico: há geometria com r < 0 (o eixo é x = 0).',
     noDirichlet: 'Falta um contorno com A prescrito (sem ele o potencial fica indefinido).',
-    onlyStatic: 'Por enquanto só a análise magnetostática resolve; harmônica e transitória vêm depois.',
+    onlyStatic: 'Harmônica ainda não resolve; use magnetostática ou transitória.',
+    badTime: 'Transitório: passo e tempo final precisam ser positivos (t final > passo).',
+    frame: (k, n, t) => `passo ${k}/${n} · t = ${t}`,
+    play: 'Animar',
+    pause: 'Pausar',
+    exportAnim: 'Exportar animação (WebM)',
+    recording: 'Gravando…',
+    newtonNote: (n) => `Newton: ${n} iterações (materiais não lineares).`,
     failed: (e) => `Falha ao resolver: ${e}`,
     run: 'Resolver',
     running: 'Resolvendo…',
@@ -957,7 +971,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     probeOut: 'Ponto fora da malha.',
     probeRegion: 'Região',
     noSolution: 'Resolva o problema em Método de resolução (▶).',
-    linearNote: 'Materiais com curva B-H usam o μr linear por enquanto (não linear na próxima etapa).',
+    linearNote: 'Materiais com curva B-H são resolvidos como não lineares (Newton-Raphson).',
     goResults: 'Ver resultados',
   },
   post: {
@@ -1512,7 +1526,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     bhAdd: 'Add B-H curve (nonlinear)',
     turnsNonZero: 'Turns: any nonzero number (negative reverses the direction).',
     bhPoint: 'Point',
-    bhClickHint: 'Click a point to edit.',
+    bhClickHint: 'Drag a point to move it; click to edit its values.',
     bhOpen: 'View B-H curve (tab)',
     bhAddPoint: 'Point',
     bhRemove: 'Remove curve (use linear μr)',
@@ -1528,7 +1542,14 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     periodicMismatch: (b) => `${b}: both curves need the same number of nodes (generate the mesh again).`,
     negativeR: 'Axisymmetric: some geometry has r < 0 (the axis is x = 0).',
     noDirichlet: 'A boundary with prescribed A is missing (without it the potential is undefined).',
-    onlyStatic: 'Only the magnetostatic analysis solves for now; harmonic and transient come later.',
+    onlyStatic: 'Harmonic does not solve yet; use magnetostatic or transient.',
+    badTime: 'Transient: step and end time must be positive (end > step).',
+    frame: (k, n, t) => `step ${k}/${n} · t = ${t}`,
+    play: 'Animate',
+    pause: 'Pause',
+    exportAnim: 'Export animation (WebM)',
+    recording: 'Recording…',
+    newtonNote: (n) => `Newton: ${n} iterations (nonlinear materials).`,
     failed: (e) => `Solve failed: ${e}`,
     run: 'Solve',
     running: 'Solving…',
@@ -1544,7 +1565,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     probeOut: 'Point outside the mesh.',
     probeRegion: 'Region',
     noSolution: 'Solve the problem under Solver (▶).',
-    linearNote: 'Materials with a B-H curve use their linear μr for now (nonlinear in the next step).',
+    linearNote: 'Materials with a B-H curve are solved as nonlinear (Newton-Raphson).',
     goResults: 'See results',
   },
   post: {

@@ -23,6 +23,7 @@ import { RightDrawer } from './ui/RightDrawer';
 import { setDrawer, useDrawer } from './ui/drawerStore';
 import { activateTab, openTab, pruneTabs, useTabs } from './ui/tabsStore';
 import { CanvasTabBar, ChartPane, LegendModal } from './ui/CanvasTabs';
+import { TabToolbar } from './ui/TabToolbar';
 import { chartImage, chartSVG, tabCSV } from './ui/chartExport';
 import { Toolbar } from './ui/Toolbar';
 import { LazyInput } from './ui/common';
@@ -258,7 +259,13 @@ export default function App() {
           <ThemeSwitch />
         </nav>
       </header>
-      {ed && tabs.active === 'draw' && (treeSel.kind === 'geometry' || treeSel.kind === 'var') ? <Toolbar ed={ed} /> : <div className="toolbar" />}
+      {ed && tabs.active === 'draw' && (treeSel.kind === 'geometry' || treeSel.kind === 'var') ? (
+        <Toolbar ed={ed} />
+      ) : ed && tabs.active !== 'draw' ? (
+        <TabToolbar ed={ed} tab={tabs.active} name={name} />
+      ) : (
+        <div className="toolbar" />
+      )}
       <main className={`work${drawer ? ' drawer-open' : ''}`}>
         {ed ? <ModelTree ed={ed} sel={treeSel} onSelect={setTreeSel} name={name} /> : <aside className="side left" />}
         <div className="center">
@@ -267,11 +274,6 @@ export default function App() {
             <canvas ref={canvasRef} className="sketch" tabIndex={0} />
             {ed && (tabs.active.startsWith('chart:') || tabs.active.startsWith('bh:') || tabs.active.startsWith('circuits:') || tabs.active.startsWith('table:')) && <ChartPane ed={ed} tab={tabs.active} />}
             {ed && <LegendModal ed={ed} />}
-            {ed && tabs.active.startsWith('view:') && (
-              <button className="canvas-fit icon-btn" title={t.tools.fit} aria-label={t.tools.fit} onClick={() => ed.fit()}>
-                {Icons.fit}
-              </button>
-            )}
             {ed && <DimInput ed={ed} />}
             {ready !== 'ok' && <div className="overlay">{ready === 'loading' ? t.app.loading : ready}</div>}
             {ed && <StageOverlay ed={ed} sel={treeSel} />}

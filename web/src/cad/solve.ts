@@ -23,6 +23,16 @@ export interface MagInput {
   periodicSlave: number[];
   periodicMaster: number[];
   periodicSign: number[];
+  /** Curvas B-H: região r usa bhB/bhH[bhStart[r] .. bhStart[r+1]). */
+  bhStart?: number[];
+  bhB?: number[];
+  bhH?: number[];
+  /** Transitório: σ por região (S/m, só condutores sem fonte), fase da fonte (rad), frequência, passo, número de passos. */
+  sigma?: number[];
+  jPhase?: number[];
+  freq?: number;
+  dt?: number;
+  steps?: number;
 }
 
 export interface Solution {
@@ -47,6 +57,16 @@ export interface Solution {
   /** Tamanho típico do elemento (mm). */
   meshSize: number;
   ms: number;
+  /** Iterações de Newton (materiais não lineares). */
+  iterations?: number;
+  /** Transitório: A de cada passo (steps × nós), tempos (s) e o passo mostrado. */
+  At?: Float64Array;
+  times?: Float64Array;
+  freq?: number;
+  jPhase?: number[];
+  /** Quadro derivado: a solução transitória de origem e o índice do passo. */
+  frameOf?: Solution;
+  frame?: number;
 }
 
 const num = (sk: Sketch, expr: string | undefined, def: number): number => {
@@ -96,6 +116,9 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
   const brx = new Array<number>(nr).fill(0);
   const bry = new Array<number>(nr).fill(0);
   const assigned = new Set<number>();
+  const sigma = new Array<number>(nr).fill(0);
+  const jPhase = new Array<number>(nr).fill(0);
+  const bhRegion = new Array<[number, number][] | undefined>(nr).fill(undefined);
   for (const a of sk.regionAssigns) {
     const r = findRegion(arr, a);
     if (!r || assigned.has(r.index)) continue;
@@ -103,6 +126,9 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
     if (!m) continue;
     assigned.add(r.index);
     nu[r.index] = 1 / (MU0 * m.mur);
+    if (m.bh && m.bh.length >= 2) bhRegion[r.index] = m.bh.filter(([h, b]) => h > 0 && b > 0).map(([h, b]) => [b, h]);
+    // Correntes parasitas só em condutores sem fonte (bobina com corrente imposta = enrolamento, σ ignorado).
+    if (!a.current && !a.circuit && m.sigma > 0) sigma[r.index] = m.sigma * 1e6;
     try {
       // Corrente: do circuito (se a região estiver ligada a um) ou da própria região.
       const circ = a.circuit ? sk.circuits.find((c) => c.id === a.circuit) : undefined;
@@ -170,6 +196,16 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
   }
   if (!dirichlet.size) problems.push(t.solve.noDirichlet);
 
+  const bhStart: number[] = [0];
+  const bhB: number[] = [];
+  const bhH: number[] = [];
+  for (let r = 0; r < nr; r++) {
+    for (const [b, h] of bhRegion[r] ?? []) {
+      bhB.push(b);
+      bhH.push(h);
+    }
+    bhStart.push(bhB.length);
+  }
   const xym = new Float64Array(xy.length);
   for (let i = 0; i < xy.length; i++) xym[i] = xy[i] * 1e-3;
   return {
@@ -187,6 +223,11 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
       periodicSlave: slave,
       periodicMaster: master,
       periodicSign: sign,
+      bhStart,
+      bhB,
+      bhH,
+      sigma,
+      jPhase,
     },
     problems,
   };
@@ -696,3 +737,47 @@ export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>
   }
   return out;
 }
+
+/** Solução num passo de tempo (A do passo; B recalculado por elemento). */
+export function frameOf(sol: Solution, k: number): Solution {
+  if (!sol.At || !sol.times || !sol.times.length) return sol;
+  const i = Math.max(0, Math.min(sol.times.length - 1, Math.round(k)));
+  const cache = frameCache.get(sol) ?? new Map<number, Solution>();
+  frameCache.set(sol, cache);
+  const hit = cache.get(i);
+  if (hit) return hit;
+  const nn = sol.mesh.xy.length / 2;
+  const A = sol.At.subarray(i * nn, (i + 1) * nn);
+  const { xy, triangles } = sol.mesh;
+  const nt = triangles.length / 3;
+  const bx = new Float64Array(nt), by = new Float64Array(nt), bmag = new Float64Array(nt);
+  let bmax = 0;
+  for (let t = 0; t < nt; t++) {
+    const v = [triangles[3 * t], triangles[3 * t + 1], triangles[3 * t + 2]];
+    const x = v.map((j) => xy[2 * j] * 1e-3), y = v.map((j) => xy[2 * j + 1] * 1e-3);
+    const a2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
+    let gx = 0, gy = 0;
+    for (let q = 0; q < 3; q++) {
+      const j = (q + 1) % 3, l = (q + 2) % 3;
+      gx += ((y[j] - y[l]) * A[v[q]]) / a2;
+      gy += ((x[l] - x[j]) * A[v[q]]) / a2;
+    }
+    if (sol.axisymmetric) {
+      const rc = Math.max((x[0] + x[1] + x[2]) / 3, 1e-12);
+      bx[t] = -gy / rc;
+      by[t] = gx / rc;
+    } else {
+      bx[t] = gy;
+      by[t] = -gx;
+    }
+    bmag[t] = Math.hypot(bx[t], by[t]);
+    if (bmag[t] > bmax) bmax = bmag[t];
+  }
+  // J do passo (fonte senoidal) para mapas de J.
+  const w = 2 * Math.PI * (sol.freq ?? 0);
+  const J = sol.J.map((j, r) => (w ? j * Math.sin(w * sol.times![i] + (sol.jPhase?.[r] ?? 0)) : j));
+  const f: Solution = { ...sol, A: new Float64Array(A), bx, by, bmag, bmax, J, At: undefined, times: undefined, frameOf: sol, frame: i };
+  cache.set(i, f);
+  return f;
+}
+const frameCache = new WeakMap<Solution, Map<number, Solution>>();

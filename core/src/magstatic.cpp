@@ -1,22 +1,102 @@
-// Montagem P1, eliminação de Dirichlet e de nós periódicos, solução por Cholesky esparsa (Eigen).
+// Magnetostática/transitório 2D: montagem P1, Newton-Raphson para materiais não lineares (curva B-H),
+// Euler implícito com correntes parasitas, eliminação de Dirichlet e de nós periódicos (Eigen).
 #include "magstatic.h"
 
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
+#include <algorithm>
 #include <cmath>
 
 namespace magfem {
 
 namespace {
 constexpr double TWO_PI = 6.283185307179586;
+constexpr double MU0 = 4e-7 * M_PI;
 
-// Grau de liberdade de um nó: fixo (valor) ou livre (índice reduzido) com sinal.
 struct Dof {
   int free = -1;  // índice reduzido; -1 se fixo
   double sign = 1;
   double value = 0;  // se fixo
 };
+
+/** Curva B-H de uma região: H(B) cúbica monótona (Fritsch–Carlson) por (0,0) e os pontos dados. */
+struct BH {
+  std::vector<double> B, H, m;  // m = dH/dB nos pontos
+  bool ok = false;
+  void build(const double* b, const double* h, int n) {
+    B = {0};
+    H = {0};
+    for (int i = 0; i < n; ++i)
+      if (b[i] > B.back() + 1e-12 && h[i] > H.back()) B.push_back(b[i]), H.push_back(h[i]);
+    ok = B.size() >= 2;
+    if (!ok) return;
+    const size_t k = B.size();
+    std::vector<double> d(k - 1);
+    for (size_t i = 0; i + 1 < k; ++i) d[i] = (H[i + 1] - H[i]) / (B[i + 1] - B[i]);
+    m.assign(k, 0);
+    m[0] = d[0];
+    m[k - 1] = d[k - 2];
+    for (size_t i = 1; i + 1 < k; ++i) m[i] = d[i - 1] * d[i] <= 0 ? 0 : 2 / (1 / d[i - 1] + 1 / d[i]);  // média harmônica
+    for (size_t i = 0; i + 1 < k; ++i) {  // limita para manter monotonia
+      if (d[i] == 0) continue;
+      const double a = m[i] / d[i], c = m[i + 1] / d[i];
+      const double r = a * a + c * c;
+      if (r > 9) {
+        const double t = 3 / std::sqrt(r);
+        m[i] = t * a * d[i];
+        m[i + 1] = t * c * d[i];
+      }
+    }
+  }
+  /** H e dH/dB em B (acima do último ponto: reta com inclinação 1/μ0). */
+  void eval(double b, double& h, double& dh) const {
+    const size_t k = B.size();
+    if (b >= B[k - 1]) {
+      dh = 1 / MU0;
+      h = H[k - 1] + (b - B[k - 1]) * dh;
+      return;
+    }
+    size_t i = std::upper_bound(B.begin(), B.end(), b) - B.begin() - 1;
+    const double hh = B[i + 1] - B[i], t = (b - B[i]) / hh;
+    const double h00 = 2 * t * t * t - 3 * t * t + 1, h10 = t * t * t - 2 * t * t + t, h01 = -2 * t * t * t + 3 * t * t, h11 = t * t * t - t * t;
+    h = h00 * H[i] + h10 * hh * m[i] + h01 * H[i + 1] + h11 * hh * m[i + 1];
+    const double d00 = 6 * t * t - 6 * t, d10 = 3 * t * t - 4 * t + 1, d01 = -6 * t * t + 6 * t, d11 = 3 * t * t - 2 * t;
+    dh = (d00 * H[i] + d01 * H[i + 1]) / hh + d10 * m[i] + d11 * m[i + 1];
+  }
+  /** ν = H/B e dν/d(B²). */
+  void nu(double b2, double& nuv, double& dnu) const {
+    const double b = std::sqrt(std::max(b2, 0.0));
+    if (b < 1e-9) {
+      nuv = m[0];
+      dnu = 0;
+      return;
+    }
+    double h, dh;
+    eval(b, h, dh);
+    nuv = h / b;
+    dnu = (dh * b - h) / (b * b) / (2 * b);
+  }
+  /** Densidade de energia ∫₀^B H dB (Simpson). */
+  double energy(double b) const {
+    const int n = 16;
+    double s = 0;
+    for (int i = 0; i <= n; ++i) {
+      double h, dh;
+      eval(b * i / n, h, dh);
+      s += h * (i == 0 || i == n ? 1 : i % 2 ? 4 : 2);
+    }
+    return s * b / (3 * n);
+  }
+};
 }  // namespace
+
+double bh_curve_h(const std::vector<double>& B, const std::vector<double>& H, double b) {
+  BH c;
+  c.build(B.data(), H.data(), static_cast<int>(B.size()));
+  double h, dh;
+  c.eval(b, h, dh);
+  return h;
+}
 
 MagOutput solve_magnetostatic(const MagInput& in) {
   MagOutput out;
@@ -27,13 +107,21 @@ MagOutput solve_magnetostatic(const MagInput& in) {
     return out;
   }
   const int nr = static_cast<int>(in.nu.size());
-  auto reg = [&](int t, const std::vector<double>& v, double def) {
-    const int r = in.triRegion[t];
-    return r >= 0 && r < nr && r < static_cast<int>(v.size()) ? v[r] : def;
-  };
-  const double nu0 = 1.0 / (4e-7 * M_PI);
+  auto regv = [&](int r, const std::vector<double>& v, double def) { return r >= 0 && r < static_cast<int>(v.size()) ? v[r] : def; };
+  const double nu0 = 1.0 / MU0;
 
-  // Resolve cada nó para (mestre final, sinal) seguindo a cadeia de periódicos; Dirichlet vence.
+  std::vector<BH> curves(std::max(nr, 0));
+  bool nonlinear = false;
+  if (static_cast<int>(in.bhStart.size()) == nr + 1)
+    for (int r = 0; r < nr; ++r) {
+      const int a = in.bhStart[r], b = in.bhStart[r + 1];
+      if (b - a >= 1) {
+        curves[r].build(&in.bhB[a], &in.bhH[a], b - a);
+        nonlinear = nonlinear || curves[r].ok;
+      }
+    }
+
+  // Nós → graus de liberdade (Dirichlet vence; periódicos seguem a cadeia até o mestre).
   std::vector<int> master(nn), fixedIdx(nn, -1);
   std::vector<double> sign(nn, 1.0);
   for (int i = 0; i < nn; ++i) master[i] = i;
@@ -71,97 +159,199 @@ MagOutput solve_magnetostatic(const MagInput& in) {
     return out;
   }
 
-  std::vector<Eigen::Triplet<double>> trip;
-  trip.reserve(static_cast<size_t>(nt) * 9);
-  Eigen::VectorXd rhs = Eigen::VectorXd::Zero(nfree);
+  // Geometria dos elementos (fixa).
+  struct Elem {
+    int v[3];
+    double b[3], c[3], area, w, rc;
+    int r;
+  };
+  std::vector<Elem> el(nt);
   for (int t = 0; t < nt; ++t) {
-    const int* v = &in.triangles[3 * t];
+    Elem& e = el[t];
     double x[3], y[3];
-    for (int k = 0; k < 3; ++k) x[k] = in.xy[2 * v[k]], y[k] = in.xy[2 * v[k] + 1];
-    // b_i = y_j − y_k, c_i = x_k − x_j (gradientes das funções de forma × 2Δ)
-    double b[3], c[3];
+    for (int k = 0; k < 3; ++k) e.v[k] = in.triangles[3 * t + k], x[k] = in.xy[2 * e.v[k]], y[k] = in.xy[2 * e.v[k] + 1];
     for (int k = 0; k < 3; ++k) {
       const int j = (k + 1) % 3, l = (k + 2) % 3;
-      b[k] = y[j] - y[l];
-      c[k] = x[l] - x[j];
+      e.b[k] = y[j] - y[l];
+      e.c[k] = x[l] - x[j];
     }
-    const double area2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
-    const double area = 0.5 * std::fabs(area2);
-    if (area <= 0) continue;
-    const double nu = reg(t, in.nu, nu0);
-    const double J = reg(t, in.J, 0);
-    const double brx = reg(t, in.brx, 0), bry = reg(t, in.bry, 0);
-    double w = 1;  // peso 1/r no axissimétrico (raio do centroide)
-    if (in.axisymmetric) {
-      const double rc = (x[0] + x[1] + x[2]) / 3;
-      w = 1.0 / std::max(rc, 1e-12);
-    }
-    double ke[3][3], fe[3];
-    for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j < 3; ++j) ke[i][j] = nu * w * (b[i] * b[j] + c[i] * c[j]) / (4 * area);
-      fe[i] = J * area / 3;
-      // Ímã: ∫ ν Br·δB. Plano: δB = (∂N/∂y, −∂N/∂x); axissimétrico: δB = (−∂N/∂z, ∂N/∂r)/r.
-      if (in.axisymmetric) fe[i] += nu * w * (-brx * c[i] + bry * b[i]) / 2;
-      else fe[i] += nu * (brx * c[i] - bry * b[i]) / 2;
-    }
-    for (int i = 0; i < 3; ++i) {
-      const Dof& di = dof[v[i]];
-      if (di.free < 0) continue;
-      rhs[di.free] += di.sign * fe[i];
-      for (int j = 0; j < 3; ++j) {
-        const Dof& dj = dof[v[j]];
-        const double kij = di.sign * ke[i][j];
-        if (dj.free < 0) rhs[di.free] -= kij * dj.value;
-        else trip.emplace_back(di.free, dj.free, kij * dj.sign);
+    e.area = 0.5 * std::fabs((x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]));
+    e.rc = (x[0] + x[1] + x[2]) / 3;
+    e.w = in.axisymmetric ? 1.0 / std::max(e.rc, 1e-12) : 1.0;
+    e.r = t < static_cast<int>(in.triRegion.size()) ? in.triRegion[t] : -1;
+  }
+  const bool transient = in.steps > 0 && in.dt > 0;
+  const double invDt = transient ? 1.0 / in.dt : 0.0;
+
+  // Gradiente de A no elemento (∂A/∂x, ∂A/∂y) e B² correspondente.
+  auto grad = [&](const Elem& e, const std::vector<double>& A, double& gx, double& gy) {
+    gx = gy = 0;
+    const double a2 = 2 * e.area;
+    for (int k = 0; k < 3; ++k) gx += e.b[k] * A[e.v[k]] / a2, gy += e.c[k] * A[e.v[k]] / a2;
+  };
+  auto elemNu = [&](const Elem& e, double b2, double& nuv, double& dnu) {
+    if (e.r >= 0 && e.r < nr && curves[e.r].ok) curves[e.r].nu(b2, nuv, dnu);
+    else nuv = regv(e.r, in.nu, nu0), dnu = 0;
+  };
+
+  std::vector<double> A(nn, 0.0), Aprev(nn, 0.0);
+  auto expand = [&](const Eigen::VectorXd& a) {
+    for (int i = 0; i < nn; ++i) A[i] = dof[i].free < 0 ? dof[i].value : dof[i].sign * a[dof[i].free];
+  };
+  auto reduce = [&]() {
+    Eigen::VectorXd a = Eigen::VectorXd::Zero(nfree);
+    for (int i = 0; i < nn; ++i)
+      if (dof[i].free >= 0) a[dof[i].free] = dof[i].sign * A[i];
+    return a;
+  };
+
+  // Resíduo R(A) (graus livres) e, se pedido, o Jacobiano (tangente de Newton).
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt;
+  bool analyzed = false;
+  auto assemble = [&](double time, bool withJac, Eigen::VectorXd& R, Eigen::SparseMatrix<double>* Kt) {
+    R = Eigen::VectorXd::Zero(nfree);
+    std::vector<Eigen::Triplet<double>> trip;
+    if (withJac) trip.reserve(static_cast<size_t>(nt) * 9);
+    for (const Elem& e : el) {
+      if (e.area <= 0) continue;
+      double gx, gy;
+      grad(e, A, gx, gy);
+      const double b2 = e.w * e.w * (gx * gx + gy * gy);
+      double nuv, dnu;
+      elemNu(e, b2, nuv, dnu);
+      double J = regv(e.r, in.J, 0);
+      if (transient && in.freq > 0) J *= std::sin(TWO_PI * in.freq * time + regv(e.r, in.jPhase, 0));
+      const double brx = regv(e.r, in.brx, 0), bry = regv(e.r, in.bry, 0);
+      const double sg = transient ? regv(e.r, in.sigma, 0) : 0;
+      double re[3], ke[3][3];
+      for (int i = 0; i < 3; ++i) {
+        const double gNi_x = e.b[i] / (2 * e.area), gNi_y = e.c[i] / (2 * e.area);
+        // ∫ ν w ∇A·∇N_i − J N_i − (ímã) + σ w/dt (A − A_prev) N_i
+        re[i] = nuv * e.w * (gx * gNi_x + gy * gNi_y) * e.area - J * e.area / 3;
+        if (in.axisymmetric) re[i] -= nuv * e.w * (-brx * e.c[i] + bry * e.b[i]) / 2;
+        else re[i] -= nuv * (brx * e.c[i] - bry * e.b[i]) / 2;
+        if (sg > 0)
+          for (int j = 0; j < 3; ++j) re[i] += sg * e.w * invDt * (A[e.v[j]] - Aprev[e.v[j]]) * e.area * (i == j ? 2 : 1) / 12;
+        if (!withJac) continue;
+        const double gAi = gx * gNi_x + gy * gNi_y;
+        for (int j = 0; j < 3; ++j) {
+          const double gNj_x = e.b[j] / (2 * e.area), gNj_y = e.c[j] / (2 * e.area);
+          const double gAj = gx * gNj_x + gy * gNj_y;
+          ke[i][j] = nuv * e.w * (gNi_x * gNj_x + gNi_y * gNj_y) * e.area + 2 * dnu * e.w * e.w * e.w * gAi * gAj * e.area;
+          if (sg > 0) ke[i][j] += sg * e.w * invDt * e.area * (i == j ? 2 : 1) / 12;
+        }
+      }
+      for (int i = 0; i < 3; ++i) {
+        const Dof& di = dof[e.v[i]];
+        if (di.free < 0) continue;
+        R[di.free] += di.sign * re[i];
+        if (!withJac) continue;
+        for (int j = 0; j < 3; ++j) {
+          const Dof& dj = dof[e.v[j]];
+          if (dj.free >= 0) trip.emplace_back(di.free, dj.free, di.sign * ke[i][j] * dj.sign);
+        }
       }
     }
-  }
-  Eigen::SparseMatrix<double> K(nfree, nfree);
-  K.setFromTriplets(trip.begin(), trip.end());
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt(K);
-  if (ldlt.info() != Eigen::Success) {
-    out.error = "sistema singular: falta contorno (A prescrito) ou região isolada";
+    if (withJac) {
+      Kt->resize(nfree, nfree);
+      Kt->setFromTriplets(trip.begin(), trip.end());
+    }
+  };
+
+  // Um passo (estático ou de tempo): Newton com busca linear.
+  auto solveStep = [&](double time) -> bool {
+    Eigen::VectorXd a = reduce(), R, R2;
+    Eigen::SparseMatrix<double> K;
+    const int maxIt = nonlinear ? std::max(1, in.maxIter) : 1;
+    double r0 = -1;
+    for (int it = 0; it < maxIt; ++it) {
+      expand(a);
+      assemble(time, true, R, &K);
+      const double rn = R.norm();
+      if (r0 < 0) r0 = std::max(rn, 1e-30);
+      if (it > 0 && rn <= in.tol * r0) {
+        out.iterations = it;
+        return true;
+      }
+      if (!analyzed) {
+        ldlt.analyzePattern(K);
+        analyzed = true;
+      }
+      ldlt.factorize(K);
+      if (ldlt.info() != Eigen::Success) {
+        out.error = "sistema singular: falta contorno (A prescrito) ou região isolada";
+        return false;
+      }
+      Eigen::VectorXd d = ldlt.solve(-R);
+      if (!d.allFinite()) {
+        out.error = "falha ao resolver o sistema linear";
+        return false;
+      }
+      if (!nonlinear) {
+        a += d;
+        expand(a);
+        out.iterations = 1;
+        return true;
+      }
+      // Busca linear: reduz o passo até o resíduo cair.
+      double lam = 1;
+      for (int ls = 0; ls < 12; ++ls) {
+        expand(a + lam * d);
+        assemble(time, false, R2, nullptr);
+        if (R2.norm() < rn || lam < 1e-3) break;
+        lam *= 0.5;
+      }
+      a += lam * d;
+      if (lam * d.norm() <= 1e-12 * std::max(a.norm(), 1e-30)) {
+        expand(a);
+        out.iterations = it + 1;
+        return true;
+      }
+    }
+    expand(a);
+    out.iterations = maxIt;
+    return true;  // devolve a melhor estimativa (a interface avisa pelo número de iterações)
+  };
+
+  if (transient) {
+    out.At.reserve(static_cast<size_t>(in.steps) * nn);
+    for (int k = 1; k <= in.steps; ++k) {
+      const double time = k * in.dt;
+      if (!solveStep(time)) return out;
+      out.At.insert(out.At.end(), A.begin(), A.end());
+      out.times.push_back(time);
+      Aprev = A;
+    }
+  } else if (!solveStep(0)) {
     return out;
   }
-  Eigen::VectorXd a = ldlt.solve(rhs);
-  if (ldlt.info() != Eigen::Success || !a.allFinite()) {
-    out.error = "falha ao resolver o sistema linear";
-    return out;
-  }
-  out.A.resize(nn);
-  for (int i = 0; i < nn; ++i) out.A[i] = dof[i].free < 0 ? dof[i].value : dof[i].sign * a[dof[i].free];
+  out.A = A;
 
   out.bx.resize(nt);
   out.by.resize(nt);
   double W = 0;
   for (int t = 0; t < nt; ++t) {
-    const int* v = &in.triangles[3 * t];
-    double x[3], y[3];
-    for (int k = 0; k < 3; ++k) x[k] = in.xy[2 * v[k]], y[k] = in.xy[2 * v[k] + 1];
-    const double area2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
-    double dAdx = 0, dAdy = 0;
-    for (int k = 0; k < 3; ++k) {
-      const int j = (k + 1) % 3, l = (k + 2) % 3;
-      dAdx += (y[j] - y[l]) * out.A[v[k]] / area2;
-      dAdy += (x[l] - x[j]) * out.A[v[k]] / area2;
-    }
+    const Elem& e = el[t];
+    double gx, gy;
+    grad(e, A, gx, gy);
     double Bx, By, dV;
-    const double area = 0.5 * std::fabs(area2);
     if (in.axisymmetric) {
-      const double rc = std::max((x[0] + x[1] + x[2]) / 3, 1e-12);
-      Bx = -dAdy / rc;
-      By = dAdx / rc;
-      dV = TWO_PI * rc * area;
+      const double rc = std::max(e.rc, 1e-12);
+      Bx = -gy / rc;
+      By = gx / rc;
+      dV = TWO_PI * rc * e.area;
     } else {
-      Bx = dAdy;
-      By = -dAdx;
-      dV = area;
+      Bx = gy;
+      By = -gx;
+      dV = e.area;
     }
     out.bx[t] = Bx;
     out.by[t] = By;
-    const double nu = reg(t, in.nu, nu0);
-    const double hx = Bx - reg(t, in.brx, 0), hy = By - reg(t, in.bry, 0);
-    W += 0.5 * nu * (hx * hx + hy * hy) * dV;
+    if (e.r >= 0 && e.r < nr && curves[e.r].ok) W += curves[e.r].energy(std::hypot(Bx, By)) * dV;
+    else {
+      const double hx = Bx - regv(e.r, in.brx, 0), hy = By - regv(e.r, in.bry, 0);
+      W += 0.5 * regv(e.r, in.nu, nu0) * (hx * hx + hy * hy) * dV;
+    }
   }
   out.energy = W;
   return out;

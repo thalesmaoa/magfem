@@ -1,5 +1,5 @@
 // Barra de abas do canvas e painéis de gráfico (gráfico sobre linha, curva B-H) com escala linear/log.
-import { useState } from 'react';
+import { useRef, useState, useSyncExternalStore } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { updateMaterial } from '../cad/mesh';
@@ -11,6 +11,24 @@ import { T, useT } from '../i18n';
 import { LazyInput } from './common';
 import { useDocVersion, useEditor } from './useStore';
 import { activateTab, closeTab, tabKey, useTabs, type CanvasTab } from './tabsStore';
+
+// Escala log dos eixos por aba (compartilhada entre a barra superior e o gráfico).
+let logState: Record<string, [boolean, boolean]> = {};
+const logListeners = new Set<() => void>();
+export function setChartLog(tab: string, x: boolean, y: boolean) {
+  logState = { ...logState, [tab]: [x, y] };
+  logListeners.forEach((f) => f());
+}
+export function useChartLog(tab: string): [boolean, boolean] {
+  return useSyncExternalStore(
+    (f) => {
+      logListeners.add(f);
+      return () => logListeners.delete(f);
+    },
+    () => logState[tab] ?? NO_LOG,
+  );
+}
+const NO_LOG: [boolean, boolean] = [false, false];
 
 export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s: TreeSel) => void }) {
   const t = useT();
@@ -71,7 +89,11 @@ function XYChart(p: {
   logY: boolean;
   markers?: boolean;
   onPoint?: (i: number) => void;
+  /** Arrastar um ponto: coordenadas de dados (final = soltou). */
+  onDrag?: (i: number, x: number, y: number, final: boolean) => void;
 }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const drag = useRef<{ i: number; moved: boolean; x0: number; y0: number } | null>(null);
   const W = 800, H = 460, L = 70, R = 20, T = 20, B = 50;
   const ok = (v: number, log: boolean) => Number.isFinite(v) && (!log || v > 0);
   const idx = p.x.map((_, i) => i).filter((i) => ok(p.x[i], p.logX) && ok(p.y[i], p.logY));
@@ -97,13 +119,45 @@ function XYChart(p: {
     for (let v = Math.ceil(a / st) * st; v <= b + 1e-12; v += st) out.push(v);
     return out;
   };
+  /** Ponto do mouse → coordenadas de dados (inverte a escala, inclusive log). */
+  const toData = (e: { clientX: number; clientY: number }): [number, number] | null => {
+    const svg = svgRef.current;
+    const m = svg?.getScreenCTM();
+    if (!svg || !m) return null;
+    const q = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    const vx = x0 + ((q.x - L) / (W - L - R)) * (x1 - x0);
+    const vy = y0 + (1 - (q.y - T) / (H - T - B)) * (y1 - y0);
+    return [p.logX ? Math.pow(10, vx) : vx, p.logY ? Math.pow(10, vy) : vy];
+  };
   const fmt = (v: number, log: boolean) => {
     const r = log ? Math.pow(10, v) : v;
     const a = Math.abs(r);
     return a !== 0 && (a >= 1e4 || a < 1e-2) ? r.toExponential(0) : Number(r.toPrecision(3)).toString();
   };
   return (
-    <svg className="xychart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={p.yLabel}>
+    <svg
+      ref={svgRef}
+      className="xychart"
+      viewBox={`0 0 ${W} ${H}`}
+      role="img"
+      aria-label={p.yLabel}
+      onPointerMove={(e) => {
+        const d = drag.current;
+        if (!d || !p.onDrag || !svgRef.current) return;
+        if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 3) d.moved = true;
+        if (!d.moved) return;
+        const pt = toData(e);
+        if (pt) p.onDrag(d.i, pt[0], pt[1], false);
+      }}
+      onPointerUp={(e) => {
+        const d = drag.current;
+        drag.current = null;
+        if (!d) return;
+        if (!d.moved) return p.onPoint?.(d.i);
+        const pt = toData(e);
+        if (pt && p.onDrag) p.onDrag(d.i, pt[0], pt[1], true);
+      }}
+    >
       {ticks(x0, x1, p.logX).map((v) => (
         <g key={`x${v}`}>
           <line x1={X(v)} y1={T} x2={X(v)} y2={H - B} className="grid" />
@@ -124,7 +178,20 @@ function XYChart(p: {
       <polyline points={idx.map((i) => `${X(tx(p.x[i])).toFixed(1)},${Y(ty(p.y[i])).toFixed(1)}`).join(' ')} className="curve" />
       {p.markers &&
         idx.map((i) => (
-          <circle key={i} cx={X(tx(p.x[i]))} cy={Y(ty(p.y[i]))} r={5} className="pt" role="button" aria-label={`${i + 1}`} onClick={() => p.onPoint?.(i)}>
+          <circle
+            key={i}
+            cx={X(tx(p.x[i]))}
+            cy={Y(ty(p.y[i]))}
+            r={6}
+            className="pt"
+            role="button"
+            aria-label={`${i + 1}`}
+            onPointerDown={(e) => {
+              (e.target as Element).setPointerCapture?.(e.pointerId);
+              drag.current = { i, moved: false, x0: e.clientX, y0: e.clientY };
+            }}
+            onClick={p.onDrag ? undefined : () => p.onPoint?.(i)}
+          >
             <title>
               ({p.x[i]}, {p.y[i]})
             </title>
@@ -140,7 +207,7 @@ function XYChart(p: {
   );
 }
 
-function LogToggles({ logX, logY, set }: { logX: boolean; logY: boolean; set: (x: boolean, y: boolean) => void }) {
+export function LogToggles({ logX, logY, set }: { logX: boolean; logY: boolean; set: (x: boolean, y: boolean) => void }) {
   const t = useT();
   return (
     <div className="chart-tools">
@@ -158,9 +225,8 @@ function LogToggles({ logX, logY, set }: { logX: boolean; logY: boolean; set: (x
 export function ChartPane({ ed, tab }: { ed: SketchEditor; tab: string }) {
   useDocVersion(ed.doc);
   useEditor(ed);
-  const [logs, setLogs] = useState<Record<string, [boolean, boolean]>>({});
-  const [lx, ly] = logs[tab] ?? [false, false];
-  const setLog = (x: boolean, y: boolean) => setLogs((l) => ({ ...l, [tab]: [x, y] }));
+  const [lx, ly] = useChartLog(tab);
+  const setLog = (x: boolean, y: boolean) => setChartLog(tab, x, y);
   if (tab.startsWith('chart:')) return <LinePane ed={ed} id={tab.slice(6)} lx={lx} ly={ly} setLog={setLog} />;
   if (tab.startsWith('table:'))
     return (
@@ -178,10 +244,10 @@ export function ChartPane({ ed, tab }: { ed: SketchEditor; tab: string }) {
   return m ? <BHPane ed={ed} m={m} lx={lx} ly={ly} setLog={setLog} /> : null;
 }
 
-function LinePane({ ed, id, lx, ly, setLog }: { ed: SketchEditor; id: string; lx: boolean; ly: boolean; setLog: (x: boolean, y: boolean) => void }) {
+function LinePane({ ed, id, lx, ly }: { ed: SketchEditor; id: string; lx: boolean; ly: boolean; setLog?: (x: boolean, y: boolean) => void }) {
   const t = useT();
   const node = ed.sketch.nodes.find((n): n is PostNode => n.id === id && n.kind === 'post');
-  const sol = node?.physics ? ed.solutions.get(node.physics) : undefined;
+  const sol = node?.physics ? ed.shownSol(node.physics) : undefined;
   if (!node) return null;
   const smooth = ed.sketch.nodes.some((n) => n.id === node.view && n.kind === 'view' && !!n.level);
   const prof = sol && node.curve ? lineProfile(sol, ed.sketch, node.curve, 400, smooth) : null;
@@ -201,7 +267,6 @@ function LinePane({ ed, id, lx, ly, setLog }: { ed: SketchEditor; id: string; lx
             </option>
           ))}
         </select>
-        <LogToggles logX={lx} logY={ly} set={setLog} />
         {prof && (
           <span className="chart-stat">
             {t.post.flux}: <b>{prof.flux.toPrecision(4)} Wb</b>
@@ -216,10 +281,24 @@ function LinePane({ ed, id, lx, ly, setLog }: { ed: SketchEditor; id: string; lx
 }
 
 /** Aba da curva B-H: gráfico com pontos clicáveis (modal para editar), incluir ponto, log/linear. */
-function BHPane({ ed, m, lx, ly, setLog }: { ed: SketchEditor; m: Material; lx: boolean; ly: boolean; setLog: (x: boolean, y: boolean) => void }) {
+function BHPane({ ed, m, lx, ly }: { ed: SketchEditor; m: Material; lx: boolean; ly: boolean; setLog?: (x: boolean, y: boolean) => void }) {
   const t = useT();
   const [edit, setEdit] = useState<number | null>(null);
-  const bh = m.bh ?? [];
+  const [live, setLive] = useState<[number, number][] | null>(null);
+  const bh = live ?? m.bh ?? [];
+  // Arrastar: o ponto fica entre os vizinhos (curva crescente); ao soltar, grava.
+  const onDrag = (i: number, h: number, b: number, final: boolean) => {
+    const base = m.bh ?? [];
+    const lo = base[i - 1] ?? [0, 0], hi = base[i + 1];
+    const eps = 1e-6;
+    const nh = Math.max(lo[0] + Math.max(1e-3, lo[0] * eps), hi ? Math.min(h, hi[0] - Math.max(1e-3, hi[0] * eps)) : h);
+    const nb = Math.max(lo[1], hi ? Math.min(b, hi[1]) : b);
+    const next = base.map((p, j) => (j === i ? ([+nh.toPrecision(5), +nb.toPrecision(4)] as [number, number]) : p));
+    if (final) {
+      setLive(null);
+      save(next);
+    } else setLive(next);
+  };
   const save = (next: [number, number][]) => {
     for (let i = 1; i < next.length; i++) if (!(next[i][0] > next[i - 1][0]) || !(next[i][1] >= next[i - 1][1])) return ed.flash(t.mesh.bhMonotonic);
     ed.meshOp((s) => updateMaterial(s, m.id, { bh: next }), `m.material(${q(m.name)}, bh=[${next.map((p) => `(${p[0]}, ${p[1]})`).join(', ')}])`);
@@ -230,7 +309,6 @@ function BHPane({ ed, m, lx, ly, setLog }: { ed: SketchEditor; m: Material; lx: 
         <strong>
           {t.post.bhTab}: {m.name}
         </strong>
-        <LogToggles logX={lx} logY={ly} set={setLog} />
         <button
           className="btn secondary"
           onClick={() => {
@@ -244,7 +322,7 @@ function BHPane({ ed, m, lx, ly, setLog }: { ed: SketchEditor; m: Material; lx: 
         </button>
         <span className="chart-stat">{t.mesh.bhClickHint}</span>
       </div>
-      <XYChart x={bh.map((p) => p[0])} y={bh.map((p) => p[1])} xLabel="H (A/m)" yLabel="B (T)" logX={lx} logY={ly} markers onPoint={setEdit} />
+      <XYChart x={bh.map((p) => p[0])} y={bh.map((p) => p[1])} xLabel="H (A/m)" yLabel="B (T)" logX={lx} logY={ly} markers onPoint={setEdit} onDrag={onDrag} />
       {edit !== null && bh[edit] && (
         <div className="modal-back" onClick={() => setEdit(null)}>
           <div className="modal" role="dialog" aria-label={`${t.mesh.bhPoint} ${edit + 1}`} onClick={(e) => e.stopPropagation()}>
@@ -393,7 +471,7 @@ const eng = (v: number | null, unit: string) => {
 export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: string; big?: boolean }) {
   const t = useT();
   useEditor(ed);
-  const sol = ed.solutions.get(physics);
+  const sol = ed.shownSol(physics);
   if (!ed.sketch.circuits.length) return <p className="muted">{t.circuit.empty}</p>;
   if (!sol) return <p className="muted">{t.solve.noSolution}</p>;
   const rows = circuitResults(ed.sketch, ed.arrangement(), sol);
@@ -437,7 +515,7 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
 /** Linhas (rótulo, valor) de um item de tabela, ou uma mensagem. */
 export function tableItemRows(ed: SketchEditor, it: PostNode): { rows: [string, string][]; msg?: string } {
   const t = T();
-  const sol = it.physics ? ed.solutions.get(it.physics) : undefined;
+  const sol = it.physics ? ed.shownSol(it.physics) : undefined;
   if (!sol) return { rows: [], msg: t.solve.noSolution };
   const sk = ed.sketch;
   if (it.item === 'lineint') {

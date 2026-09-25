@@ -61,7 +61,7 @@ export function tabCSV(ed: SketchEditor, tab: string): string | null {
   if (tab.startsWith('chart:')) {
     const node = sk.nodes.find((n) => n.id === tab.slice(6));
     if (node?.kind !== 'post' || !node.physics || !node.curve) return null;
-    const sol = ed.solutions.get(node.physics);
+    const sol = ed.shownSol(node.physics);
     if (!sol) return null;
     const smooth = sk.nodes.some((n) => n.id === node.view && n.kind === 'view' && !!n.level);
     const p = lineProfile(sol, sk, node.curve, 400, smooth);
@@ -76,7 +76,7 @@ export function tabCSV(ed: SketchEditor, tab: string): string | null {
     rows.push(['H (A/m)', 'B (T)']);
     for (const [h, b] of m.bh) rows.push([h, b]);
   } else if (tab.startsWith('circuits:')) {
-    const sol = ed.solutions.get(tab.slice(9));
+    const sol = ed.shownSol(tab.slice(9));
     if (!sol) return null;
     rows.push(['circuito', 'I (A)', 'espiras', 'lambda (Wb)', 'L (H)', 'R (ohm)', 'V (V)', 'P (W)']);
     for (const r of circuitResults(sk, ed.arrangement(), sol)) rows.push([r.name, r.I, r.turns, r.lambda, r.L ?? '', r.R ?? '', r.V ?? '', r.P ?? '']);

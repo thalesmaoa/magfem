@@ -22,16 +22,39 @@ struct MagInput {
   std::vector<int> periodicSlave;       // nó escravo = sinal × nó mestre
   std::vector<int> periodicMaster;
   std::vector<int> periodicSign;        // +1 periódico, −1 antiperiódico
+
+  // Não linear: curva B-H por região (pontos (B, H) crescentes, sem o (0, 0)); bhStart tem nr+1 índices
+  // em bhB/bhH (região r usa [bhStart[r], bhStart[r+1])). Região sem pontos = linear (nu).
+  std::vector<int> bhStart;
+  std::vector<double> bhB;
+  std::vector<double> bhH;
+  int maxIter = 60;
+  double tol = 1e-8;
+
+  // Transitório (steps > 0): Euler implícito, A(0) = 0. Fonte J_r(t) = J[r]·sen(2π f t + jPhase[r]) (f = 0: constante).
+  // Correntes parasitas σ ∂A/∂t nas regiões com sigma > 0 (S/m) — bobinas (fonte imposta) devem vir com sigma 0.
+  std::vector<double> sigma;
+  std::vector<double> jPhase;
+  double freq = 0;
+  double dt = 0;
+  int steps = 0;
 };
 
 struct MagOutput {
   std::vector<double> A;   // potencial por nó (A_z ou ψ)
   std::vector<double> bx;  // B por triângulo (x ou r), T
   std::vector<double> by;  // B por triângulo (y ou z), T
-  double energy = 0;       // ∫ ½ ν |B − Br|² dΩ (por metro de profundidade no plano; volume total no axissimétrico), J
+  double energy = 0;       // ∫ w(B) dΩ, w = ∫₀^B H dB (por metro no plano; volume total no axissimétrico), J
+  int iterations = 0;      // Newton (último passo)
+  // Transitório: A de cada passo (steps × nós) e os tempos.
+  std::vector<double> At;
+  std::vector<double> times;
   std::string error;
 };
 
 MagOutput solve_magnetostatic(const MagInput& in);
+
+/** H(B) pela mesma curva cúbica monótona usada no solver (pontos (B, H) sem o (0, 0)). */
+double bh_curve_h(const std::vector<double>& B, const std::vector<double>& H, double b);
 
 }  // namespace magfem

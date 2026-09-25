@@ -12,6 +12,9 @@ export interface MagOut {
   bx: Float64Array;
   by: Float64Array;
   energy: number;
+  iterations: number;
+  At: Float64Array;
+  times: Float64Array;
 }
 export interface CoreModule {
   solveMagnetostatic(input: import('../cad/solve').MagInput): MagOut;

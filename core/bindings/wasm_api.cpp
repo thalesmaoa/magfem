@@ -53,6 +53,18 @@ val solveMagnetostatic(val in) {
   m.periodicSlave = convertJSArrayToNumberVector<int>(in["periodicSlave"]);
   m.periodicMaster = convertJSArrayToNumberVector<int>(in["periodicMaster"]);
   m.periodicSign = convertJSArrayToNumberVector<int>(in["periodicSign"]);
+  auto has = [&](const char* k) { return !in[k].isUndefined() && !in[k].isNull(); };
+  if (has("bhStart")) {
+    m.bhStart = convertJSArrayToNumberVector<int>(in["bhStart"]);
+    m.bhB = convertJSArrayToNumberVector<double>(in["bhB"]);
+    m.bhH = convertJSArrayToNumberVector<double>(in["bhH"]);
+  }
+  if (has("sigma")) m.sigma = convertJSArrayToNumberVector<double>(in["sigma"]);
+  if (has("jPhase")) m.jPhase = convertJSArrayToNumberVector<double>(in["jPhase"]);
+  if (has("freq")) m.freq = in["freq"].as<double>();
+  if (has("dt")) m.dt = in["dt"].as<double>();
+  if (has("steps")) m.steps = in["steps"].as<int>();
+  if (has("maxIter")) m.maxIter = in["maxIter"].as<int>();
   magfem::MagOutput o = magfem::solve_magnetostatic(m);
   val r = val::object();
   r.set("error", o.error);
@@ -60,6 +72,9 @@ val solveMagnetostatic(val in) {
   r.set("bx", toTyped(o.bx, "Float64Array"));
   r.set("by", toTyped(o.by, "Float64Array"));
   r.set("energy", o.energy);
+  r.set("iterations", o.iterations);
+  r.set("At", toTyped(o.At, "Float64Array"));
+  r.set("times", toTyped(o.times, "Float64Array"));
   return r;
 }
 }  // namespace
