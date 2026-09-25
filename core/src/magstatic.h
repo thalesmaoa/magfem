@@ -38,6 +38,18 @@ struct MagInput {
   double freq = 0;
   double dt = 0;
   int steps = 0;
+
+  // Circuito externo acoplado (só no transitório). Nós 1..netNodes (0 = terra). Elementos:
+  //   tipo 0 R (valor Ω), 1 L (H), 2 C (F), 3 fonte de tensão, 4 fonte de corrente, 5 bobina do FEM (coilIndex).
+  //   Fontes: amplitude·sen(2π freq t + fase) + dc. Corrente do elemento: de a para b por dentro dele.
+  // Bobina k: regiões coilRegion[coilStart[k]..coilStart[k+1]) com espiras coilTurns (com sinal), resistência coilR[k];
+  //   as regiões das bobinas devem vir com J = 0 (a corrente vem do circuito). depth: profundidade (m) no plano.
+  int netNodes = 0;
+  std::vector<int> elType, elA, elB, elCoil;
+  std::vector<double> elValue, elFreq, elPhase, elDC;
+  std::vector<int> coilStart, coilRegion;
+  std::vector<double> coilTurns, coilR;
+  double depth = 1;
 };
 
 struct MagOutput {
@@ -49,6 +61,8 @@ struct MagOutput {
   // Transitório: A de cada passo (steps × nós) e os tempos.
   std::vector<double> At;
   std::vector<double> times;
+  // Circuito: tensões de nó (steps × netNodes) e correntes de elemento (steps × elementos); λ das bobinas (steps × bobinas).
+  std::vector<double> nodeV, elI, coilLambda;
   std::string error;
 };
 

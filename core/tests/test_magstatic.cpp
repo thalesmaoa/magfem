@@ -249,5 +249,115 @@ int main() {
     }
     check(o.error.empty() && err < 0.02, "difusão (correntes parasitas) vs série analítica em t = τ/2", err, 0);
   }
+  // 8) Circuito acoplado: bobina do FEM (ida e volta no ar) em série com R e fonte senoidal.
+  //    i(t) deve ser igual ao do RL discreto (Euler implícito) com L = λ/I do estático.
+  {
+    MeshInput mi;
+    auto add = [&](double x, double y) {
+      mi.xy.push_back(x);
+      mi.xy.push_back(y);
+      return static_cast<int>(mi.xy.size() / 2 - 1);
+    };
+    auto rect = [&](double x0, double y0, double x1, double y1, int mark) {
+      const int a = add(x0, y0), b = add(x1, y0), c = add(x1, y1), d = add(x0, y1);
+      const int q[4][2] = {{a, b}, {b, c}, {c, d}, {d, a}};
+      for (auto& e : q) mi.segments.push_back(e[0]), mi.segments.push_back(e[1]), mi.segMarkers.push_back(mark);
+    };
+    rect(0, 0, 0.2, 0.1, 1);
+    rect(0.05, 0.04, 0.07, 0.06, 2);
+    rect(0.13, 0.04, 0.15, 0.06, 3);
+    mi.regions = {0.01, 0.01, 1, 2e-5, 0.06, 0.05, 2, 5e-6, 0.14, 0.05, 3, 5e-6};
+    mi.minAngle = 30;
+    mi.keepBoundary = false;
+    MeshOutput m = triangulate_pslg(mi);
+    MagInput base;
+    base.xy = m.xy;
+    base.triangles = m.triangles;
+    for (int r : m.triRegion) base.triRegion.push_back(r - 1);
+    base.nu = {1 / MU0, 1 / MU0, 1 / MU0};
+    base.J = {0, 0, 0};
+    for (size_t i = 0; i < m.xy.size() / 2; ++i) {
+      const double x = m.xy[2 * i], y = m.xy[2 * i + 1];
+      if (x < 1e-12 || x > 0.2 - 1e-12 || y < 1e-12 || y > 0.1 - 1e-12) base.dirichletNodes.push_back(static_cast<int>(i)), base.dirichletValues.push_back(0);
+    }
+    const double Nt = 100, Acoil = 0.02 * 0.02, depth = 0.5, I0 = 1;
+    // Estático: L = λ/I.
+    MagInput st = base;
+    st.J = {0, Nt * I0 / Acoil, -Nt * I0 / Acoil};
+    MagOutput so = solve_magnetostatic(st);
+    double intGo = 0, intRet = 0;
+    for (size_t t = 0; t < m.triangles.size() / 3; ++t) {
+      const int* v = &m.triangles[3 * t];
+      double x[3], y[3];
+      for (int k = 0; k < 3; ++k) x[k] = m.xy[2 * v[k]], y[k] = m.xy[2 * v[k] + 1];
+      const double ar = 0.5 * std::fabs((x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]));
+      const double Am = (so.A[v[0]] + so.A[v[1]] + so.A[v[2]]) / 3;
+      if (base.triRegion[t] == 1) intGo += Am * ar;
+      if (base.triRegion[t] == 2) intRet += Am * ar;
+    }
+    const double L = depth * (Nt / Acoil * intGo - Nt / Acoil * intRet) / I0;
+    // Transitório acoplado: V sen(ωt) → R → bobina → terra.
+    const double Vm = 10, f = 50, R = 0.5, dt = 1e-4;
+    const int steps = 300;
+    MagInput in = base;
+    in.dt = dt;
+    in.steps = steps;
+    in.depth = depth;
+    in.netNodes = 2;
+    in.elType = {3, 0, 5};
+    in.elA = {1, 1, 2};
+    in.elB = {0, 2, 0};
+    in.elValue = {Vm, R, 0};
+    in.elFreq = {f, 0, 0};
+    in.elPhase = {0, 0, 0};
+    in.elDC = {0, 0, 0};
+    in.elCoil = {-1, -1, 0};
+    in.coilStart = {0, 2};
+    in.coilRegion = {1, 2};
+    in.coilTurns = {Nt, -Nt};
+    in.coilR = {0};
+    MagOutput o = solve_magnetostatic(in);
+    // RL discreto com a mesma L e o mesmo passo.
+    double ip = 0, err = 0, imax = 0;
+    for (int k = 1; k <= steps; ++k) {
+      const double V = Vm * std::sin(2 * M_PI * f * k * dt);
+      const double i = (V + L / dt * ip) / (R + L / dt);
+      const double ifem = o.elI.size() ? o.elI[static_cast<size_t>(k - 1) * 3 + 2] : 1e9;
+      err = std::max(err, std::fabs(ifem - i));
+      imax = std::max(imax, std::fabs(i));
+      ip = i;
+    }
+    std::printf("      (L = %.4g mH, i máx. = %.4g A)\n", L * 1e3, imax);
+    check(o.error.empty() && err / imax < 1e-6, "circuito acoplado: i(t) da bobina FEM = RL discreto com L = λ/I", err / imax, 0);
+
+    // Transformador (acoplamento perfeito: as duas bobinas nas mesmas ranhuras), secundário com carga alta:
+    // V2 = (N2/N1) V1.
+    MagInput tr = base;
+    tr.dt = dt;
+    tr.steps = 100;
+    tr.depth = depth;
+    tr.netNodes = 3;  // 1: fonte, 2: primário (após R), 3: secundário
+    tr.elType = {3, 0, 5, 5, 0};
+    tr.elA = {1, 1, 2, 3, 3};
+    tr.elB = {0, 2, 0, 0, 0};
+    tr.elValue = {Vm, R, 0, 0, 1e7};
+    tr.elFreq = {f, 0, 0, 0, 0};
+    tr.elPhase = {0, 0, 0, 0, 0};
+    tr.elDC = {0, 0, 0, 0, 0};
+    tr.elCoil = {-1, -1, 0, 1, -1};
+    const double N2 = 250;
+    tr.coilStart = {0, 2, 4};
+    tr.coilRegion = {1, 2, 1, 2};
+    tr.coilTurns = {Nt, -Nt, N2, -N2};
+    tr.coilR = {0, 0};
+    MagOutput to = solve_magnetostatic(tr);
+    double errV = 0, vmax = 0;
+    for (int k = 0; k < tr.steps; ++k) {
+      const double v1 = to.nodeV[static_cast<size_t>(k) * 3 + 1], v2 = to.nodeV[static_cast<size_t>(k) * 3 + 2];
+      errV = std::max(errV, std::fabs(v2 - N2 / Nt * v1));
+      vmax = std::max(vmax, std::fabs(v2));
+    }
+    check(to.error.empty() && errV / vmax < 1e-4, "transformador: V2 = (N2/N1)·V1 com acoplamento perfeito", errV / vmax, 0);
+  }
   return fails ? 1 : 0;
 }

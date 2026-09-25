@@ -4,6 +4,7 @@
 
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
+#include <Eigen/SparseLU>
 #include <algorithm>
 #include <cmath>
 
@@ -313,7 +314,171 @@ MagOutput solve_magnetostatic(const MagInput& in) {
     return true;  // devolve a melhor estimativa (a interface avisa pelo número de iterações)
   };
 
-  if (transient) {
+  // ---------- Circuito externo acoplado (Newton sobre o sistema monolítico, SparseLU) ----------
+  const int ne = static_cast<int>(in.elType.size());
+  const int nk = in.coilStart.empty() ? 0 : static_cast<int>(in.coilStart.size()) - 1;
+  if (transient && ne > 0) {
+    const int nv = in.netNodes;
+    // Correntes de ramo como incógnitas: L, fonte de tensão, bobina.
+    std::vector<int> br(ne, -1);
+    int nb = 0;
+    for (int e = 0; e < ne; ++e)
+      if (in.elType[e] == 1 || in.elType[e] == 3 || in.elType[e] == 5) br[e] = nb++;
+    const int N = nfree + nv + nb;
+    // Área de cada região (m²) e vetores de acoplamento por bobina: s (fonte no campo, por nó) e c (λ = c·A).
+    std::vector<double> regArea(std::max(nr, 1), 0.0);
+    for (const Elem& e : el)
+      if (e.r >= 0 && e.r < nr) regArea[e.r] += e.area;
+    std::vector<std::vector<double>> sK(nk, std::vector<double>(nn, 0.0));
+    for (int k = 0; k < nk; ++k)
+      for (int q = in.coilStart[k]; q < in.coilStart[k + 1]; ++q) {
+        const int r = in.coilRegion[q];
+        if (r < 0 || r >= nr || regArea[r] <= 0) continue;
+        const double f = in.coilTurns[q] / regArea[r];
+        for (const Elem& e : el)
+          if (e.r == r)
+            for (int i = 0; i < 3; ++i) sK[k][e.v[i]] += f * e.area / 3;
+      }
+    const double cScale = in.axisymmetric ? TWO_PI : in.depth;
+    auto lambdaOf = [&](int k, const std::vector<double>& Av) {
+      double l = 0;
+      for (int i = 0; i < nn; ++i) l += sK[k][i] * Av[i];
+      return cScale * l;
+    };
+    auto src = [&](int e, double time) { return in.elValue[e] * std::sin(TWO_PI * in.elFreq[e] * time + in.elPhase[e]) + in.elDC[e]; };
+    std::vector<double> V(nv + 1, 0.0), Vprev(nv + 1, 0.0), Ib(nb, 0.0), Ibprev(nb, 0.0), lamPrev(nk, 0.0);
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> lu;
+    bool luAnalyzed = false;
+    out.At.reserve(static_cast<size_t>(in.steps) * nn);
+    for (int step = 1; step <= in.steps; ++step) {
+      const double time = step * in.dt;
+      Eigen::VectorXd a = reduce();
+      const int maxIt = nonlinear ? std::max(1, in.maxIter) : 2;
+      double r0 = -1;
+      for (int it = 0; it < maxIt; ++it) {
+        expand(a);
+        Eigen::VectorXd Rf;
+        Eigen::SparseMatrix<double> Kf;
+        assemble(time, true, Rf, &Kf);
+        // Resíduo completo e Jacobiano.
+        Eigen::VectorXd F = Eigen::VectorXd::Zero(N);
+        std::vector<Eigen::Triplet<double>> T;
+        T.reserve(Kf.nonZeros() + 64);
+        for (int c = 0; c < Kf.outerSize(); ++c)
+          for (Eigen::SparseMatrix<double>::InnerIterator itk(Kf, c); itk; ++itk) T.emplace_back(itk.row(), itk.col(), itk.value());
+        F.head(nfree) = Rf;
+        auto vrow = [&](int node) { return nfree + node - 1; };  // linha/coluna da tensão do nó (1..nv)
+        auto brcol = [&](int e) { return nfree + nv + br[e]; };
+        // Correntes dos elementos (valor atual) e contribuição à KCL.
+        auto Vn = [&](int n) { return n > 0 ? V[n] : 0.0; };
+        for (int e = 0; e < ne; ++e) {
+          const int A_ = in.elA[e], B_ = in.elB[e], ty = in.elType[e];
+          double ie = 0;  // corrente de a para b
+          // derivadas de ie em relação a V_a, V_b (para R, C) ou à corrente de ramo
+          if (ty == 0) {
+            const double g = 1 / in.elValue[e];
+            ie = g * (Vn(A_) - Vn(B_));
+            if (A_ > 0) T.emplace_back(vrow(A_), vrow(A_), g);
+            if (B_ > 0) T.emplace_back(vrow(B_), vrow(B_), g);
+            if (A_ > 0 && B_ > 0) T.emplace_back(vrow(A_), vrow(B_), -g), T.emplace_back(vrow(B_), vrow(A_), -g);
+          } else if (ty == 2) {
+            const double g = in.elValue[e] / in.dt;
+            ie = g * ((Vn(A_) - Vn(B_)) - (Vprev[std::max(A_, 0)] * (A_ > 0) - Vprev[std::max(B_, 0)] * (B_ > 0)));
+            if (A_ > 0) T.emplace_back(vrow(A_), vrow(A_), g);
+            if (B_ > 0) T.emplace_back(vrow(B_), vrow(B_), g);
+            if (A_ > 0 && B_ > 0) T.emplace_back(vrow(A_), vrow(B_), -g), T.emplace_back(vrow(B_), vrow(A_), -g);
+          } else if (ty == 4) {
+            ie = src(e, time);
+          } else {
+            ie = Ib[br[e]];
+            if (A_ > 0) T.emplace_back(vrow(A_), brcol(e), 1);
+            if (B_ > 0) T.emplace_back(vrow(B_), brcol(e), -1);
+          }
+          if (A_ > 0) F[vrow(A_)] += ie;
+          if (B_ > 0) F[vrow(B_)] -= ie;
+          // Equações de ramo.
+          if (ty == 1) {  // L: V_a − V_b − L (i − i_prev)/dt = 0
+            const int row = brcol(e);
+            const double Ldt = in.elValue[e] / in.dt;
+            F[row] = Vn(A_) - Vn(B_) - Ldt * (Ib[br[e]] - Ibprev[br[e]]);
+            if (A_ > 0) T.emplace_back(row, vrow(A_), 1);
+            if (B_ > 0) T.emplace_back(row, vrow(B_), -1);
+            T.emplace_back(row, row, -Ldt);
+          } else if (ty == 3) {  // V: V_a − V_b − V(t) = 0
+            const int row = brcol(e);
+            F[row] = Vn(A_) - Vn(B_) - src(e, time);
+            if (A_ > 0) T.emplace_back(row, vrow(A_), 1);
+            if (B_ > 0) T.emplace_back(row, vrow(B_), -1);
+          } else if (ty == 5) {  // bobina: V_a − V_b − R i − (λ − λ_prev)/dt = 0; campo recebe −s·i
+            const int k = in.elCoil[e], row = brcol(e);
+            const double ik = Ib[br[e]];
+            F[row] = Vn(A_) - Vn(B_) - in.coilR[k] * ik - (lambdaOf(k, A) - lamPrev[k]) / in.dt;
+            if (A_ > 0) T.emplace_back(row, vrow(A_), 1);
+            if (B_ > 0) T.emplace_back(row, vrow(B_), -1);
+            T.emplace_back(row, row, -in.coilR[k]);
+            for (int i = 0; i < nn; ++i) {
+              if (sK[k][i] == 0 || dof[i].free < 0) continue;
+              const int fi = dof[i].free;
+              const double sgn = dof[i].sign;
+              F[fi] -= sgn * sK[k][i] * ik;  // fonte J = N i / A no campo
+              T.emplace_back(fi, row, -sgn * sK[k][i]);
+              T.emplace_back(row, fi, -cScale * sK[k][i] * sgn / in.dt);
+            }
+          }
+        }
+        const double rn = F.norm();
+        if (r0 < 0) r0 = std::max(rn, 1e-30);
+        if (it > 0 && rn <= in.tol * r0) break;
+        Eigen::SparseMatrix<double> Jm(N, N);
+        Jm.setFromTriplets(T.begin(), T.end());
+        if (!luAnalyzed) {
+          lu.analyzePattern(Jm);
+          luAnalyzed = true;
+        }
+        lu.factorize(Jm);
+        if (lu.info() != Eigen::Success) {
+          out.error = "circuito ou campo singular (falta terra, nó solto ou contorno A prescrito)";
+          return out;
+        }
+        Eigen::VectorXd d = lu.solve(-F);
+        if (!d.allFinite()) {
+          out.error = "falha ao resolver o sistema acoplado";
+          return out;
+        }
+        a += d.head(nfree);
+        for (int n = 1; n <= nv; ++n) V[n] += d[nfree + n - 1];
+        for (int b = 0; b < nb; ++b) Ib[b] += d[nfree + nv + b];
+        out.iterations = it + 1;
+        if (d.norm() <= 1e-12 * std::max(1.0, a.norm())) {
+          expand(a);
+          break;
+        }
+      }
+      expand(a);
+      // Guarda o passo.
+      out.At.insert(out.At.end(), A.begin(), A.end());
+      out.times.push_back(time);
+      for (int n = 1; n <= nv; ++n) out.nodeV.push_back(V[n]);
+      for (int e = 0; e < ne; ++e) {
+        const int A_ = in.elA[e], B_ = in.elB[e], ty = in.elType[e];
+        const double va = A_ > 0 ? V[A_] : 0, vb = B_ > 0 ? V[B_] : 0;
+        double ie;
+        if (ty == 0) ie = (va - vb) / in.elValue[e];
+        else if (ty == 2) ie = in.elValue[e] / in.dt * ((va - vb) - ((A_ > 0 ? Vprev[A_] : 0) - (B_ > 0 ? Vprev[B_] : 0)));
+        else if (ty == 4) ie = src(e, time);
+        else ie = Ib[br[e]];
+        out.elI.push_back(ie);
+      }
+      for (int k = 0; k < nk; ++k) {
+        lamPrev[k] = lambdaOf(k, A);
+        out.coilLambda.push_back(lamPrev[k]);
+      }
+      Aprev = A;
+      Vprev = V;
+      Ibprev = Ib;
+    }
+    out.A = A;
+  } else if (transient) {
     out.At.reserve(static_cast<size_t>(in.steps) * nn);
     for (int k = 1; k <= in.steps; ++k) {
       const double time = k * in.dt;
