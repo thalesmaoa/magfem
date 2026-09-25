@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { q } from '../cad/code';
 import { entityLabel, type SketchEditor } from '../cad/editor';
 import { evaluate, evaluateVariables, formatLength, formatQ } from '../cad/expr';
-import { addNode, addSchematic, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
+import { addNode, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
 import { MeshProps, MeshTree } from './MeshPanel';
 import { InterpSection, PlotProps, TableItemProps, ResultsProps, ResultsTree, SolveButton, SolveSection } from './PostPanel';
-import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type TreeNode } from '../cad/types';
+import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type RegionAssign, type TreeNode } from '../cad/types';
 import { deleteVariable, nextVarName, renameVariable, setVariable } from '../cad/vars';
 import { groupOf } from '../cad/ops';
 import { formatValue } from '../cad/measure';
@@ -15,6 +15,10 @@ import { Icons } from './icons';
 import { GeometryProps } from './GeometryProps';
 import { useDocVersion, useEditor } from './useStore';
 import { ScriptExportButton } from './ScriptExport';
+import { assignRegion, pointCode, regionKey, updateCircuit } from '../cad/mesh';
+import { findRegion } from '../cad/regions';
+import { SchematicSidebar } from './SchematicPane';
+import { activateTab, openTab, useTabs } from './tabsStore';
 
 const ICON: Record<string, JSX.Element> = { pre: Icons.treePre, geometry: Icons.treeGeom, physics: Icons.treePhysics, mesh: Icons.treeMesh, post: Icons.treePost, schematic: Icons.circuit };
 /** Ícone de cada tipo de restrição na árvore (reaproveita os da barra). */
@@ -44,40 +48,6 @@ const CONSTRAINT_ICON: Record<ConstraintType, keyof typeof Icons> = {
 const isAux = (e: Entity) => (e.type === 'point' || e.type === 'line') && !!e.aux;
 const ENT_ICON: Record<Entity['type'], JSX.Element> = { point: Icons.point, line: Icons.line, circle: Icons.circle, arc: Icons.arc3 };
 
-/** (+) de Modelo: inclui peças de nível do modelo (por enquanto, o circuito externo). */
-function ModelAddMenu({ ed, onAdded }: { ed: SketchEditor; onAdded: (id: string) => void }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    window.addEventListener('mousedown', close);
-    return () => window.removeEventListener('mousedown', close);
-  }, [open]);
-  return (
-    <div className="add-menu" ref={ref}>
-      <button className="icon-btn tadd" title={t.sch.add} aria-label={t.sch.add} aria-expanded={open} onClick={() => setOpen(!open)}>
-        +
-      </button>
-      {open && (
-        <div className="menu" role="menu">
-          <button
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              const r = addSchematic(ed.sketch);
-              if (ed.commit(r.sketch, [r.code])) onAdded(r.node.id);
-            }}
-          >
-            <span className="ticon">{Icons.circuit}</span> {t.sch.name}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** (+) de uma seção da árvore: inclui os tipos de nó daquela seção. */
 function AddMenu({ ed, kinds, label, onAdded }: { ed: SketchEditor; kinds: AddKind[]; label: string; onAdded: (id: string) => void }) {
   const t = useT();
@@ -93,12 +63,12 @@ function AddMenu({ ed, kinds, label, onAdded }: { ed: SketchEditor; kinds: AddKi
   const numbered = (base: string, k: TreeNode['kind']) => (count(k) ? `${base} ${count(k) + 1}` : base);
   const add = (kind: AddKind) => {
     setOpen(false);
-    const name = kind === 'physics-magnetic' ? numbered(t.tree.magnetic, 'physics') : kind === 'mesh' ? numbered(t.tree.addMesh, 'mesh') : numbered(t.tree.addPost, 'post');
+    const name = kind === 'physics-circuit' ? numbered(t.tree.magneticCircuit, 'physics') : kind === 'physics-magnetic' ? numbered(t.tree.magnetic, 'physics') : kind === 'mesh' ? numbered(t.tree.addMesh, 'mesh') : numbered(t.tree.addPost, 'post');
     const r = addNode(ed.sketch, kind, name);
     if (ed.commit(r.sketch, [r.code])) onAdded(r.node.id);
   };
-  const itemIcon = (k: AddKind) => (k === 'physics-magnetic' ? ICON.physics : k === 'mesh' ? ICON.mesh : ICON.post);
-  const itemLabel = (k: AddKind) => (k === 'physics-magnetic' ? t.tree.magnetic : k === 'mesh' ? t.tree.addMesh : t.tree.addPost);
+  const itemIcon = (k: AddKind) => (k === 'physics-circuit' ? Icons.source : k === 'physics-magnetic' ? ICON.physics : k === 'mesh' ? ICON.mesh : ICON.post);
+  const itemLabel = (k: AddKind) => (k === 'physics-circuit' ? t.tree.magneticCircuit : k === 'physics-magnetic' ? t.tree.magnetic : k === 'mesh' ? t.tree.addMesh : t.tree.addPost);
   return (
     <div className="add-menu" ref={ref} onClick={(e) => e.stopPropagation()}>
       <button
@@ -192,47 +162,86 @@ function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsN
         <h3>
           {t.tree.physicsProps}: {node.name}
         </h3>
-        <label className="field">
-          <span>{t.problem.analysis}</span>
-          <select value={node.analysis} onChange={(e) => set({ analysis: e.target.value as AnalysisType }, `s.physics(${q(node.id)}, analysis=${q(e.target.value)})`)}>
-            <option value="magnetostatic">{t.problem.magnetostatic}</option>
-            <option value="harmonic">{t.problem.harmonic}</option>
-            <option value="transient">{t.problem.transient}</option>
-            <option value="circuit">{t.problem.circuit}</option>
-          </select>
-        </label>
+        {node.coupled ? (
+          <p className="muted">{t.solve.coupledPhysics}</p>
+        ) : (
+          <label className="field">
+            <span>{t.problem.analysis}</span>
+            <select value={node.analysis} onChange={(e) => set({ analysis: e.target.value as AnalysisType }, `s.physics(${q(node.id)}, analysis=${q(e.target.value)})`)}>
+              <option value="magnetostatic">{t.problem.magnetostatic}</option>
+              <option value="harmonic">{t.problem.harmonic}</option>
+              <option value="transient">{t.problem.transient}</option>
+            </select>
+          </label>
+        )}
         {node.analysis === 'harmonic' && field(t.problem.frequency, 'frequency', 'frequency')}
-        {(node.analysis === 'transient' || node.analysis === 'circuit') && (
+        {node.analysis === 'transient' && (
           <>
             {field(t.problem.dt, 'dt', 'dt')}
             {field(t.problem.tEnd, 'tEnd', 't_end')}
-            {node.analysis === 'circuit' && (
-              <label className="field">
-                <span>{t.solve.schematic}</span>
-                <select
-                  aria-label={t.solve.schematic}
-                  value={node.schematic ?? sk.nodes.find((n) => n.kind === 'schematic')?.id ?? ''}
-                  onChange={(e) => set({ schematic: e.target.value } as Partial<PhysicsNode>, `s.physics(${q(node.id)}, schematic=${q(e.target.value)})`)}
-                >
-                  {sk.nodes
-                    .filter((n) => n.kind === 'schematic')
-                    .map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
+            {node.coupled && node.schematic && (
+              <button className="btn secondary" onClick={() => openTab({ kind: 'sch', id: node.schematic! })}>
+                {Icons.source} {t.solve.openCircuit}
+              </button>
             )}
-            <p className="help-line">{t.solve.timeHelp}</p>
           </>
         )}
       </section>
+      {node.analysis !== 'harmonic' && <TimeSources ed={ed} node={node} />}
       <SolveSection ed={ed} node={node} onSelect={onSelect} />
     </div>
   );
 }
 
+
+/**
+ * Correntes da física: cada circuito do FEM e cada região com corrente própria, com a expressão editável
+ * (pode usar t e as variáveis do projeto). No acoplado, as bobinas do esquemático recebem a corrente do circuito.
+ */
+function TimeSources({ ed, node }: { ed: SketchEditor; node: PhysicsNode }) {
+  const t = useT();
+  const sk = ed.sketch;
+  const arr = ed.arrangement();
+  const sch = node.coupled ? sk.nodes.find((n) => n.id === node.schematic && n.kind === 'schematic') : undefined;
+  const inCircuit = new Set(sch?.kind === 'schematic' ? sch.parts.filter((p) => p.kind === 'coil').map((p) => p.circuit) : []);
+  const regions = sk.regionAssigns
+    .map((a) => ({ a, r: findRegion(arr, a) }))
+    .filter((x): x is { a: RegionAssign; r: NonNullable<ReturnType<typeof findRegion>> } => !!x.r && !x.a.circuit && !!x.a.current?.trim());
+  if (!sk.circuits.length && !regions.length) return null;
+  return (
+    <section>
+      <h3>{node.analysis === 'transient' ? t.solve.sourcesTime : t.solve.sources}</h3>
+      {sk.circuits.map((c) =>
+        inCircuit.has(c.id) ? (
+          <label className="field" key={c.id}>
+            <span>{c.name}</span>
+            <span className="cval muted">{t.solve.fromCircuit}</span>
+          </label>
+        ) : (
+          <label className="field" key={c.id}>
+            <span>{c.name} (A)</span>
+            <LazyInput
+              value={c.current}
+              ariaLabel={`${c.name} (A)`}
+              onCommit={(v) => v.trim() && ed.meshOp((s2) => updateCircuit(s2, c.id, { current: v.trim() }), `m.circuit(${q(c.name)}, current=${q(v.trim())})`)}
+            />
+          </label>
+        ),
+      )}
+      {regions.map(({ a, r }) => (
+        <label className="field" key={a.id}>
+          <span>{a.name ?? t.mesh.region(r.index + 1)} (A)</span>
+          <LazyInput
+            value={a.current ?? ''}
+            ariaLabel={`${a.name ?? t.mesh.region(r.index + 1)} (A)`}
+            onCommit={(v) => ed.meshOp((s2) => assignRegion(s2, ed.arrangement(), regionKey(r), { current: v.trim() || undefined }), `m.region(${pointCode(r.label)}, current=${q(v.trim())})`)}
+          />
+        </label>
+      ))}
+      <p className="help-line">{node.analysis === 'transient' ? t.solve.timeHelp : t.solve.staticHelp}</p>
+    </section>
+  );
+}
 
 /** (+) da Geometria: incluir variável ou grupo (da seleção). */
 function GeometryAddMenu({ ed, onVar }: { ed: SketchEditor; onVar: (name: string) => void }) {
@@ -595,6 +604,7 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
       else n.add(k);
       return n;
     });
+  const tabs = useTabs();
   const nodes = ed.sketch.nodes;
   const isOn = (id: string) => sel.kind === 'node' && sel.id === id;
   const current = sel.kind === 'node' ? nodes.find((n) => n.id === sel.id) : null;
@@ -622,13 +632,37 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
     if (sel.kind === 'boundary' && sel.id !== 'outer' && !ed.sketch.boundaries.some((b) => b.id === sel.id)) onSelect({ kind: 'mesh' });
   }, [sel, current, onSelect, ed.sketch.variables, ed.sketch.boundaries]);
 
+  // Aba do painel esquerdo segue a aba do canvas: esquemático → componentes do circuito; demais → árvore.
+  const schTab = tabs.active.startsWith('sch:') ? tabs.active.slice(4) : null;
+  // Aba do circuito só existe com a física "Campo magnético + circuito".
+  const coupledIds = new Set(nodes.filter((n) => n.kind === 'physics' && n.coupled && n.schematic).map((n) => (n as PhysicsNode).schematic));
+  const schematics = nodes.filter((n) => n.kind === 'schematic' && coupledIds.has(n.id));
+  const leftTabs = schematics.length > 0 && (
+    <div className="left-tabs" role="tablist">
+      <button role="tab" aria-selected={!schTab} className={!schTab ? 'on' : ''} onClick={() => activateTab('draw')}>
+        {t.sch.tabModel}
+      </button>
+      {schematics.map((n) => (
+        <button key={n.id} role="tab" aria-selected={schTab === n.id} className={schTab === n.id ? 'on' : ''} onClick={() => openTab({ kind: 'sch', id: n.id })}>
+          {Icons.source} {schematics.length > 1 ? n.name : t.sch.tabCircuit}
+        </button>
+      ))}
+    </div>
+  );
+  if (schTab)
+    return (
+      <aside className="side left">
+        {leftTabs}
+        <SchematicSidebar ed={ed} id={schTab} />
+      </aside>
+    );
   return (
     <aside className="side left">
+      {leftTabs}
       <section className="tree">
         <h3 className="tree-title">
           {t.tree.title}
           <span className="tree-actions">
-            <ModelAddMenu ed={ed} onAdded={(id) => onSelect({ kind: 'node', id })} />
             <ScriptExportButton ed={ed} name={name} />
           </span>
         </h3>
@@ -659,22 +693,10 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
             />
             {geoOpen && <GeometryTree ed={ed} sel={sel} onSelect={onSelect} />}
           </li>
-          {nodes.some((n) => n.kind === 'schematic') && (
-            <li>
-              <Row icon={Icons.circuit} label={t.sch.section} selected={false} onClick={() => undefined} />
-              <ul role="group">
-                {nodes
-                  .filter((n) => n.kind === 'schematic')
-                  .map((n) => (
-                    <NodeRow key={n.id} ed={ed} node={n} active={isOn(n.id)} onSelect={() => onSelect({ kind: 'node', id: n.id })} onTreeSelect={onSelect} />
-                  ))}
-              </ul>
-            </li>
-          )}
           {(
             [
               { key: 'mesh', icon: ICON.mesh, label: t.tree.addMesh, kinds: ['mesh'], add: t.tree.addToMesh, match: (n: TreeNode) => n.kind === 'mesh' },
-              { key: 'solver', icon: Icons.solver, label: t.tree.solver, kinds: ['physics-magnetic'], add: t.tree.addToSolver, match: (n: TreeNode) => n.kind === 'physics' },
+              { key: 'solver', icon: Icons.solver, label: t.tree.solver, kinds: ['physics-magnetic', 'physics-circuit'], add: t.tree.addToSolver, match: (n: TreeNode) => n.kind === 'physics' },
               { key: 'results', icon: ICON.post, label: t.tree.results, kinds: ['post'], add: t.tree.addToResults, match: (n: TreeNode) => n.kind === 'post' },
             ] as const
           ).map((sec) => (

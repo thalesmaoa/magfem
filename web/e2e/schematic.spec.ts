@@ -20,14 +20,15 @@ test('circuito externo: fonte + R + bobina do FEM acoplados no transitório (KVL
   ])
     await run(c);
 
-  // + em Modelo → Circuito: aba do esquemático com o bloco da bobina já colocado.
-  await page.getByRole('button', { name: 'Incluir no modelo' }).click();
-  await page.getByRole('menuitem', { name: /Circuito/ }).click();
-  await expect(page.getByRole('tab', { name: /Circuito 1/ })).toHaveAttribute('aria-selected', 'true');
+  // Método de resolução → + → Campo magnético + circuito: cria a física acoplada e o circuito (aba "Circuito").
+  await page.getByRole('button', { name: 'Incluir no método de resolução' }).click();
+  await page.getByRole('menuitem', { name: /Campo magnético \+ circuito/ }).click();
+  await page.getByRole('button', { name: 'Abrir o circuito' }).click();
+  await expect(page.getByRole('tab', { name: /Circuito/ }).last()).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.sch-canvas').getByRole('button', { name: 'Bobina', exact: true })).toBeVisible();
 
-  // Paleta na barra superior: fonte de tensão, resistor e terra.
-  for (const k of ['Fonte de tensão', 'Resistor', 'Terra']) await page.getByRole('button', { name: k, exact: true }).click();
+  // Componentes na paleta da esquerda (onde fica a árvore).
+  for (const k of ['Fonte de tensão', 'Resistor', 'Terra']) await page.locator('.sch-palette').getByRole('button', { name: k, exact: true }).click();
   const pin = (n: string) => page.locator(`.sch-canvas circle[aria-label="${n}"]`);
   const wire = async (a: string, b: string) => {
     await pin(a).click();
@@ -36,17 +37,24 @@ test('circuito externo: fonte + R + bobina do FEM acoplados no transitório (KVL
   await wire('V1:1', 'R1:0');
   await wire('R1:1', 'Bobina:0');
   await wire('Bobina:1', 'GND1:0');
-  await wire('V1:0', 'GND1:0');
+  // Um fio arrastado de terminal a terminal.
+  const a = await pin('V1:0').boundingBox();
+  const b = await pin('GND1:0').boundingBox();
+  await page.mouse.move(a!.x + a!.width / 2, a!.y + a!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b!.x + b!.width / 2, b!.y + b!.height / 2, { steps: 8 });
+  await page.mouse.up();
   let sch = (await sketch(page)).nodes.find((n: any) => n.kind === 'schematic');
   expect(sch.wires).toHaveLength(4);
   // Valores: R = 0,5 Ω (fonte já vem com 10 V, 50 Hz).
   await page.locator('.sch-canvas').getByRole('button', { name: 'R1', exact: true }).click();
-  await page.locator('.sch-side').getByLabel('Resistência (Ω)').fill('0.5');
-  await page.locator('.sch-side').getByLabel('Resistência (Ω)').press('Enter');
+  await page.locator('.sch-sidebar').getByLabel('Resistência (Ω)').fill('0.5');
+  await page.locator('.sch-sidebar').getByLabel('Resistência (Ω)').press('Enter');
 
-  await run('s.physics("n2", analysis="circuit", dt="0.0001", t_end="0.02")');
+  const phys = (await sketch(page)).nodes.find((n: any) => n.kind === 'physics' && n.coupled).id;
+  await run(`s.physics("${phys}", dt="0.0001", t_end="0.02")`);
   await run('m.settings("n1", size="4 mm")');
-  await run('s.solve()');
+  await run(`s.solve("${phys}")`);
   await expect.poll(() => page.evaluate(() => !!([...(window as any).__magfem.solutions.values()][0]?.circuit)), { timeout: 30000 }).toBe(true);
   const r = await page.evaluate(async () => {
     const ed = (window as any).__magfem;
@@ -68,10 +76,13 @@ test('circuito externo: fonte + R + bobina do FEM acoplados no transitório (KVL
   expect(r.imax).toBeGreaterThan(0.1);
   expect(r.kvl).toBeLessThan(1e-9);
   expect(r.ohm).toBeLessThan(1e-9);
-  // Sinais do componente selecionado aparecem no painel.
-  await page.getByRole('tab', { name: /Circuito 1/ }).click();
-  await page.locator('.sch-canvas').getByRole('button', { name: 'Bobina', exact: true }).click();
-  await expect(page.locator('.sch-signals svg.xychart')).toHaveCount(2);
+  // Valores no esquemático e gráfico por variável.
+  await page.getByRole('tab', { name: /Circuito/ }).last().click();
+  await expect(page.locator('.sch-live').first()).toContainText('i =');
+  await page.locator('.sig-opt', { hasText: 'i(Bobina)' }).locator('input').check();
+  await page.locator('.sig-opt', { hasText: 'v(R1)' }).locator('input').check();
+  await expect(page.locator('.sch-signals-charts svg.xychart')).toHaveCount(2);
+  await expect(page.locator('.sch-value', { hasText: '0.5 Ω' })).toBeVisible();
   sch = (await sketch(page)).nodes.find((n: any) => n.kind === 'schematic');
   expect(sch.parts.map((p: any) => p.kind).sort()).toEqual(['R', 'V', 'coil', 'gnd']);
 });

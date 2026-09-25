@@ -518,3 +518,29 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 @keyframes indet { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 .progress { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 6px 0; }
 .progress > div { height: 100%; background: var(--accent); transition: width 0.15s; }
+.left-tabs { display: flex; gap: 2px; padding: 6px 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.left-tabs button { display: inline-flex; align-items: center; gap: 4px; border: 1px solid transparent; border-bottom: none; background: none; color: var(--muted); font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 6px 6px 0 0; cursor: pointer; }
+.left-tabs button svg { width: 14px; height: 14px; }
+.left-tabs button.on { color: var(--accent); border-color: var(--border); background: var(--bg); margin-bottom: -1px; }
+.sch-sidebar-wrap { overflow-y: auto; padding: 8px 10px; flex: 1; min-height: 0; }
+.sch-palette h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 8px 0 4px; }
+.sch-comp { display: flex; align-items: center; gap: 8px; width: 100%; border: 1px solid transparent; background: none; color: var(--text); font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; cursor: pointer; text-align: left; }
+.sch-comp:hover { background: var(--accent-soft); border-color: var(--border); }
+.sch-ico { width: 44px; height: 24px; flex: none; }
+.sch-sidebar { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 8px; }
+.sch-pane { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+.sch-signals-bottom { border-top: 1px solid var(--border); padding: 6px 12px; background: var(--panel); font-size: 12px; }
+.sch-signals-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sch-signals-charts .xychart { max-height: 190px; }
+.tab-hint { font-size: 12px; }
+.sch-canvas { cursor: grab; }
+.sch-canvas.wiring, .sch-canvas.wiring .sch-part { cursor: crosshair; }
+.sch-wire-hit { fill: none; stroke: transparent; stroke-width: 12; cursor: pointer; }
+.sch-value { font-size: 11px; fill: var(--muted); pointer-events: none; font-family: ui-monospace, monospace; }
+.sch-live { font-size: 11px; fill: var(--accent); pointer-events: none; font-variant-numeric: tabular-nums; }
+.sch-comp.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.sch-mode { position: absolute; left: 10px; top: 10px; background: var(--accent); color: #fff; font-size: 12px; padding: 3px 8px; border-radius: 4px; }
+.sig-pick { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin-bottom: 4px; }
+.sig-opt { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; }
+.xychart.multi .cursor { stroke: var(--muted); stroke-dasharray: 3 3; }
+.sch-pane { position: relative; }

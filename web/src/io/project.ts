@@ -67,6 +67,15 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
   // Tipos de gráfico anteriores (grandeza embutida no tipo) → tipo + grandeza.
   const OLD: Record<string, [PlotKind, PlotQuantity]> = { bmap: ['surface', 'b'], hmap: ['surface', 'h'], amap: ['surface', 'a'], flux: ['contour', 'a'], vectors: ['arrow', 'b'] };
   sk.nodes = sk.nodes.map((n) => (n.kind === 'post' && n.plot && OLD[n.plot as string] ? { ...n, plot: OLD[n.plot as string][0], quantity: OLD[n.plot as string][1] } : n));
+  // Análise 'circuit' (versão anterior) → física 'Campo magnético + circuito' (transitória acoplada).
+  sk.nodes = sk.nodes.map((n) => {
+    const raw = n as unknown as { kind: string; analysis?: string };
+    if (raw.kind === 'physics' && raw.analysis === 'circuit') {
+      const sch = (n as { schematic?: string }).schematic ?? sk.nodes.find((x) => x.kind === 'schematic')?.id;
+      return { ...(n as object), analysis: 'transient', coupled: true, schematic: sch } as typeof n;
+    }
+    return n;
+  });
   // Filtros de interpolação (versão anterior) viram vistas interpoladas; a fonte por camada some.
   sk.nodes = sk.nodes.map((n) => {
     const raw = n as unknown as { kind: string; id: string; name: string; physics: string; level?: number; source?: string };

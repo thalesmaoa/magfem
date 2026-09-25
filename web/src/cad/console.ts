@@ -857,7 +857,7 @@ export class CommandConsole {
       case 'add_physics':
       case 'add_mesh':
       case 'add_post': {
-        const kind = fn === 'add_physics' ? 'physics-magnetic' : fn === 'add_mesh' ? 'mesh' : 'post';
+        const kind = fn === 'add_physics' ? (kw.circuit === true ? 'physics-circuit' : 'physics-magnetic') : fn === 'add_mesh' ? 'mesh' : 'post';
         const name = kw.name ? String(kw.name) : fn === 'add_physics' ? T().tree.magnetic : fn === 'add_mesh' ? T().tree.addMesh : T().tree.addPost;
         const r = addNode(sk, kind, name);
         return this.commitWithId(r.sketch, r.node.id, kw.id);

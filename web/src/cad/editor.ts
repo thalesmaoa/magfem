@@ -356,7 +356,7 @@ export class SketchEditor {
     let netInfo: { schematic: Id; partOf: Id[]; nodeOf: Map<string, number>; netNodes: number } | null = null;
     // Transitório: correntes = funções de t (avaliadas a cada passo), passo dt até t_final (A(0) = 0).
     // Transitória com circuito: além disso, o esquemático escolhido é acoplado ao campo.
-    if (node.analysis === 'transient' || node.analysis === 'circuit') {
+    if (node.analysis === 'transient') {
       const arr = this.arrangement();
       let steps = 0, dt = 0;
       try {
@@ -373,7 +373,7 @@ export class SketchEditor {
         return fail((e as Error).message);
       }
       let coupled = new Set<Id>();
-      if (node.analysis === 'circuit') {
+      if (node.coupled) {
         const schem = this.sketch.nodes.find((n): n is SchematicNode => n.kind === 'schematic' && (n.id === node.schematic || !node.schematic));
         if (!schem || !schem.parts.length) return fail(t.solve.noSchematic);
         const { net, problems: np } = buildNetlist(this.sketch, schem, arr);

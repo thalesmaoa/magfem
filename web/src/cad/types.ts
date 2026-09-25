@@ -128,7 +128,7 @@ export type PatternSpec =
   | { kind: 'circular'; src: Id[]; n: number; angle: number; center: Id };
 
 export type ProblemType = 'planar' | 'axisymmetric';
-export type AnalysisType = 'magnetostatic' | 'harmonic' | 'transient' | 'circuit';
+export type AnalysisType = 'magnetostatic' | 'harmonic' | 'transient';
 
 /** Configurações globais do problema (valem para todas as físicas). */
 export interface Settings {
@@ -151,7 +151,8 @@ export interface PhysicsNode {
   physics: 'magnetic';
   name: string;
   analysis: AnalysisType;
-  /** Transitória com circuito: o esquemático acoplado. */
+  /** Campo magnético + circuito: acoplado ao esquemático `schematic` (sempre transitório). */
+  coupled?: boolean;
   schematic?: Id;
   /** Frequência (harmônico), expressão em Hz. */
   frequency: string;
@@ -255,6 +256,8 @@ export interface SchPart {
   x: number;
   y: number;
   rot: 0 | 90 | 180 | 270;
+  /** Espelhado (troca os terminais de lado). */
+  flip?: boolean;
   /** R (Ω), L (H), C (F): valor (expressão). */
   value?: string;
   /** Fontes: amplitude (V ou A), frequência (Hz), fase (graus) e nível CC. */

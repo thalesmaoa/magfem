@@ -45,7 +45,7 @@ export function CanvasTabBar({ ed, onSelect }: { ed: SketchEditor; onSelect: (s:
     }
     if (tab.kind === 'chart') return `${t.post.chart}: ${sk.nodes.find((n) => n.id === tab.plot)?.name ?? '?'}`;
     if (tab.kind === 'table') return sk.nodes.find((n) => n.id === tab.id)?.name ?? '?';
-    if (tab.kind === 'sch') return sk.nodes.find((n) => n.id === tab.id)?.name ?? '?';
+    if (tab.kind === 'sch') return t.sch.tabCircuit;
     if (tab.kind === 'circuits') return `${t.circuit.title}: ${sk.nodes.find((n) => n.id === tab.physics)?.name ?? '?'}`;
     return `${t.post.bhTab}: ${sk.materials.find((m) => m.id === tab.material)?.name ?? '?'}`;
   };

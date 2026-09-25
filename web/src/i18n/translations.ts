@@ -37,6 +37,7 @@ export interface Translations {
     add: string;
     addPhysics: string;
     magnetic: string;
+    magneticCircuit: string;
     addMesh: string;
     addPost: string;
     moreSoon: string;
@@ -375,6 +376,12 @@ export interface Translations {
     onlyStatic: string;
     badTime: string;
     noSchematic: string;
+    coupledPhysics: string;
+    openCircuit: string;
+    sources: string;
+    sourcesTime: string;
+    fromCircuit: string;
+    staticHelp: string;
     timeHelp: string;
     schematic: string;
     frame: (k: number, n: number, t: string) => string;
@@ -530,6 +537,13 @@ export interface Translations {
     addCoil: (name: string) => string;
     selectHint: string;
     signals: string;
+    components: string;
+    wire: string;
+    wireMode: string;
+    flip: string;
+    coils: string;
+    tabModel: string;
+    tabCircuit: string;
     current: string;
     voltage: string;
     coupledNote: string;
@@ -605,6 +619,7 @@ const PT: Translations = {
     add: 'Adicionar à árvore',
     addPhysics: 'Física',
     magnetic: 'Campo magnético',
+    magneticCircuit: 'Campo magnético + circuito',
     addMesh: 'Malha',
     addPost: 'Resultado',
     moreSoon: 'Outras físicas (térmica, elétrica, mecânica) virão depois.',
@@ -992,8 +1007,14 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     noDirichlet: 'Falta um contorno com A prescrito (sem ele o potencial fica indefinido).',
     onlyStatic: 'Harmônica ainda não resolve; use magnetostática ou transitória.',
     badTime: 'Transitório: passo e tempo final precisam ser positivos (t final > passo).',
-    noSchematic: 'Transitória com circuito: crie um circuito (+ ao lado de Modelo) e ligue as bobinas.',
-    timeHelp: 'As correntes dos circuitos/regiões são expressões que podem usar o tempo t (s) e as variáveis do projeto. Ex.: I0*sin(2*pi*60*t). No estático, t = 0.',
+    noSchematic: 'O circuito desta física está vazio: abra o circuito e ligue as bobinas às fontes.',
+    coupledPhysics: 'Transitória acoplada ao circuito: as bobinas ligadas no circuito recebem a corrente dele a cada passo.',
+    openCircuit: 'Abrir o circuito',
+    sources: 'Correntes',
+    sourcesTime: 'Correntes no tempo',
+    fromCircuit: 'vem do circuito',
+    staticHelp: 'Correntes dos circuitos e regiões (expressões com as variáveis do projeto; t = 0 no estático).',
+    timeHelp: 'Escreva cada corrente como função do tempo t (s), com as variáveis do projeto. Ex.: I0*sin(2*pi*60*t). O transitório atualiza t a cada passo.',
     schematic: 'Circuito',
     frame: (k, n, t) => `passo ${k}/${n} · t = ${t}`,
     play: 'Animar',
@@ -1157,6 +1178,13 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     addCoil: (n) => `Bobina: ${n}`,
     selectHint: 'Clique num componente para editar; depois de resolver (transitório), mostra i(t) e v(t).',
     signals: 'Sinais',
+    components: 'Componentes',
+    wire: 'Fio (W)',
+    wireMode: 'Modo fio: clique num terminal e depois em outro (Esc sai).',
+    flip: 'Espelhar (M)',
+    coils: 'Bobinas do FEM',
+    tabModel: 'Modelo',
+    tabCircuit: 'Circuito',
     current: 'Corrente (A)',
     voltage: 'Tensão (V)',
     coupledNote: 'No transitório, as bobinas do esquemático recebem a corrente do circuito (acoplamento campo–circuito).',
@@ -1238,6 +1266,7 @@ const EN: Translations = {
     add: 'Add to tree',
     addPhysics: 'Physics',
     magnetic: 'Magnetic field',
+    magneticCircuit: 'Magnetic field + circuit',
     addMesh: 'Mesh',
     addPost: 'Result',
     moreSoon: 'Other physics (thermal, electric, mechanical) will come later.',
@@ -1625,8 +1654,14 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     noDirichlet: 'A boundary with prescribed A is missing (without it the potential is undefined).',
     onlyStatic: 'Harmonic does not solve yet; use magnetostatic or transient.',
     badTime: 'Transient: step and end time must be positive (end > step).',
-    noSchematic: 'Transient with circuit: create a circuit (+ next to Model) and connect the coils.',
-    timeHelp: 'Circuit/region currents are expressions that may use time t (s) and project variables. E.g. I0*sin(2*pi*60*t). In statics, t = 0.',
+    noSchematic: 'This physics circuit is empty: open the circuit and connect the coils to sources.',
+    coupledPhysics: 'Transient coupled to the circuit: coils in the circuit take its current at every step.',
+    openCircuit: 'Open the circuit',
+    sources: 'Currents',
+    sourcesTime: 'Currents in time',
+    fromCircuit: 'from the circuit',
+    staticHelp: 'Circuit and region currents (expressions with project variables; t = 0 in statics).',
+    timeHelp: 'Write each current as a function of time t (s), with project variables. E.g. I0*sin(2*pi*60*t). The transient updates t at every step.',
     schematic: 'Circuit',
     frame: (k, n, t) => `step ${k}/${n} · t = ${t}`,
     play: 'Animate',
@@ -1790,6 +1825,13 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     addCoil: (n) => `Coil: ${n}`,
     selectHint: 'Click a component to edit; after solving (transient) it shows i(t) and v(t).',
     signals: 'Signals',
+    components: 'Components',
+    wire: 'Wire (W)',
+    wireMode: 'Wire mode: click a terminal and then another (Esc exits).',
+    flip: 'Mirror (M)',
+    coils: 'FEM coils',
+    tabModel: 'Model',
+    tabCircuit: 'Circuit',
     current: 'Current (A)',
     voltage: 'Voltage (V)',
     coupledNote: 'In transient analysis, schematic coils take the circuit current (field–circuit coupling).',

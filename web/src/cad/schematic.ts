@@ -27,7 +27,8 @@ export function sourceSteps(sk: Sketch, sch: SchematicNode, partOf: Id[], dt: nu
 
 /** Terminais do componente (coordenadas do esquemático). Terra tem um terminal. */
 export function pinsOf(p: SchPart): { x: number; y: number }[] {
-  const local = p.kind === 'gnd' ? [{ x: 0, y: -20 }] : [{ x: -40, y: 0 }, { x: 40, y: 0 }];
+  const f = p.flip ? -1 : 1;
+  const local = p.kind === 'gnd' ? [{ x: 0, y: -20 }] : [{ x: -40 * f, y: 0 }, { x: 40 * f, y: 0 }];
   const a = (p.rot * Math.PI) / 180;
   const c = Math.round(Math.cos(a)), s = Math.round(Math.sin(a));
   return local.map((q) => ({ x: p.x + q.x * c - q.y * s, y: p.y + q.x * s + q.y * c }));

@@ -5,7 +5,7 @@ import { download } from '../io/export';
 import { useT } from '../i18n';
 import { LogToggles, setChartLog, useChartLog } from './CanvasTabs';
 import { Icons } from './icons';
-import { addPart } from './SchematicPane';
+import { deleteSelected, flipSelected, rotateSelected, schResult, setSchUi, useSchUi } from './SchematicPane';
 import { useEditor } from './useStore';
 
 export function TabToolbar({ ed, tab, name }: { ed: SketchEditor; tab: string; name: string }) {
@@ -91,28 +91,34 @@ function ViewToolbar({ ed, name }: { ed: SketchEditor; name: string }) {
   );
 }
 
-/** Paleta do esquemático: fontes, R, L, C, terra e as bobinas do FEM ainda não colocadas. */
+/** Barra do esquemático: girar, espelhar, apagar, ajustar vista e (com resultado) o passo de tempo. */
 function SchToolbar({ ed, id }: { ed: SketchEditor; id: string }) {
   const t = useT();
   useEditor(ed);
-  const sch = ed.sketch.nodes.find((n) => n.id === id && n.kind === 'schematic');
-  const placed = new Set(sch?.kind === 'schematic' ? sch.parts.filter((p) => p.kind === 'coil').map((p) => p.circuit) : []);
-  const kinds = ['V', 'I', 'R', 'L', 'C', 'gnd'] as const;
+  const ui = useSchUi();
+  const r = schResult(ed, id);
+  const n = r?.times.length ?? 0;
   return (
     <div className="toolbar tab-toolbar">
-      {kinds.map((k) => (
-        <button key={k} className="btn secondary" title={t.sch.parts[k]} onClick={() => addPart(ed, id, k)}>
-          {t.sch.parts[k]}
-        </button>
-      ))}
-      <span className="sep" />
-      {ed.sketch.circuits
-        .filter((c) => !placed.has(c.id))
-        .map((c) => (
-          <button key={c.id} className="btn secondary" onClick={() => addPart(ed, id, 'coil', c.id)}>
-            {t.sch.addCoil(c.name)}
-          </button>
-        ))}
+      <button className="icon-btn" title={t.sch.rotate} aria-label={t.sch.rotate} onClick={() => rotateSelected(ed)}>
+        {Icons.rotate}
+      </button>
+      <button className="icon-btn" title={t.sch.flip} aria-label={t.sch.flip} onClick={() => flipSelected(ed)}>
+        {Icons.mirror}
+      </button>
+      <button className="icon-btn" title={t.sch.del} aria-label={t.sch.del} onClick={() => deleteSelected(ed)}>
+        {Icons.trash}
+      </button>
+      <button className="icon-btn" title={t.tools.fit} aria-label={t.tools.fit} onClick={() => setSchUi({ zoom: 1, px: 0, py: 0 })}>
+        {Icons.fit}
+      </button>
+      {n > 0 && (
+        <>
+          <span className="sep" />
+          <input type="range" className="time-slider" aria-label="t" min={0} max={n - 1} value={Math.min(ui.frame, n - 1)} onChange={(e) => setSchUi({ frame: Number(e.target.value) })} />
+          <span className="time-label">{t.solve.frame(Math.min(ui.frame, n - 1) + 1, n, `${(r!.times[Math.min(ui.frame, n - 1)] * 1e3).toPrecision(4)} ms`)}</span>
+        </>
+      )}
     </div>
   );
 }

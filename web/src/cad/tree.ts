@@ -3,7 +3,7 @@ import { T } from '../i18n';
 import { q } from './code';
 import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type SchPart, type Sketch, type TableItem, type TreeNode } from './types';
 
-export type AddKind = 'physics-magnetic' | 'mesh' | 'post';
+export type AddKind = 'physics-magnetic' | 'physics-circuit' | 'mesh' | 'post';
 
 /** Seleção na árvore (estado da interface, não do documento). */
 export type TreeSel =
@@ -27,6 +27,16 @@ export function addNode(sk: Sketch, kind: AddKind, name: string): { sketch: Sket
   const id = `n${sk.nextId}`;
   let node: TreeNode;
   let code: string;
+  if (kind === 'physics-circuit') {
+    // Campo magnético + circuito: física transitória acoplada a um esquemático novo (com as bobinas do FEM).
+    const sc = addSchematic({ ...sk, nextId: sk.nextId + 1 }, T().sch.name);
+    const phys: TreeNode = { ...newPhysics(id, name), analysis: 'transient', coupled: true, schematic: sc.node.id };
+    return {
+      sketch: { ...sc.sketch, nodes: [...sk.nodes, phys, sc.node] },
+      node: phys,
+      code: `${id} = s.add_physics(name=${q(name)}, circuit=True)`,
+    };
+  }
   if (kind === 'physics-magnetic') {
     node = newPhysics(id, name);
     code = `${id} = s.add_physics(name=${q(name)})`;
@@ -114,6 +124,8 @@ export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch
 export function removeNode(sk: Sketch, id: Id): Sketch {
   // Remover uma vista leva junto as camadas dela; remover uma física leva vistas e camadas.
   const gone = new Set([id]);
+  const ph = sk.nodes.find((n) => n.id === id);
+  if (ph?.kind === 'physics' && ph.coupled && ph.schematic) gone.add(ph.schematic);
   for (const n of sk.nodes) if (((n.kind === 'view' || n.kind === 'table') && n.physics === id) || (n.kind === 'post' && (n.view === id || n.physics === id))) gone.add(n.id);
   for (const n of sk.nodes) if (n.kind === 'post' && n.view && gone.has(n.view)) gone.add(n.id);
   return { ...sk, nodes: sk.nodes.filter((n) => !gone.has(n.id)) };

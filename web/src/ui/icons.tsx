@@ -138,6 +138,20 @@ export const Icons = {
       <rect x="11" y="11" width="6" height="6" rx="1" />
     </S>
   ),
+  rotate: (
+    <S>
+      <path d="M15.5 9A5.5 5.5 0 1 1 13 4.4" />
+      <path d="M13.5 1.5l0 3.2l-3.2 0" />
+    </S>
+  ),
+  source: (
+    // Fonte senoidal (círculo com ~).
+    <S>
+      <circle cx="10" cy="10" r="6.5" />
+      <path d="M6.5 10q1.75 -3.5 3.5 0t3.5 0" />
+      <path d="M10 1v2.5M10 16.5V19" />
+    </S>
+  ),
   circuit: (
     // Bobina (espiras) ligada a uma fonte.
     <S>

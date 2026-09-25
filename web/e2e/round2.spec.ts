@@ -224,7 +224,7 @@ test('árvore: física com análise, várias físicas, remover e desfazer', asyn
   // Segunda física pelo (+) do Método de resolução (multifísica futura) e um resultado pelo (+) de Resultados.
   await page.getByRole('button', { name: 'Incluir no método de resolução' }).click();
   await expect(page.getByRole('menuitem', { name: /Resultado/ })).toHaveCount(0);
-  await page.getByRole('menuitem', { name: /Campo magnético/ }).click();
+  await page.getByRole('menuitem', { name: 'Campo magnético', exact: true }).click();
   await page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético', exact: true }).last().getByRole('button', { name: 'Nova vista (aba) com…' }).click();
   await page.getByRole('menuitem', { name: /Mapa de campo/ }).click();
   sk = await sketch(page);
