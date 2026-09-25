@@ -1,57 +1,78 @@
-# magfem-web
+<p align="center"><img src="doc/logo/magfem.svg" width="96" alt="MagFEM"></p>
 
-Elementos finitos magnéticos 2D (plano e axissimétrico), magnetostático e transitório, **rodando
-inteiramente no browser**: CAD paramétrico estilo Onshape, malha, solver e pós-processamento.
-Local-first, no estilo draw.io/Excalidraw: sem backend, os projetos ficam na máquina do usuário.
+# MagFEM
 
-Publicação prevista em `thalesmaia.com/tools/magfem-web/`.
+**Elementos finitos magnéticos 2D no navegador** — plano e axissimétrico — com CAD paramétrico
+(estilo Onshape), malha, solver e pós-processamento no estilo do ParaView. Tudo roda localmente no
+browser (WebAssembly): sem instalação, sem servidor, sem login. Os projetos ficam na sua máquina,
+como no draw.io.
+
+*2D magnetic finite elements in the browser (planar and axisymmetric), with a parametric sketcher,
+meshing, solver and ParaView-like post-processing — all local, no install.*
+
+## O que já faz
+
+- **CAD paramétrico:** linhas, arcos, círculos, retângulos; restrições (coincidente, H/V, paralelo,
+  tangente, simetria…), cotas com unidades e expressões ligadas a variáveis; offset, espelho e
+  padrões linear/circular associativos; importação futura de DXF/SVG, exportação SVG/DXF/PNG.
+- **Malha:** regiões detectadas automaticamente, materiais (biblioteca agrupada, curvas B-H),
+  circuitos, contornos (A prescrito, Neumann, periódico, antiperiódico), tamanho por região;
+  gerador Triangle compilado para WebAssembly.
+- **Solver magnetostático** (Eigen/WASM num Web Worker): correntes, ímãs permanentes, circuitos em
+  série; validado contra soluções analíticas.
+- **Resultados em abas:** mapas de campo (|B|, |H|, A, J), contornos (linhas de fluxo), vetores,
+  gráficos sobre linha, interpolação de alta ordem, tabelas (circuitos: λ, L, R, perdas; integrais
+  sobre linha e superfície); exportação PNG/SVG/CSV.
+- **API/console estilo Python:** cada ação vira um comando (`g.line(...)`, `m.region(...)`,
+  `s.solve()`); o botão "exportar código" gera um script que recria o modelo exatamente — base para
+  automação e otimização (ponte local WebSocket planejada).
+- Interface em **português e inglês**, tema claro/escuro, "Cite este trabalho".
+
+Veja [`doc/`](doc/) para o guia de uso, a referência da API e a formulação/validação numérica, e
+[`PLAN.md`](PLAN.md) para o roteiro (transitório, não linear, acoplamento com circuitos e EDOs).
+
+## Rodar localmente
+
+Pré-requisitos: Docker (e `cmake`/`g++` para os testes nativos do núcleo).
+
+```bash
+git clone git@github.com:thalesmaoa/magfem.git && cd magfem
+./compose-up                  # compila o núcleo WASM e sobe http://localhost:3002/tools/magfem-web/
+./scripts/build-core native   # núcleo C++ nativo + testes contra soluções analíticas
+./scripts/npm test            # testes unitários (vitest)
+./scripts/e2e                 # testes de ponta a ponta (Playwright, headless)
+```
+
+`./scripts/npm run build` gera o site estático em `web/dist` (~1,4 MB). Qualquer servidor de
+arquivos estáticos serve; o CI publica o `dist` na branch `dist`.
 
 ## Estrutura
 
 ```
-core/      núcleo numérico C++17 + Eigen -> WebAssembly (Emscripten) e nativo (testes)
-web/       interface Vite + React + TypeScript; o solver roda num Web Worker
-bridge/    (futuro) ponte local WebSocket/REST para scripts de otimização
-clients/   (futuro) wrappers Python / Matlab / Julia
-examples/  (futuro) modelos de referência
+core/      núcleo numérico C++17 + Eigen + Triangle → WebAssembly (Emscripten) e nativo (testes)
+web/       interface Vite + React + TypeScript; malha e solver rodam num Web Worker
+doc/       documentação (uso, API, formulação, validação) e logo
+bridge/    (planejado) ponte local WebSocket/REST para scripts de otimização
+clients/   (planejado) clientes Python / Matlab / Julia
 ```
 
-## Desenvolvimento
+## Contribuir
 
-Pré-requisitos: Docker. (Para os testes nativos: `cmake` e `g++`.)
-
-```bash
-./compose-up                  # compila o núcleo WASM e sobe http://localhost:3002/tools/magfem-web/
-./scripts/build-core native   # compila o núcleo nativo e roda os testes
-./scripts/build-core wasm     # só recompila o WASM (web/src/wasm/core.{js,wasm})
-./scripts/npm test            # testes unitários do front (vitest); ./scripts/npm roda npm no container
-./scripts/e2e                 # testes E2E (Playwright headless) contra o servidor de dev
-```
-
-## Interface
-
-- **Esquerda — árvore do modelo:** Pré-processador › Geometria e Físicas; Malha e Pós-processador são incluídos
-  pelo `+`. Embaixo, as propriedades do item selecionado (na Geometria: seleção, mover/girar, restrições).
-- **Direita — gaveta oculta** (aba vertical): Problema (unidade, planar/axissimétrico, profundidade), Variáveis, Grupos.
-- **Embaixo — console:** cada ação aparece como o comando equivalente da API Python (`s.line(...)`, `s.angle(...)`).
-- Idioma PT/EN e "Cite este trabalho" no topo.
-
-| Atalho | Ação | Atalho | Ação |
-|---|---|---|---|
-| `L` | linha (polilinha) | `I` | coincidente / ponto sobre |
-| `R` / `Shift+R` | retângulo por vértices / pelo centro | `H` / `V` | horizontal / vertical |
-| `C` | círculo | `E` | igual |
-| `A` / `Shift+A` | arco por 3 pontos / pelo centro | `T` | tangente |
-| `P` | ponto | `M` | ponto médio |
-| `D` | cota (1 ou 2 entidades; ou selecione antes) | `Q` | construção |
-| `Ctrl+G` / `Ctrl+Shift+G` | agrupar / desagrupar | `F` | ajustar vista |
-| `Esc` | cancelar / selecionar | `Del` | apagar |
-| `Ctrl+Z` / `Ctrl+Shift+Z` | desfazer / refazer | `Ctrl+S` / `Ctrl+O` | salvar / abrir |
-
-Roda do mouse = zoom no cursor; botão do meio, direito ou espaço+arrastar = mover a vista.
-Cotas aceitam número (`12,5`), unidade (`2 cm`, `15 deg`) ou expressão com variáveis (`Ds/2 - g`).
-Arrastar um ponto sobre outro une os dois. A cota de ângulo mede o setor onde o texto é posicionado.
+Issues e pull requests são bem-vindos. Rode `./scripts/npm test`, `./scripts/e2e` e
+`./scripts/build-core native` antes de enviar. O código segue o estilo do entorno (comentários em
+português, TypeScript estrito).
 
 ## Licença
 
-Propriedade de Thales Maia. Todos os direitos reservados. Dependências: Eigen (MPL2), PlaneGCS/FreeCAD via `@salusoft89/planegcs` (LGPL), Triangle 1.6 de J. R. Shewchuk (gerador de malha; uso e distribuição livres desde que sem cobrança e com o aviso de copyright — uso comercial exige acordo com o autor; o código-fonte vem do netlib no build).
+Código do MagFEM: **MIT** (veja [`LICENSE`](LICENSE)) — use, modifique e redistribua à vontade.
+
+Componentes de terceiros baixados no build: **Eigen** (MPL-2.0), **PlaneGCS/FreeCAD** via
+`@salusoft89/planegcs` (LGPL-2.1) e **Triangle 1.6** de J. R. Shewchuk, que é livre para uso
+privado, acadêmico e institucional e para redistribuição **gratuita** (com o aviso de copyright),
+mas **uso comercial exige acordo com o autor**. Se isso for um problema para você, o gerador de malha
+fica isolado em `core/src/mesh2d.cpp` e pode ser trocado.
+
+## Citar
+
+Maia, T. (2026). *MagFEM: A Web-Based Magnetic Finite Element Analysis Tool*. (Use o botão
+"Citar" no app para BibTeX.)
