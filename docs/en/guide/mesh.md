@@ -35,9 +35,11 @@ Under **Mesh › Materials**, each region has a searchable material list. The li
 
 ## Circuits and currents
 
-Under **Mesh › Circuits**, `+` creates a circuit with a **current** (in A; it accepts variables and, in transient
-analysis, functions of `t` such as `2*sin(2*pi*60*t)`). In the region properties, connect it to a circuit with a
-number of **turns**; negative turns reverse the direction (the go and return sides of a coil).
+Under **Mesh › Circuits**, `+` creates a circuit. In the region properties, connect it to a circuit with a number
+of **turns**; negative turns reverse the direction (the go and return sides of a coil).
+
+The **current** is a source of the analysis, so it lives under **Solver › (physics) › Currents**: in A, it accepts
+variables and, in transient analysis, functions of `t` such as `2*sin(2*pi*60*t)`.
 
 - Every region of a circuit carries the same current (a **series** circuit). The "parallel" type of FEMM files is
   kept, but splitting the current among parallel regions is not implemented yet.

@@ -8,7 +8,7 @@ each one opens as a **tab** in the canvas (the **Drawing** tab stays there).
 | Item | What it shows |
 |---|---|
 | Field map | colored surface (|B|, |H|, A, J), A contour (the **flux lines**) and glyphs (vector arrows) |
-| Interpolated map | the same with high-order interpolation and subdivision: smooth contours |
+| Interpolated map | an empty view with high-order interpolation and subdivision (smooth contours): add layers with the view's `+` |
 | Plot over line | a quantity along a curve of the drawing (B, Bn, Bt, H, A…) |
 
 A view has **layers** (surface, contour, glyphs) that can be hidden, duplicated and dragged in the tree to another

@@ -35,9 +35,11 @@ direita (**Problema e bibliotecas › Materiais**):
 
 ## Circuitos e correntes
 
-Em **Malha › Circuitos**, `+` cria um circuito com uma **corrente** (em A; aceita variáveis e, no transitório,
-funções de `t`, como `2*sin(2*pi*60*t)`). Nas propriedades da região, ligue-a a um circuito com um número de
+Em **Malha › Circuitos**, `+` cria um circuito. Nas propriedades da região, ligue-a a um circuito com um número de
 **espiras**; espiras negativas invertem o sentido (ida e volta de uma bobina).
+
+A **corrente** é uma fonte da análise, então fica em **Método de resolução › (física) › Correntes**: em A, aceita
+variáveis e, no transitório, funções de `t`, como `2*sin(2*pi*60*t)`.
 
 - Todas as regiões de um circuito levam a mesma corrente (circuito **série**). O tipo "paralelo" dos arquivos do
   FEMM é guardado, mas a divisão da corrente entre regiões em paralelo ainda não foi implementada.

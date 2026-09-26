@@ -48,7 +48,7 @@ Under **Mesh › Materials**, each closed region shows up as "Region N".
 
 1. Choose **Air** for the domain, **1010 steel** for the core and **Copper** for the coil. The list has a search box
    and includes the FEMM library.
-2. Under **Mesh › Circuits**, click `+` and create the circuit **Coil** with current `I` (the variable is 2 A).
+2. Under **Mesh › Circuits**, click `+` and create the circuit **Coil**.
 3. Select the coil region and, in its properties, connect it to the **Coil** circuit with **500 turns**.
 4. The outer border already belongs to the **Dirichlet (A = 0)** boundary. In axisymmetric problems the axis also
    has A = 0.
@@ -59,13 +59,14 @@ Under **Mesh › Materials**, each closed region shows up as "Region N".
 
 ## 4. Solve
 
-Under **Solver**, click the ▶ of **Magnetic field** (magnetostatic analysis). Since the steel has a B-H curve, the
+Under **Solver › Magnetic field**, in the **Currents** section, give the **Coil** circuit the current `I` (the
+variable is 2 A). Then click the ▶ of **Magnetic field** (magnetostatic analysis). Since the steel has a B-H curve, the
 problem is nonlinear and solved with Newton-Raphson; it takes less than a second.
 
 ## 5. Results
 
 1. From the `+` of **Results › Magnetic field**, create a **Field map**. The view opens in a tab with the |B|
-   surface and the A contour (the flux lines).
+   surface; with the view's `+`, add an A **Contour** (the flux lines).
 2. Create a **Table** and add the **Circuits** item: it shows current, turns, flux linkage λ, inductance L = λ/I,
    DC resistance and losses.
 

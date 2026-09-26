@@ -8,7 +8,7 @@ tabelas; cada um abre como uma **aba** no canvas (a aba **Desenho** continua lá
 | Item | O que mostra |
 |---|---|
 | Mapa de campo | superfície colorida (|B|, |H|, A, J), contorno de A (as **linhas de fluxo**) e glifos (setas dos vetores) |
-| Mapa interpolado | o mesmo com interpolação de alta ordem e subdivisão: contornos suaves |
+| Mapa interpolado | vista vazia com interpolação de alta ordem e subdivisão (contornos suaves): inclua as camadas pelo `+` da vista |
 | Gráfico sobre linha | uma grandeza ao longo de uma curva do desenho (B, Bn, Bt, H, A…) |
 
 Uma vista tem **camadas** (superfície, contorno, setas), que podem ser ocultadas, duplicadas e arrastadas na

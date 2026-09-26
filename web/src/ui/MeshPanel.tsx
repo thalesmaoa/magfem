@@ -233,7 +233,7 @@ export function MeshTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: TreeSel
                     onSelect({ kind: 'circuit', id: c.id });
                   }}
                   onRename={(n) => n.trim() && ed.meshOp((s2) => updateCircuit(s2, c.id, { name: n.trim() }), `m.circuit(${q(c.name)}, name=${q(n.trim())})`)}
-                  extra={<span className="crefs">{c.current} A · {t.circuit.regions(sk.regionAssigns.filter((a) => a.circuit === c.id).length)}</span>}
+                  extra={<span className="crefs">{t.circuit.regions(sk.regionAssigns.filter((a) => a.circuit === c.id).length)}</span>}
                 />
               </li>
             ))}
@@ -679,10 +679,8 @@ function CircuitProps({ ed, id, onRemoved }: { ed: SketchEditor; id: Id; onRemov
         <span>{t.mesh.name}</span>
         <LazyInput value={c.name} ariaLabel={t.mesh.name} onCommit={(v) => v.trim() && v.trim() !== c.name && set({ name: v.trim() }, `name=${q(v.trim())}`)} />
       </label>
-      <label className="field">
-        <span>{t.circuit.current}</span>
-        <LazyInput value={c.current} ariaLabel={t.circuit.current} onCommit={(v) => v.trim() && set({ current: v.trim() }, `current=${q(v.trim())}`)} />
-      </label>
+      {/* A corrente é uma fonte da análise: fica em Método de resolução › física › Correntes (não aqui). */}
+      <p className="help-line">{t.circuit.currentInSolver(c.current)}</p>
       <label className="field">
         <span>{t.circuit.kind}</span>
         <select aria-label={t.circuit.kind} value={c.kind} onChange={(e) => set({ kind: e.target.value as 'series' | 'parallel' }, `kind=${q(e.target.value)}`)}>

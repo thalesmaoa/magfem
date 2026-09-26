@@ -347,11 +347,9 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                         label: t.table.newInterp,
                         note: t.table.newInterpNote,
                         onClick: () => {
-                          // Vista interpolada (pai): já vem com superfície B e contorno A.
+                          // Vista interpolada vazia: o usuário escolhe as camadas pelo + da vista.
                           const v = addView(ed.sketch, ph.id, undefined, 3);
-                          const a = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
-                          const b = addPlot(a.sketch, v.node.id, 'contour', plotName('contour', 'a'), 'a');
-                          if (ed.commit(b.sketch, [v.code, a.code, b.code])) {
+                          if (ed.commit(v.sketch, [v.code])) {
                             openRow(ph.id);
                             onSelect({ kind: 'node', id: v.node.id });
                           }

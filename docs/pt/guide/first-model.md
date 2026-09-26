@@ -47,7 +47,7 @@ Em **Malha › Materiais**, cada região fechada aparece como "Região N".
 
 1. Escolha **Ar** para o domínio, **Aço 1010** para o núcleo e **Cobre** para a bobina. A lista tem busca e
    inclui a biblioteca do FEMM.
-2. Em **Malha › Circuitos**, clique em `+` e crie o circuito **Bobina** com corrente `I` (a variável vale 2 A).
+2. Em **Malha › Circuitos**, clique em `+` e crie o circuito **Bobina**.
 3. Selecione a região da bobina e, nas propriedades, ligue-a ao circuito **Bobina** com **500 espiras**.
 4. A borda externa já entra no contorno **Dirichlet (A = 0)**. No axissimétrico, o eixo também tem A = 0.
 5. Em **Malha › Regiões**, dê 0,8 mm ao núcleo e à bobina. Em **Elementos**, use 2,5 mm como tamanho padrão e
@@ -57,13 +57,14 @@ Em **Malha › Materiais**, cada região fechada aparece como "Região N".
 
 ## 4. Resolver
 
-Em **Método de resolução**, clique no ▶ de **Campo magnético** (análise magnetostática). Como o aço tem curva
+Em **Método de resolução › Campo magnético**, na seção **Correntes**, dê ao circuito **Bobina** a corrente `I` (a
+variável vale 2 A). Depois clique no ▶ de **Campo magnético** (análise magnetostática). Como o aço tem curva
 B-H, o problema é não linear e resolvido por Newton-Raphson; leva menos de um segundo.
 
 ## 5. Resultados
 
 1. No `+` de **Resultados › Campo magnético**, crie um **Mapa de campo**. A vista abre numa aba com a superfície
-   |B| e o contorno de A (as linhas de fluxo).
+   |B|; pelo `+` da vista, inclua um **Contorno** de A (as linhas de fluxo).
 2. Crie uma **Tabela** e adicione o item **Circuitos**: ela mostra corrente, espiras, fluxo concatenado λ,
    indutância L = λ/I, resistência CC e perdas.
 

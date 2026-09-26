@@ -558,6 +558,7 @@ export interface Translations {
     title: string;
     add: string;
     current: string;
+    currentInSolver: (i: string) => string;
     kind: string;
     series: string;
     parallel: string;
@@ -1298,6 +1299,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     title: 'Circuitos',
     add: 'Novo circuito',
     current: 'Corrente (A) — expressão, pode usar t',
+    currentInSolver: (i) => `Corrente: ${i} A. Ela é definida em Método de resolução › (física) › Correntes, junto com a análise.`,
     kind: 'Ligação',
     series: 'Série',
     parallel: 'Paralelo',
@@ -1306,7 +1308,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     none: '— nenhum (corrente da região) —',
     fromCircuit: (n, i) => `do circuito ${n}: ${i} A`,
     regions: (n) => `${n} região${n === 1 ? '' : 'ões'}`,
-    help: 'Ligue regiões ao circuito em Materiais › região › Circuito. A corrente vem do circuito; cada região usa suas espiras (negativo = sentido de volta).',
+    help: 'Ligue regiões ao circuito em Materiais › região › Circuito. Todas levam a corrente do circuito; cada região usa suas espiras (negativo = sentido de volta).',
     results: 'Circuitos',
     table: 'Tabela de circuitos',
     tableMenu: 'Circuitos (tabela)',
@@ -1330,7 +1332,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     newView: 'Mapa de campo',
     newViewNote: 'superfície, contorno, glifos no plano',
     newInterp: 'Mapa interpolado',
-    newInterpNote: 'o mesmo, com os dados suavizados',
+    newInterpNote: 'vista vazia com os dados suavizados: inclua as camadas pelo +',
     newLine: 'Gráfico sobre linha',
     newLineNote: 'grandeza ao longo de uma curva',
     lineViewName: 'Gráfico',
@@ -2053,6 +2055,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     title: 'Circuits',
     add: 'New circuit',
     current: 'Current (A) — expression, may use t',
+    currentInSolver: (i) => `Current: ${i} A. It is set under Solver › (physics) › Currents, together with the analysis.`,
     kind: 'Connection',
     series: 'Series',
     parallel: 'Parallel',
@@ -2085,7 +2088,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     newView: 'Field map',
     newViewNote: 'surface, contour, glyphs on the plane',
     newInterp: 'Interpolated map',
-    newInterpNote: 'the same, with smoothed data',
+    newInterpNote: 'empty view with smoothed data: add layers with its +',
     newLine: 'Plot over line',
     newLineNote: 'a quantity along a curve',
     lineViewName: 'Plot',

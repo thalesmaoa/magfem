@@ -19,7 +19,7 @@ test('vista interpolada (pai), legenda com limites e duplicar gráfico', async (
   await defaultView(page);
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.mode)).toBe('post');
 
-  // Nova vista interpolada pelo + da física: vira uma aba própria com superfície e contorno.
+  // Nova vista interpolada pelo + da física: vira uma aba própria, vazia (as camadas são escolhidas depois).
   const grp = page.locator('.tree').getByRole('treeitem', { name: 'Campo magnético' }).last();
   await grp.getByRole('button', { name: 'Nova vista (aba) com…' }).click();
   await page.getByRole('menuitem', { name: /Mapa interpolado/ }).click();
@@ -28,7 +28,11 @@ test('vista interpolada (pai), legenda com limites e duplicar gráfico', async (
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.postLevel)).toBe(3);
   const nodes = (await sketch(page)).nodes;
   const iv = nodes.find((n: any) => n.kind === 'view' && n.level === 3);
-  expect(nodes.filter((n: any) => n.kind === 'post' && n.view === iv.id).length).toBe(2);
+  expect(nodes.filter((n: any) => n.kind === 'post' && n.view === iv.id).length).toBe(0);
+  await run(`r.plot("${iv.id}", "surface", quantity="b")`);
+  await run(`r.plot("${iv.id}", "contour")`);
+  expect((await sketch(page)).nodes.filter((n: any) => n.kind === 'post' && n.view === iv.id).length).toBe(2);
+  await page.getByRole('tab', { name: /Interpolação 1/ }).click();
   // A vista crua continua sem interpolação.
   await page.getByRole('tab', { name: /Vista 1/ }).click();
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.postLevel)).toBe(0);
