@@ -1,4 +1,5 @@
 // Desenho do sketch em Canvas2D.
+import { T } from '../i18n';
 import { dimDrawing } from './dimgeom';
 import { add, arcAngles, mid, mul, norm, perp, pt, sub, type Vec } from './geometry';
 import { formatValue } from './measure';
@@ -14,6 +15,8 @@ const LIGHT = {
   gridMajor: '#dfe5ec',
   axis: '#b9c4d0',
   axisLabel: '#8795a3',
+  axisShade: 'rgba(120, 132, 146, 0.10)',
+  axisHatch: 'rgba(120, 132, 146, 0.18)',
   origin: '#5b6b7c',
   curve: '#1f6fd1', // sub-definido (padrão Onshape: azul)
   defined: '#1b1f24', // totalmente definido
@@ -38,6 +41,8 @@ const DARK: typeof LIGHT = {
   gridMajor: '#26313d',
   axis: '#3c4a59',
   axisLabel: '#6f8194',
+  axisShade: 'rgba(0, 0, 0, 0.22)',
+  axisHatch: 'rgba(140, 155, 170, 0.12)',
   origin: '#9fb0c2',
   curve: '#5aa2ff',
   defined: '#e8eef5',
@@ -622,8 +627,32 @@ function drawGrid(ctx: CanvasRenderingContext2D, v: View, axisymmetric: boolean)
     ctx.stroke();
   }
   const o = v.toScreen({ x: 0, y: 0 });
+  if (axisymmetric && o.x > 0) {
+    // Axissimétrico: só vale r ≥ 0. O semiplano r < 0 fica sombreado e marcado como fora do domínio.
+    const xr = Math.min(v.w, Math.round(o.x));
+    ctx.fillStyle = COLORS.axisShade;
+    ctx.fillRect(0, 0, xr, v.h);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, xr, v.h);
+    ctx.clip();
+    ctx.strokeStyle = COLORS.axisHatch;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let d = -v.h; d < xr; d += 14) {
+      ctx.moveTo(d, v.h);
+      ctx.lineTo(d + v.h, 0);
+    }
+    ctx.stroke();
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillStyle = COLORS.axisLabel;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (xr > 140) ctx.fillText(T().app.axisOut, xr / 2, v.h / 2);
+    ctx.restore();
+  }
   ctx.strokeStyle = COLORS.axis;
-  ctx.setLineDash([6, 4]);
+  ctx.setLineDash(axisymmetric ? [] : [6, 4]);
   ctx.beginPath();
   ctx.moveTo(0, Math.round(o.y) + 0.5);
   ctx.lineTo(v.w, Math.round(o.y) + 0.5);
@@ -637,6 +666,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, v: View, axisymmetric: boolean)
   ctx.textBaseline = 'alphabetic';
   ctx.fillText(axisymmetric ? 'r' : 'x', v.w - 14, Math.round(o.y) - 5);
   ctx.fillText(axisymmetric ? 'z' : 'y', Math.round(o.x) + 5, 13);
+  if (axisymmetric) ctx.fillText(T().app.axisLabel, Math.round(o.x) + 5, 27);
 }
 
 function arcPath(ctx: CanvasRenderingContext2D, v: View, c: Vec, r: number, a0: number, a1: number) {

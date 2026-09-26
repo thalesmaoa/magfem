@@ -251,3 +251,17 @@ test('caixa como nos CADs: para a direita só o que está dentro, para a esquerd
   await dragWorld(page, { x: 40, y: 12 }, { x: 35, y: 8 });
   expect(await sel()).toEqual([lb.id]);
 });
+
+test('axissimétrico: desenhar em r < 0 avisa que só vale o lado direito', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  const run = async (c: string) => {
+    await box.fill(c);
+    await box.press('Enter');
+  };
+  await run('g.problem("axisymmetric")');
+  await run('g.line((5, 0), (20, 10))');
+  await expect(page.locator('.status')).not.toContainText('r ≥ 0');
+  await run('g.line((-10, 0), (-2, 10))');
+  await expect(page.locator('.status .msg')).toContainText('só vale o lado direito (r ≥ 0)');
+  await page.screenshot({ path: 'test-results/axi-lado-esquerdo.png' });
+});

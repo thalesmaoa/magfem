@@ -191,6 +191,20 @@ export class SketchEditor {
   meshBusy: Id | null = null;
   /** Nó de malha exibido no canvas (modo malha). */
   shownMesh: Id | null = null;
+  /** Pontos de curvas (não de construção) em r < 0 na última alteração (aviso do axissimétrico). */
+  private lastNegR = 0;
+  private negativeRPoints(): number {
+    const sk = this.sketch;
+    const used = new Set<Id>();
+    for (const e of Object.values(sk.entities))
+      if (isCurve(e) && !(e as { construction?: boolean }).construction) curvePoints(e).forEach((p) => used.add(p));
+    let n = 0;
+    for (const id of used) {
+      const p = sk.entities[id] as { x: number } | undefined;
+      if (p && p.x < -1e-9) n++;
+    }
+    return n;
+  }
   /** Mapa de qualidade da malha (cor pelo menor ângulo); estado de interface, não salvo. */
   meshQuality = false;
   setMeshQuality(on: boolean) {
@@ -528,6 +542,10 @@ export class SketchEditor {
     this.cleanup.push(() => ro.disconnect());
     this.cleanup.push(
       doc.subscribe(() => {
+        // Axissimétrico: avisa quando aparece geometria no semiplano r < 0 (fora do domínio).
+        const neg = this.sketch.settings.problem === 'axisymmetric' ? this.negativeRPoints() : 0;
+        if (neg > this.lastNegR) this.flash(T().app.axisWarn);
+        this.lastNegR = neg;
         // Seleção só com o que ainda existe (após desfazer, apagar...).
         const alive = this.selection.filter((id) => this.exists(id));
         if (alive.length !== this.selection.length) this.selection = alive;

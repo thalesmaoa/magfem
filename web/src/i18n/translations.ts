@@ -4,7 +4,7 @@ import type { BoundaryType, ConstraintType } from '../cad/types';
 export type Lang = 'pt' | 'en';
 
 export interface Translations {
-  app: { loading: string; solverFail: (e: string) => string; untitled: string };
+  app: { loading: string; solverFail: (e: string) => string; untitled: string; axisOut: string; axisLabel: string; axisWarn: string };
   file: {
     new: string;
     open: string;
@@ -674,7 +674,7 @@ export interface Translations {
 }
 
 const PT: Translations = {
-  app: { loading: 'Carregando…', solverFail: (e) => `Falha ao carregar o solver de restrições: ${e}`, untitled: 'sem-titulo' },
+  app: { loading: 'Carregando…', solverFail: (e) => `Falha ao carregar o solver de restrições: ${e}`, untitled: 'sem-titulo', axisOut: 'r < 0: fora do domínio (axissimétrico)', axisLabel: 'eixo de simetria (r = 0)', axisWarn: 'Axissimétrico: só vale o lado direito (r ≥ 0); o que está em r < 0 fica fora do domínio.' },
   file: {
     new: 'Novo',
     open: 'Abrir…',
@@ -1424,7 +1424,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
 };
 
 const EN: Translations = {
-  app: { loading: 'Loading…', solverFail: (e) => `Failed to load the constraint solver: ${e}`, untitled: 'untitled' },
+  app: { loading: 'Loading…', solverFail: (e) => `Failed to load the constraint solver: ${e}`, untitled: 'untitled', axisOut: 'r < 0: outside the domain (axisymmetric)', axisLabel: 'symmetry axis (r = 0)', axisWarn: 'Axisymmetric: only the right side (r ≥ 0) counts; anything at r < 0 is outside the domain.' },
   file: {
     new: 'New',
     open: 'Open…',
