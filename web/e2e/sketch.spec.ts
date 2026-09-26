@@ -350,3 +350,21 @@ test('tesoura (X): apara a ponta da linha, divide ao meio, círculo vira arco e 
   const code = await page.locator('.console .code').innerText();
   expect((code.match(/g\.trim\(/g) ?? []).length).toBe(4);
 });
+
+test('snap nos eixos: centro do círculo no eixo y fica vertical à Origem; linha termina no eixo x', async ({ page }) => {
+  await page.keyboard.press('c');
+  await clickWorld(page, { x: 0.2, y: 30 });
+  await clickWorld(page, { x: 10, y: 30 });
+  let sk = await sketch(page);
+  const circ = Object.values(sk.entities).find((e: any) => e.type === 'circle') as any;
+  expect(sk.entities[circ.c]).toMatchObject({ x: 0, y: 30 });
+  expect(sk.constraints).toContainEqual(expect.objectContaining({ type: 'vertical', refs: [circ.c, 'O'] }));
+  await page.keyboard.press('l');
+  await clickWorld(page, { x: 20, y: 20 });
+  await clickWorld(page, { x: 40, y: 0.2 });
+  await page.keyboard.press('Escape');
+  sk = await sketch(page);
+  const line = Object.values(sk.entities).find((e: any) => e.type === 'line') as any;
+  expect(sk.entities[line.p2].y).toBe(0);
+  expect(sk.constraints).toContainEqual(expect.objectContaining({ type: 'horizontal', refs: [line.p2, 'O'] }));
+});

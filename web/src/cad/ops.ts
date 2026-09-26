@@ -336,6 +336,31 @@ export function adaptOrientationConstraints(sk: Sketch, pointIds: Id[], angle: n
   return { sketch: { ...sk, constraints }, removed };
 }
 
+/**
+ * Depois de mover/girar: ligações de pontos movidos com a Origem (coincidente, H/V do snap nos eixos) que deixaram
+ * de valer. Um giro de 90° em torno da origem troca H↔V; nos outros casos a ligação sai (devolve quantas saíram).
+ */
+export function adaptOriginLinks(sk: Sketch, pointIds: Id[]): { sketch: Sketch; removed: number } {
+  const moved = new Set(pointIds);
+  const tol = 1e-9;
+  const holds = (type: ConstraintType, p: { x: number; y: number }) =>
+    type === 'horizontal' ? Math.abs(p.y) < tol : type === 'vertical' ? Math.abs(p.x) < tol : Math.hypot(p.x, p.y) < tol;
+  let removed = 0;
+  const constraints: Constraint[] = [];
+  for (const c of sk.constraints) {
+    const other = c.refs.length === 2 && c.refs.includes(ORIGIN_ID) ? c.refs.find((r) => r !== ORIGIN_ID)! : null;
+    const p = other ? sk.entities[other] : null;
+    if (!other || !moved.has(other) || p?.type !== 'point' || !['horizontal', 'vertical', 'coincident'].includes(c.type) || holds(c.type, p)) {
+      constraints.push(c);
+      continue;
+    }
+    const to: ConstraintType | null = c.type === 'horizontal' ? 'vertical' : c.type === 'vertical' ? 'horizontal' : null;
+    if (to && holds(to, p)) constraints.push({ ...c, type: to });
+    else removed++;
+  }
+  return { sketch: { ...sk, constraints }, removed };
+}
+
 export function selectionCenter(sk: Sketch, sel: Id[]): Vec {
   let b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
   for (const id of expandSelection(sk, sel)) {

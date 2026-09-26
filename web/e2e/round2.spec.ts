@@ -152,10 +152,12 @@ test('grupos: Ctrl+G, clique seleciona o grupo, mover e girar pelo painel', asyn
   const circ = Object.values(sk.entities).find((e: any) => e.type === 'circle') as any;
   expect(sk.entities[circ.c].x).toBeCloseTo(0, 6);
   expect(sk.entities[circ.c].y).toBeCloseTo(20, 6);
-  // Arrastar o grupo move tudo junto.
-  await dragWorld(page, { x: 0, y: 25 }, { x: 10, y: 25 });
+  // O centro nasceu no eixo x (snap); girando 90° em torno da origem passa a ficar no eixo y.
+  expect(sk.constraints.find((c: any) => c.refs.includes(circ.c) && c.refs.includes('O'))?.type).toBe('vertical');
+  // Arrastar o grupo move tudo junto (ao longo do eixo em que o centro está preso).
+  await dragWorld(page, { x: 0, y: 25 }, { x: 0, y: 35 });
   sk = await sketch(page);
-  expect(sk.entities[circ.c].x).toBeCloseTo(10, 0);
+  expect(sk.entities[circ.c].y).toBeCloseTo(30, 0);
   const code = await page.locator('.console .code').innerText();
   expect(code).toContain(`g.rotate("${gid}", "90 deg", pivot=(0, 0))`);
   expect(code).toContain(`${gid} = g.group(`);

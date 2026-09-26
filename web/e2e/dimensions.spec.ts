@@ -35,17 +35,18 @@ test('diâmetro do círculo, raio do arco e tangência linha-arco', async ({ pag
   await clickWorld(page, { x: 12, y: 0 });
   // Linha horizontal terminando num arco (arco pelo centro com início no fim da linha).
   await page.keyboard.press('l');
+  // Longe do eixo y (x = 5), para o snap nos eixos não entrar.
   await clickWorld(page, { x: -40, y: 30 });
-  await clickWorld(page, { x: 0, y: 30.3 });
+  await clickWorld(page, { x: 5, y: 30.3 });
   await page.keyboard.press('Escape');
   await page.keyboard.press('Shift+A');
-  await clickWorld(page, { x: 1, y: 40 }); // centro (levemente fora da tangência)
-  await clickWorld(page, { x: 0, y: 30 }); // início = fim da linha (encaixa no ponto)
+  await clickWorld(page, { x: 6, y: 40 }); // centro (levemente fora da tangência)
+  await clickWorld(page, { x: 5, y: 30 }); // início = fim da linha (encaixa no ponto)
   for (const t of [-1.2, -0.6, 0]) {
-    const s = await toPage(page, { x: 1 + 10 * Math.cos(t), y: 40 + 10 * Math.sin(t) });
+    const s = await toPage(page, { x: 6 + 10 * Math.cos(t), y: 40 + 10 * Math.sin(t) });
     await page.mouse.move(s.x, s.y, { steps: 3 });
   }
-  await clickWorld(page, { x: 11, y: 40 });
+  await clickWorld(page, { x: 16, y: 40 });
   await page.keyboard.press('Escape');
   let sk = await sketch(page);
   const arc = (await ents(page, 'arc'))[0];
@@ -115,7 +116,7 @@ test('distância ponto-linha e cotas horizontal/vertical pelo posicionamento', a
   await typeDim(page, '5');
   sk = await sketch(page);
   const types = sk.constraints.map((c: any) => c.type);
-  expect(types).toEqual(['coincident', 'hdistance', 'vdistance', 'distance']);
+  expect(types).toEqual(['coincident', 'vertical', 'hdistance', 'vdistance', 'distance']); // o ponto (0, 25) cai no eixo y
   const B = sk.entities[line.p2];
   expect(B.x).toBeCloseTo(40, 6);
   expect(B.y).toBeCloseTo(10, 6);

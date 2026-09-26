@@ -24,6 +24,7 @@ import {
   toggleConstruction,
   toggleFixed,
   transformPoints,
+  adaptOriginLinks,
   ungroup,
   updateGroup,
   type GeomTool,
@@ -78,7 +79,7 @@ export const GEOM_KEYS: Record<string, GeomTool> = {
 
 const POINT_SNAP_PX = 9;
 const CURVE_SNAP_PX = 7;
-const AXIS_SNAP = false;
+const AXIS_SNAP = true;
 const HV_TOL = Math.tan((3 * Math.PI) / 180);
 const PARALLEL_TOL = Math.sin((1 * Math.PI) / 180);
 
@@ -948,8 +949,9 @@ export class SketchEditor {
     if (t.dx || t.dy) code.push(`g.translate(${target}, dx=${q(args.dx ?? `${t.dx} mm`)}, dy=${q(args.dy ?? `${t.dy} mm`)})`);
     if (!code.length) return false;
     const { sketch, removed } = adaptOrientationConstraints(this.sketch, pts, t.angle);
-    const ok = this.commit(transformPoints(sketch, pts, t), code);
-    if (ok && removed) this.flash(T().msg.orientationRemoved(removed));
+    const links = adaptOriginLinks(transformPoints(sketch, pts, t), pts);
+    const ok = this.commit(links.sketch, code);
+    if (ok && removed + links.removed) this.flash(T().msg.orientationRemoved(removed + links.removed));
     return ok;
   }
 
@@ -1429,8 +1431,8 @@ export class SketchEditor {
     // Eixos (x = 0 e y = 0) por último.
     const o = this.view.toScreen({ x: 0, y: 0 });
     const dy = Math.abs(s.x - o.x), dx = Math.abs(s.y - o.y);
-    if (AXIS_SNAP && dy <= CURVE_SNAP_PX && dy <= dx) return { pos: { x: 0, y: w.y }, axis: "y" };
-    if (AXIS_SNAP && dx <= CURVE_SNAP_PX) return { pos: { x: w.x, y: 0 }, axis: "x" };
+    if (AXIS_SNAP && dy <= CURVE_SNAP_PX && dy <= dx) return { pos: { x: 0, y: w.y }, axis: 'y' };
+    if (AXIS_SNAP && dx <= CURVE_SNAP_PX) return { pos: { x: w.x, y: 0 }, axis: 'x' };
     return { pos: w };
   }
 
