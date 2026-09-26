@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Commita (git add -A) só se todas as baterias de ./scripts/check passarem. Uso: ./scripts/commit-if-green "mensagem"
+cd "$(dirname "$0")/.."
+log=$(mktemp)
+if ./scripts/check > "$log" 2>&1; then
+  tail -9 "$log"
+  git add -A && git commit -q -F - <<MSG && git log --oneline -1
+$1
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+MSG
+else
+  cat "$log"
+  echo "NÃO COMMITADO: a checagem falhou."
+  exit 1
+fi

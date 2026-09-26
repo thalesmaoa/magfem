@@ -9,7 +9,7 @@ test('importar SVG: retângulo e caminho com arco viram curvas e fecham regiões
     <path d="M30 20 L50 20 A10 10 0 0 1 50 40 L30 40 Z" fill="none" stroke="black"/>
     <circle cx="80" cy="30" r="8" fill="none" stroke="black"/>
   </svg>`;
-  await page.locator('input[type=file][accept=".dxf,.svg"]').setInputFiles({ name: 'peca.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(svg) });
+  await page.locator('input[type=file][accept=".dxf,.svg,.fem"]').setInputFiles({ name: 'peca.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(svg) });
   await expect(page.locator('.console .code').last()).toContainText('importado: peca.svg');
   const sk = await sketch(page);
   const ents = Object.values(sk.entities) as any[];
