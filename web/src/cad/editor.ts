@@ -268,6 +268,7 @@ export class SketchEditor {
         ms: performance.now() - t0,
       };
       this.meshes.set(id, res);
+      this.schedulePersist();
       // Os triângulos só aparecem com o nó da malha selecionado (a seleção decide, ver App).
       return res;
     } catch (e) {
@@ -338,6 +339,26 @@ export class SketchEditor {
     } as never);
     this.solveKeyCache = { version: this.doc.version, key };
     return key;
+  }
+
+  /** Guarda malhas e soluções fora da memória (definido pelo App: IndexedDB). */
+  persistResults: ((data: { meshes: [Id, MeshResult][]; solutions: [Id, Solution & { key: string }][] }) => void) | null = null;
+  private persistTimer: ReturnType<typeof setTimeout> | undefined;
+  private schedulePersist() {
+    if (!this.persistResults) return;
+    clearTimeout(this.persistTimer);
+    this.persistTimer = setTimeout(() => this.persistResults?.({ meshes: [...this.meshes], solutions: [...this.solutions] }), 300);
+  }
+
+  /** Recarga da página: reaproveita malhas e soluções guardadas que ainda batem com o modelo atual. */
+  restoreResults(data: { meshes?: [Id, MeshResult][]; solutions?: [Id, Solution & { key: string }][] }) {
+    for (const [id, m] of data.meshes ?? []) if (!this.meshes.has(id)) {
+      this.meshes.set(id, m);
+      if (this.meshStale(id)) this.meshes.delete(id);
+    }
+    const key = this.solveKey();
+    for (const [id, s] of data.solutions ?? []) if (!this.solutions.has(id) && s.key === key && this.sketch.nodes.some((n) => n.id === id)) this.solutions.set(id, s);
+    this.changed();
   }
 
   /** A solução ficou para trás (algo que a afeta mudou depois de resolver)? */
@@ -487,6 +508,7 @@ export class SketchEditor {
       this.postFrame = out.times.length && !input.harmonic ? out.times.length - 1 : 0;
       this.shownSolution = id;
       this.solveBusy = null;
+      this.schedulePersist();
       this.changed();
       return true;
     } catch (e) {

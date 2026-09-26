@@ -1244,6 +1244,8 @@ export class CommandConsole {
         if (kw.color_by_value !== undefined) patch.colorByValue = !!kw.color_by_value;
         if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
         if (kw.outputs !== undefined) patch.outputs = kw.outputs === null ? undefined : (seq(kw.outputs) ?? []).map((o) => { const t2 = seq(o) ?? []; return { q: String(t2[0]), name: String(t2[1]) }; });
+        if (kw.curves !== undefined)
+          patch.curves = kw.curves === null ? undefined : (seq(kw.curves) ?? []).map((o) => { const c = seq(o) ?? []; return { name: String(c[0]), axis: String(c[1]) === 'right' ? 'right' : 'left' }; });
         if (kw.var_name !== undefined) patch.varName = kw.var_name === null ? undefined : String(kw.var_name);
         if (kw.expr !== undefined) patch.expr = kw.expr === null ? undefined : String(kw.expr);
         if (kw.unit_label !== undefined) patch.unitLabel = kw.unit_label === null ? undefined : String(kw.unit_label);
@@ -1368,7 +1370,7 @@ const NODE_METHODS = {
     view: 'view("n2", name="Vista 2")',
     duplicate: 'duplicate("n5")  # camada ou vista',
     table: 'table("n2", name="Resultados")',
-    item: 'item("n6", "lineint" | "surfint" | "formula" | "circuits", name="...")',
+    item: 'item("n6", "lineint" | "surfint" | "formula" | "circuits" | "timeplot", name="...")  # timeplot: r.show(id, curves=[("Bobina_V", "left"), ("Bobina_lambda", "right")])',
     move: 'move("n5", "n7")  # camada para outra vista',
     plot: 'plot("n4 (vista) | n2 (física)", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
     show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn", color="#1f6fd1", color_by_value=False, colormap="viridis")',

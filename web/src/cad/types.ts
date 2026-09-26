@@ -226,6 +226,8 @@ export interface PostNode {
   unitLabel?: string;
   /** Transitório: instante (índice do passo) para mostrar como tabela; ausente = curva no tempo. */
   atTime?: number;
+  /** Gráfico no tempo (item 'timeplot'): variáveis de resultado escolhidas e o eixo y de cada uma. */
+  curves?: { name: string; axis: 'left' | 'right' }[];
   /** Integral de superfície: regiões escolhidas (identidade pelas curvas + ponto interno). */
   regions?: { curves: Id[]; seed: { x: number; y: number } }[];
   /** Cor sólida (contorno, glifos, curva). */
@@ -297,8 +299,8 @@ export interface SchematicNode {
 }
 
 /** Itens de uma tabela de resultados. */
-export type TableItem = 'circuits' | 'lineint' | 'surfint' | 'formula';
-export const TABLE_ITEMS: TableItem[] = ['circuits', 'lineint', 'surfint', 'formula'];
+export type TableItem = 'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot';
+export const TABLE_ITEMS: TableItem[] = ['circuits', 'lineint', 'surfint', 'formula', 'timeplot'];
 
 /** Tabela de resultados: uma aba com itens numéricos (circuitos, integrais). */
 export interface TableNode {

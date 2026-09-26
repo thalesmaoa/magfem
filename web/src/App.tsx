@@ -12,7 +12,7 @@ import { emptySketch } from './cad/types';
 import { setLang, T, useLang, useT, type Lang } from './i18n';
 import { parseFem } from './io/femmFile';
 import { addShapes, parseDXF, parseSVG } from './io/importCad';
-import { hasFsAccess, loadDraft, loadFileHandle, openProject, parse, saveDraft, saveFileHandle, saveProject, serialize } from './io/project';
+import { hasFsAccess, loadDraft, loadFileHandle, loadResults, openProject, parse, saveDraft, saveFileHandle, saveProject, saveResults, serialize } from './io/project';
 import { download, toDXF, toSVG } from './io/export';
 import { Icons } from './ui/icons';
 import { setThemePref, useThemePref, type ThemePref } from './theme';
@@ -152,6 +152,9 @@ export default function App() {
     if (ready !== 'ok' || !canvasRef.current) return;
     const editor = new SketchEditor(canvasRef.current, doc);
     editor.fit();
+    // Resultados sobrevivem a uma recarga da página (só os que ainda batem com o modelo).
+    editor.persistResults = (data) => void saveResults(data);
+    loadResults<Parameters<SketchEditor['restoreResults']>[0]>().then((r) => r && editor.restoreResults(r));
     setEd(editor);
     if (import.meta.env.DEV) (window as unknown as { __magfem: unknown }).__magfem = editor;
     return () => editor.dispose();

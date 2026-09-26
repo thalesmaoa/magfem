@@ -591,8 +591,9 @@ export interface Translations {
     newTableNote: string;
     resultsName: string;
     addItem: string;
-    items: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
-    itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
+    items: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
+    itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
+    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string) => string; help: string };
     varName: string;
     show: string;
     loss: string;
@@ -1342,8 +1343,25 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     newTableNote: 'integrais sobre linha e de superfície',
     resultsName: 'Resultados',
     addItem: 'Incluir na tabela',
-    items: { circuits: 'Circuitos', lineint: 'Integral sobre linha', surfint: 'Integral de superfície', formula: 'Fórmula' },
-    itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'área, ∫A dS, corrente, energia', formula: 'expressão com variáveis de resultado' },
+    items: { circuits: 'Circuitos', lineint: 'Integral sobre linha', surfint: 'Integral de superfície', formula: 'Fórmula', timeplot: 'Gráfico no tempo' },
+    itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'área, ∫A dS, corrente, energia', formula: 'expressão com variáveis de resultado', timeplot: 'variáveis escolhidas, eixo esquerdo e direito (transitório)' },
+    tp: {
+      needTransient: 'O gráfico no tempo precisa de uma solução transitória.',
+      empty: 'Escolha as variáveis nas propriedades do item (eixo esquerdo ou direito).',
+      pick: 'Variáveis no gráfico',
+      none: '—',
+      left: 'eixo esquerdo',
+      right: 'eixo direito',
+      leftShort: 'esq.',
+      rightShort: 'dir.',
+      solveFirst: 'Resolva a física (transitória) para listar as variáveis de resultado.',
+      exportHint: 'Exportar este gráfico',
+      add: 'Adicionar variável',
+      addPlaceholder: 'nome (Tab/↓ lista), Enter',
+      remove: 'tirar do gráfico',
+      unknown: (n) => `Variável de resultado "${n}" não existe nesta física.`,
+      help: 'Qualquer variável de resultado da física: circuitos (_I, _lambda, _L, _V, _P), integrais (ex.: Fx) e fórmulas.',
+    },
     varName: 'Nome (variáveis)',
     show: 'Mostrar',
     loss: 'Perdas por correntes parasitas (média, AC)',
@@ -2099,8 +2117,25 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     newTableNote: 'line and surface integrals',
     resultsName: 'Results',
     addItem: 'Add to table',
-    items: { circuits: 'Circuits', lineint: 'Line integral', surfint: 'Surface integral', formula: 'Formula' },
-    itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'area, ∫A dS, current, energy', formula: 'expression with result variables' },
+    items: { circuits: 'Circuits', lineint: 'Line integral', surfint: 'Surface integral', formula: 'Formula', timeplot: 'Time plot' },
+    itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'area, ∫A dS, current, energy', formula: 'expression with result variables', timeplot: 'chosen variables, left and right axes (transient)' },
+    tp: {
+      needTransient: 'The time plot needs a transient solution.',
+      empty: 'Choose the variables in the item properties (left or right axis).',
+      pick: 'Variables in the plot',
+      none: '—',
+      left: 'left axis',
+      right: 'right axis',
+      leftShort: 'left',
+      rightShort: 'right',
+      solveFirst: 'Solve the (transient) physics to list the result variables.',
+      exportHint: 'Export this plot',
+      add: 'Add variable',
+      addPlaceholder: 'name (Tab/↓ lists), Enter',
+      remove: 'remove from plot',
+      unknown: (n) => `Result variable "${n}" does not exist in this physics.`,
+      help: 'Any result variable of the physics: circuits (_I, _lambda, _L, _V, _P), integrals (e.g. Fx) and formulas.',
+    },
     varName: 'Name (variables)',
     show: 'Show',
     loss: 'Eddy-current losses (average, AC)',

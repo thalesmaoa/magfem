@@ -10,7 +10,7 @@ import { LazyInput } from './common';
 import { Icons } from './icons';
 import { useEditor } from './useStore';
 import { openTab } from './tabsStore';
-import { CircuitTable, qLabel, tableItemRows } from './CanvasTabs';
+import { CircuitTable, physicsTimeSeries, qLabel, tableItemRows } from './CanvasTabs';
 import { findRegion as findRegionP } from '../cad/regions';
 import { pointCode } from '../cad/mesh';
 import { defaultVarName, LINE_Q, outputsOf, resultVars, safeName, SURF_Q, varNameOf } from '../cad/results';
@@ -24,7 +24,7 @@ const PLOT_ICON: Record<PlotKind, JSX.Element> = {
 
 const FILTER_ICON = <span className="plot-ico iso">∿</span>;
 const TABLE_ICON = <span className="plot-ico iso">▦</span>;
-const ITEM_ICON: Record<TableItem, JSX.Element> = { circuits: Icons.circuit, lineint: <span className="plot-ico iso">∫ℓ</span>, surfint: <span className="plot-ico iso">∬</span>, formula: <span className="plot-ico iso">ƒx</span> };
+const ITEM_ICON: Record<TableItem, JSX.Element> = { circuits: Icons.circuit, lineint: <span className="plot-ico iso">∫ℓ</span>, surfint: <span className="plot-ico iso">∬</span>, formula: <span className="plot-ico iso">ƒx</span>, timeplot: Icons.sine };
 
 /** Botão (+) com uma lista de escolhas. */
 function ChoiceMenu({ label, items }: { label: string; items: { icon: JSX.Element; label: string; note?: string; onClick: () => void }[] }) {
@@ -957,6 +957,70 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
   const times = node.physics ? ed.solutions.get(node.physics)?.times : undefined;
   const transient = phys?.kind === 'physics' && phys.analysis === 'transient';
   const fmtMs = (s: number) => `${Number((s * 1e3).toPrecision(4))} ms`;
+  if (node.item === 'timeplot') {
+    // Gráfico no tempo: cada variável de resultado da física pode ir para o eixo esquerdo, o direito ou ficar fora.
+    const all = node.physics ? physicsTimeSeries(ed, node.physics) : null;
+    const curves = node.curves ?? [];
+    const setAxis = (name: string, axis: string) => {
+      const next = axis ? [...curves.filter((c) => c.name !== name), { name, axis: axis as 'left' | 'right' }] : curves.filter((c) => c.name !== name);
+      // Mantém a ordem em que as variáveis foram escolhidas.
+      const ordered = axis && curves.some((c) => c.name === name) ? curves.map((c) => (c.name === name ? { name, axis: axis as 'left' | 'right' } : c)) : next;
+      set({ curves: ordered.length ? ordered : undefined }, `r.show(${q(node.id)}, curves=[${ordered.map((c) => `(${q(c.name)}, ${q(c.axis)})`).join(', ')}])`);
+    };
+    return (
+      <div className="props-body">
+        <section>
+          <h3>{t.table.tp.pick}</h3>
+          {!transient && <p className="muted">{t.table.tp.needTransient}</p>}
+          {transient && !all && <p className="muted">{t.table.tp.solveFirst}</p>}
+          {all && (
+            <>
+              <label className="field">
+                <span>{t.table.tp.add}</span>
+                <input
+                  list={`tp-vars-${node.id}`}
+                  aria-label={t.table.tp.add}
+                  placeholder={t.table.tp.addPlaceholder}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return;
+                    const v = e.currentTarget.value.trim();
+                    if (!v) return;
+                    if (!all.series.some((s) => s.label === v)) return ed.flash(t.table.tp.unknown(v));
+                    if (!curves.some((c) => c.name === v)) setAxis(v, 'left');
+                    e.currentTarget.value = '';
+                  }}
+                />
+                <datalist id={`tp-vars-${node.id}`}>
+                  {all.series.map((s) => (
+                    <option key={s.label} value={s.label}>
+                      {s.unit}
+                    </option>
+                  ))}
+                </datalist>
+              </label>
+              {curves.map((c) => {
+                const s = all.series.find((x) => x.label === c.name);
+                return (
+                  <label className="field" key={c.name}>
+                    <span>
+                      {c.name}
+                      {s?.unit ? ` (${s.unit})` : ''}
+                    </span>
+                    <select aria-label={c.name} value={c.axis} onChange={(e) => setAxis(c.name, e.target.value)}>
+                      <option value="left">{t.table.tp.left}</option>
+                      <option value="right">{t.table.tp.right}</option>
+                      <option value="">{t.table.tp.remove}</option>
+                    </select>
+                  </label>
+                );
+              })}
+              <p className="help-line">{t.table.tp.help}</p>
+            </>
+          )}
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="props-body">
       <section>

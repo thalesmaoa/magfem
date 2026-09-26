@@ -584,6 +584,8 @@ body.resizing { cursor: col-resize; user-select: none; }
 .mat-menu { max-height: 60vh; overflow-y: auto; }
 .fps-pick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
 .time-charts { display: grid; gap: 8px; }
+.time-plot svg { max-width: 860px; width: 100%; }
+.tp-export { display: flex; gap: 6px; margin-top: 6px; }
 .time-charts svg { max-width: 720px; }
 
 .bridge { position: relative; margin-right: 10px; }

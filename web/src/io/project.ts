@@ -56,7 +56,8 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
   if (!sk.entities[ORIGIN_ID]) sk.entities[ORIGIN_ID] = base.entities[ORIGIN_ID];
   // Resultados antigos (um nó com mapa + linhas): viram camadas da primeira física.
   const phys = sk.nodes.find((n) => n.kind === 'physics');
-  const legacy = sk.nodes.filter((n) => n.kind === 'post' && !n.plot);
+  // (Itens de tabela também não têm `plot`, mas têm `item`: não são legados.)
+  const legacy = sk.nodes.filter((n) => n.kind === 'post' && !n.plot && !n.item);
   if (legacy.length) {
     sk.nodes = sk.nodes.filter((n) => !legacy.includes(n));
     if (phys) {
@@ -92,12 +93,12 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
     if (n.kind !== 'post' || !n.view) return n;
     const target = sk.nodes.find((x) => x.id === n.view);
     if (target?.kind === 'physics') return { ...n, physics: target.id, view: undefined };
-    if (target?.kind === 'view') return { ...n, physics: target.physics };
+    if (target?.kind === 'view' || target?.kind === 'table') return { ...n, physics: target.physics };
     return { ...n, view: undefined };
   });
   // Camadas sem vista: vão para a "Vista 1" da física.
   for (const n of [...sk.nodes]) {
-    if (n.kind !== 'post' || n.view || !n.physics) continue;
+    if (n.kind !== 'post' || n.view || !n.physics || n.item) continue;
     let v = sk.nodes.find((x) => x.kind === 'view' && x.physics === n.physics);
     if (!v) {
       v = { id: `n${sk.nextId++}`, kind: 'view', name: `${T().post.view} 1`, physics: n.physics };
@@ -306,6 +307,41 @@ export async function loadFileHandle<T>(): Promise<T | null> {
     });
     conn.close();
     return h;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Últimas malhas e soluções (não vão no arquivo do projeto): guardadas no navegador para sobreviver a uma recarga
+ * da página. Ao abrir, o editor só reaproveita as que ainda batem com o modelo (mesma chave).
+ */
+export async function saveResults(data: unknown | null) {
+  try {
+    const conn = await db();
+    await new Promise<void>((resolve, reject) => {
+      const tx = conn.transaction(STORE, 'readwrite');
+      if (data) tx.objectStore(STORE).put(data, 'results');
+      else tx.objectStore(STORE).delete('results');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    conn.close();
+  } catch {
+    // Sem espaço ou sem IndexedDB: os resultados só vivem na memória (recalculáveis).
+  }
+}
+
+export async function loadResults<T>(): Promise<T | null> {
+  try {
+    const conn = await db();
+    const r = await new Promise<T | null>((resolve, reject) => {
+      const req = conn.transaction(STORE, 'readonly').objectStore(STORE).get('results');
+      req.onsuccess = () => resolve((req.result as T) ?? null);
+      req.onerror = () => reject(req.error);
+    });
+    conn.close();
+    return r;
   } catch {
     return null;
   }

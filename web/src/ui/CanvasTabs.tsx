@@ -9,7 +9,9 @@ import { outputsOf, resultVars, safeName, varNameOf } from '../cad/results';
 import { physicsSketch, type TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT, displayName } from '../i18n';
-import { MultiChart } from './SchematicPane';
+import { DualAxisChart, MultiChart } from './SchematicPane';
+import { chartImage, chartSVG, seriesCSV } from './chartExport';
+import { download } from '../io/export';
 import { LazyInput } from './common';
 import { useDocVersion, useEditor } from './useStore';
 import { activateTab, closeTab, tabKey, useTabs, type CanvasTab } from './tabsStore';
@@ -560,52 +562,61 @@ function itemVarNames(ed: SketchEditor, it: PostNode): string[] {
   const sk = ed.sketch;
   if (it.item === 'surfint' || it.item === 'lineint') return outputsOf(sk, it).map((o) => safeName(o.name));
   if (it.item === 'formula') return [varNameOf(sk, it)];
-  if (it.item === 'circuits') return sk.circuits.flatMap((c) => [`${safeName(c.name)}_I`, `${safeName(c.name)}_lambda`]);
+  if (it.item === 'circuits') return sk.circuits.flatMap((c) => ['I', 'lambda', 'L', 'V', 'P'].map((q) => `${safeName(c.name)}_${q}`));
+  if (it.item === 'timeplot') return (it.curves ?? []).map((c) => c.name);
   return [];
 }
 
-const seriesCache = new WeakMap<object, Map<string, { t: number[]; series: { label: string; unit: string; y: number[] }[] }>>();
-/** Transitório: cada variável do item em todos os instantes (null se a solução não é transitória). */
-export function itemTimeSeries(ed: SketchEditor, it: PostNode): { t: number[]; series: { label: string; unit: string; y: number[] }[] } | null {
-  const full = it.physics ? ed.solutions.get(it.physics) : undefined;
-  if (!full?.times || !it.physics) return null;
-  const key = `${ed.doc.version}|${it.id}`;
-  const byKey = seriesCache.get(full) ?? new Map();
+type TimeSeries = { t: number[]; series: { label: string; unit: string; y: number[] }[] };
+const seriesCache = new WeakMap<object, Map<string, TimeSeries>>();
+
+/**
+ * Transitório: todas as variáveis de resultado da física em todos os instantes (null se não é transitória).
+ * Circuitos ganham também L = λ/i, v = R·i + dλ/dt e perdas R·i².
+ */
+export function physicsTimeSeries(ed: SketchEditor, physics: string): TimeSeries | null {
+  const full = ed.solutions.get(physics);
+  if (!full?.times) return null;
+  const key = `${ed.doc.version}|${physics}`;
+  const byKey = seriesCache.get(full) ?? new Map<string, TimeSeries>();
   seriesCache.set(full, byKey);
   const hit = byKey.get(key);
   if (hit) return hit;
-  const names = itemVarNames(ed, it);
   const arr = ed.arrangement();
-  const series = names.map((label) => ({ label, unit: '', y: [] as number[] }));
-  const resist = new Map<string, number>();
-  for (let k = 0; k < full.times.length; k++) {
-    const rv = resultVars(ed.sketch, arr, frameOf(full, k), it.physics);
-    for (const s of series) {
-      const v = rv.list.find((x) => x.name === s.label);
-      s.y.push(v ? v.value : NaN);
-      if (v) s.unit = v.unit;
-    }
-    if (it.item === 'circuits') for (const v of rv.list) if (v.name.endsWith('_R')) resist.set(v.name.slice(0, -2), v.value);
-  }
-  if (it.item === 'circuits') {
-    // Circuitos no tempo: além de i e λ, L = λ/i, tensão nos terminais v = R·i + dλ/dt e perdas R·i².
-    const t = full.times;
-    for (const c of ed.sketch.circuits) {
-      const p = safeName(c.name);
-      const I = series.find((s) => s.label === `${p}_I`)?.y;
-      const lam = series.find((s) => s.label === `${p}_lambda`)?.y;
-      if (!I || !lam) continue;
-      series.push({ label: `${p}_L`, unit: 'H', y: I.map((i, k) => (Math.abs(i) > 1e-12 ? lam[k] / i : NaN)) });
-      const R = resist.get(p);
-      // Derivada para trás; antes do primeiro passo, λ = 0 em t = 0 (o transitório parte de A = 0).
-      const dl = lam.map((l, k) => (l - (k ? lam[k - 1] : 0)) / (t[k] - (k ? t[k - 1] : 0) || NaN));
-      series.push({ label: `${p}_V`, unit: 'V', y: I.map((i, k) => (R !== undefined ? R * i : 0) + dl[k]) });
-      if (R !== undefined) series.push({ label: `${p}_P`, unit: 'W', y: I.map((i) => R * i * i) });
+  const byName = new Map<string, { label: string; unit: string; y: number[] }>();
+  const n = full.times.length;
+  for (let k = 0; k < n; k++) {
+    for (const v of resultVars(ed.sketch, arr, frameOf(full, k), physics).list) {
+      let s = byName.get(v.name);
+      if (!s) byName.set(v.name, (s = { label: v.name, unit: v.unit, y: new Array(n).fill(NaN) }));
+      s.y[k] = v.value;
     }
   }
-  const res = { t: Array.from(full.times), series: series.filter((s) => s.y.some((v) => Number.isFinite(v))) };
+  const t = Array.from(full.times);
+  for (const c of ed.sketch.circuits) {
+    const p = safeName(c.name);
+    const I = byName.get(`${p}_I`)?.y;
+    const lam = byName.get(`${p}_lambda`)?.y;
+    if (!I || !lam) continue;
+    // L(t) = λ/i: indefinida quando i = 0 (esses pontos ficam de fora dos gráficos).
+    byName.set(`${p}_L`, { label: `${p}_L`, unit: 'H', y: I.map((i, k) => (Math.abs(i) > 1e-12 ? lam[k] / i : NaN)) });
+    const R = byName.get(`${p}_R`)?.y.find((v) => Number.isFinite(v));
+    // Derivada para trás; antes do primeiro passo, λ = 0 em t = 0 (o transitório parte de A = 0).
+    const dl = lam.map((l, k) => (l - (k ? lam[k - 1] : 0)) / (t[k] - (k ? t[k - 1] : 0) || NaN));
+    byName.set(`${p}_V`, { label: `${p}_V`, unit: 'V', y: I.map((i, k) => (R !== undefined ? R * i : 0) + dl[k]) });
+    if (R !== undefined) byName.set(`${p}_P`, { label: `${p}_P`, unit: 'W', y: I.map((i) => R * i * i) });
+  }
+  const res = { t, series: [...byName.values()].filter((s) => s.y.some((v) => Number.isFinite(v))) };
   byKey.set(key, res);
   return res;
+}
+
+/** Transitório: cada variável do item em todos os instantes (null se a solução não é transitória). */
+export function itemTimeSeries(ed: SketchEditor, it: PostNode): TimeSeries | null {
+  const all = it.physics ? physicsTimeSeries(ed, it.physics) : null;
+  if (!all) return null;
+  const names = itemVarNames(ed, it);
+  return { t: all.t, series: names.map((nm) => all.series.find((s) => s.label === nm)).filter((s): s is TimeSeries['series'][number] => !!s) };
 }
 
 /** Curvas no tempo de um item (uma por variável, com o cursor no instante da animação). */
@@ -683,6 +694,53 @@ function fmtUnit(v: number, u: string) {
   return eng(v, u);
 }
 
+/** Gráfico no tempo: as variáveis escolhidas, cada uma no eixo esquerdo ou direito, com exportação própria. */
+function TimePlot({ ed, it }: { ed: SketchEditor; it: PostNode }) {
+  const t = useT();
+  const ref = useRef<HTMLDivElement>(null);
+  const all = it.physics ? physicsTimeSeries(ed, it.physics) : null;
+  if (!all) return <p className="muted">{t.table.tp.needTransient}</p>;
+  const series = (it.curves ?? [])
+    .map((c) => {
+      const s = all.series.find((x) => x.label === c.name);
+      return s ? { ...s, axis: c.axis } : null;
+    })
+    .filter((s): s is NonNullable<typeof s> => !!s);
+  if (!series.length) return <p className="muted">{t.table.tp.empty}</p>;
+  const cur = ed.shownSol(it.physics!)?.time;
+  const base = safeName(it.name) || 'grafico';
+  const svgEl = () => ref.current?.querySelector('svg.xychart') ?? null;
+  return (
+    <div className="time-plot" ref={ref}>
+      <DualAxisChart
+        x={all.t.map((v) => v * 1e3)}
+        series={series}
+        xLabel="t (ms)"
+        leftTag={t.table.tp.leftShort}
+        rightTag={t.table.tp.rightShort}
+        cursor={cur !== undefined ? cur * 1e3 : undefined}
+      />
+      <div className="tp-export" role="group" aria-label={t.table.tp.exportHint}>
+        <button className="btn secondary" onClick={() => download(`${base}.csv`, new Blob([seriesCSV(all.t, series)], { type: 'text/csv' }))}>
+          CSV
+        </button>
+        <button
+          className="btn secondary"
+          onClick={() => {
+            const svg = chartSVG(svgEl());
+            if (svg) download(`${base}.svg`, new Blob([svg], { type: 'image/svg+xml' }));
+          }}
+        >
+          SVG
+        </button>
+        <button className="btn secondary" onClick={async () => download(`${base}.png`, await chartImage('image/png', svgEl()))}>
+          PNG
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Aba de uma tabela de resultados: um bloco por item. */
 function TablePane({ ed, id }: { ed: SketchEditor; id: string }) {
   const t = useT();
@@ -696,7 +754,9 @@ function TablePane({ ed, id }: { ed: SketchEditor; id: string }) {
       {items.map((it) => (
         <section key={it.id} className="table-item">
           <h4>{it.name}</h4>
-          {ed.solutions.get(tb.physics ?? '')?.times && it.atTime === undefined ? (
+          {it.item === 'timeplot' ? (
+            <TimePlot ed={ed} it={it} />
+          ) : ed.solutions.get(tb.physics ?? '')?.times && it.atTime === undefined ? (
             <ItemTimeCharts ed={ed} it={it} />
           ) : it.item === 'circuits' ? (
             <CircuitTable ed={ed} physics={tb.physics} big />

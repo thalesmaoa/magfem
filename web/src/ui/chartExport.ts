@@ -13,8 +13,8 @@ const CHART_STYLE = `
 `;
 
 /** SVG autocontido do gráfico mostrado na aba (fundo branco, estilos embutidos). */
-export function chartSVG(): string | null {
-  const el = document.querySelector('.chart-pane svg.xychart');
+export function chartSVG(from?: Element | null): string | null {
+  const el = from ?? document.querySelector('.chart-pane svg.xychart');
   if (!el) return null;
   const clone = el.cloneNode(true) as SVGSVGElement;
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -34,8 +34,8 @@ export function chartSVG(): string | null {
 }
 
 /** Rasteriza o SVG do gráfico (2× para ficar nítido). */
-export async function chartImage(type: 'image/png' | 'image/jpeg'): Promise<Blob> {
-  const svg = chartSVG();
+export async function chartImage(type: 'image/png' | 'image/jpeg', from?: Element | null): Promise<Blob> {
+  const svg = chartSVG(from);
   if (!svg) throw new Error('chart');
   const img = new Image();
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
@@ -53,6 +53,13 @@ export async function chartImage(type: 'image/png' | 'image/jpeg'): Promise<Blob
   ctx.drawImage(img, 0, 0, c.width, c.height);
   URL.revokeObjectURL(url);
   return new Promise((ok, fail) => c.toBlob((b) => (b ? ok(b) : fail(new Error('canvas'))), type, 0.95));
+}
+
+/** Séries no tempo em CSV (ponto e vírgula): t e uma coluna por série, com a unidade no cabeçalho. */
+export function seriesCSV(t: number[], series: { label: string; unit: string; y: number[] }[]): string {
+  const head = ['t (s)', ...series.map((s) => (s.unit ? `${s.label} (${s.unit})` : s.label))];
+  const rows = t.map((tk, k) => [tk, ...series.map((s) => (Number.isFinite(s.y[k]) ? s.y[k] : ''))].join(';'));
+  return [head.join(';'), ...rows].join('\n') + '\n';
 }
 
 /** Dados da aba em CSV (ponto e vírgula, cabeçalho com unidades). */

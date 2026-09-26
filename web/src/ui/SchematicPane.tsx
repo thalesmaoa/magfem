@@ -514,11 +514,92 @@ export function MultiChart({ x, series, xLabel, yLabel, cursor }: { x: number[];
       <text x={L} y={Hc - B + 14}>{fmt(x0)}</text>
       <text x={Wc - R} y={Hc - B + 14} textAnchor="end">{fmt(x1)} {xLabel.replace(/^t /, '')}</text>
       {series.map((s2, i) => (
-        <text key={s2.label} x={L + 6 + i * 110} y={Hc - 4} fill={SERIES_COLORS[i % SERIES_COLORS.length]} className="axis-label">
+        <text key={s2.label} x={L + 6 + i * 110} y={Hc - 4} style={{ fill: SERIES_COLORS[i % SERIES_COLORS.length] }} className="axis-label">
           ■ {s2.label}
         </text>
       ))}
       <text x={12} y={(Tt + Hc - B) / 2} textAnchor="middle" transform={`rotate(-90 12 ${(Tt + Hc - B) / 2})`}>{yLabel}</text>
+    </svg>
+  );
+}
+
+/** Uma escala "bonita" (limites e marcas) para os valores finitos dados. */
+function niceScale(vals: number[]) {
+  const f = vals.filter((v) => Number.isFinite(v));
+  let lo = f.length ? Math.min(...f) : 0, hi = f.length ? Math.max(...f) : 1;
+  if (!(hi > lo)) (lo -= Math.abs(lo) * 0.1 || 1), (hi += Math.abs(hi) * 0.1 || 1);
+  const step0 = (hi - lo) / 5, mag = 10 ** Math.floor(Math.log10(step0)), r = step0 / mag;
+  const step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
+  lo = Math.floor(lo / step) * step;
+  hi = Math.ceil(hi / step) * step;
+  const ticks: number[] = [];
+  for (let v = lo; v <= hi + step / 2; v += step) ticks.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  return { lo, hi, ticks };
+}
+
+/**
+ * Gráfico XYY: curvas no eixo esquerdo e no direito, cada eixo com a sua escala. Pontos não finitos ficam de fora.
+ * Usado pelo item "Gráfico no tempo" (e exportável como SVG/PNG).
+ */
+export function DualAxisChart(props: {
+  x: number[];
+  series: { label: string; unit: string; y: number[]; axis: 'left' | 'right' }[];
+  xLabel: string;
+  leftTag: string;
+  rightTag: string;
+  cursor?: number;
+}) {
+  const { x, series, xLabel, cursor } = props;
+  const right = series.some((s2) => s2.axis === 'right');
+  const Wc = 640, Hc = 300, L = 64, R = right ? 64 : 14, Tt = 12, B = 44 + 16 * Math.ceil(series.length / 3);
+  const x0 = x[0], x1 = x[x.length - 1];
+  const X = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * (Wc - L - R);
+  const sl = niceScale(series.filter((s2) => s2.axis === 'left').flatMap((s2) => s2.y));
+  const sr = niceScale(series.filter((s2) => s2.axis === 'right').flatMap((s2) => s2.y));
+  const Y = (v: number, sc: { lo: number; hi: number }) => Tt + (1 - (v - sc.lo) / (sc.hi - sc.lo)) * (Hc - Tt - B);
+  const fmt = (v: number) => Number(v.toPrecision(3)).toString();
+  const unitsOf = (axis: 'left' | 'right') => [...new Set(series.filter((s2) => s2.axis === axis).map((s2) => s2.unit).filter(Boolean))].join(', ');
+  const segs = (y: number[], sc: { lo: number; hi: number }) => {
+    const out: string[] = [];
+    let cur: string[] = [];
+    y.forEach((v, k) => {
+      if (Number.isFinite(v)) cur.push(`${X(x[k]).toFixed(1)},${Y(v, sc).toFixed(1)}`);
+      else if (cur.length) (out.push(cur.join(' ')), (cur = []));
+    });
+    if (cur.length) out.push(cur.join(' '));
+    return out;
+  };
+  const yb = Hc - B;
+  return (
+    <svg className="xychart dual" viewBox={`0 0 ${Wc} ${Hc}`} role="img" aria-label={series.map((s2) => s2.label).join(', ')}>
+      <rect x={L} y={Tt} width={Wc - L - R} height={yb - Tt} className="frame" />
+      {sl.ticks.map((v) => (
+        <g key={`l${v}`}>
+          <line x1={L} x2={Wc - R} y1={Y(v, sl)} y2={Y(v, sl)} className="grid" />
+          <text x={L - 4} y={Y(v, sl) + 4} textAnchor="end">{fmt(v)}</text>
+        </g>
+      ))}
+      {right && sr.ticks.map((v) => (
+        <text key={`r${v}`} x={Wc - R + 4} y={Y(v, sr) + 4}>{fmt(v)}</text>
+      ))}
+      {series.map((s2, i) => (
+        <g key={s2.label}>
+          {segs(s2.y, s2.axis === 'left' ? sl : sr).map((pts, j) => (
+            <polyline key={j} points={pts} fill="none" stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={1.8} strokeDasharray={s2.axis === 'right' ? '6 3' : undefined} />
+          ))}
+        </g>
+      ))}
+      {cursor !== undefined && <line x1={X(cursor)} x2={X(cursor)} y1={Tt} y2={yb} className="cursor" />}
+      <text x={L} y={yb + 14}>{fmt(x0)}</text>
+      <text x={Wc - R} y={yb + 14} textAnchor="end">{fmt(x1)}</text>
+      <text x={(L + Wc - R) / 2} y={yb + 14} textAnchor="middle">{xLabel}</text>
+      <text x={14} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(-90 14 ${(Tt + yb) / 2})`}>{unitsOf('left')}</text>
+      {right && <text x={Wc - 12} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(90 ${Wc - 12} ${(Tt + yb) / 2})`}>{unitsOf('right')}</text>}
+      {series.map((s2, i) => (
+        <text key={s2.label} x={L + (i % 3) * 190} y={yb + 32 + 16 * Math.floor(i / 3)} style={{ fill: SERIES_COLORS[i % SERIES_COLORS.length] }} className="axis-label">
+          {s2.axis === 'right' ? '┅' : '━'} {s2.label}{s2.unit ? ` (${s2.unit})` : ''} · {s2.axis === 'left' ? props.leftTag : props.rightTag}
+        </text>
+      ))}
     </svg>
   );
 }
