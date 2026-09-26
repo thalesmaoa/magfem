@@ -83,6 +83,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/solver.html">Solving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/solver.html#currents">Currents</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guide/solver.html#analysis-types">Analysis types</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../guide/solver.html#magnetostatic">Magnetostatic</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../guide/solver.html#harmonic-ac">Harmonic (AC)</a></li>
@@ -516,10 +517,13 @@
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.physics(&quot;n2&quot;,</span> <span class="pre">analysis=&quot;magnetostatic&quot;</span> <span class="pre">|</span> <span class="pre">&quot;harmonic&quot;</span> <span class="pre">|</span> <span class="pre">&quot;transient&quot;,</span> <span class="pre">frequency=,</span> <span class="pre">dt=,</span> <span class="pre">t_end=,</span> <span class="pre">schematic=)</span></code></p></td>
 <td><p>sets the analysis (frequency in Hz, times in s)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.solve(&quot;n2&quot;)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.current(&quot;n2&quot;,</span> <span class="pre">&quot;Coil&quot;,</span> <span class="pre">&quot;10*sin(2*pi*60*t)&quot;)</span></code></p></td>
+<td><p>current of a circuit (or region) in this physics only; <code class="docutils literal notranslate"><span class="pre">None</span></code> goes back to the default</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.solve(&quot;n2&quot;)</span></code></p></td>
 <td><p>solves (generating the mesh first if needed)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.rename(id,</span> <span class="pre">name)</span></code>, <code class="docutils literal notranslate"><span class="pre">s.remove(id)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.rename(id,</span> <span class="pre">name)</span></code>, <code class="docutils literal notranslate"><span class="pre">s.remove(id)</span></code></p></td>
 <td><p>organization</p></td>
 </tr>
 </tbody>
@@ -549,8 +553,14 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.table(&quot;n2&quot;,</span> <span class="pre">name=)</span></code></p></td>
 <td><p>new table</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.item(table,</span> <span class="pre">&quot;circuits&quot;</span> <span class="pre">|</span> <span class="pre">&quot;lineint&quot;</span> <span class="pre">|</span> <span class="pre">&quot;surfint&quot;</span> <span class="pre">|</span> <span class="pre">&quot;formula&quot;,</span> <span class="pre">name=)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.item(table,</span> <span class="pre">&quot;circuits&quot;</span> <span class="pre">|</span> <span class="pre">&quot;lineint&quot;</span> <span class="pre">|</span> <span class="pre">&quot;surfint&quot;</span> <span class="pre">|</span> <span class="pre">&quot;formula&quot;</span> <span class="pre">|</span> <span class="pre">&quot;timeplot&quot;,</span> <span class="pre">name=)</span></code></p></td>
 <td><p>table item</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.show(item,</span> <span class="pre">curves=[(&quot;Coil_V&quot;,</span> <span class="pre">&quot;left&quot;),</span> <span class="pre">(&quot;Coil_lambda&quot;,</span> <span class="pre">&quot;right&quot;,</span> <span class="pre">&quot;#1f6fd1&quot;,</span> <span class="pre">&quot;Flux&quot;,</span> <span class="pre">&quot;dash&quot;,</span> <span class="pre">2.5)])</span></code></p></td>
+<td><p>time plot: variable, axis and, optionally, color, label, line type (<code class="docutils literal notranslate"><span class="pre">solid</span></code>, <code class="docutils literal notranslate"><span class="pre">dash</span></code>, <code class="docutils literal notranslate"><span class="pre">dot</span></code>), width and area fill (<code class="docutils literal notranslate"><span class="pre">True</span></code>); the name can be an expression</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.show(item,</span> <span class="pre">t_range=(0,</span> <span class="pre">20),</span> <span class="pre">y_left=(-100,</span> <span class="pre">100),</span> <span class="pre">y_right=(None,</span> <span class="pre">2))</span></code></p></td>
+<td><p>time plot: axis limits (t in ms; <code class="docutils literal notranslate"><span class="pre">None</span></code> = automatic)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.move(layer,</span> <span class="pre">view)</span></code>, <code class="docutils literal notranslate"><span class="pre">r.duplicate(id)</span></code>, <code class="docutils literal notranslate"><span class="pre">r.rename(id,</span> <span class="pre">name)</span></code>, <code class="docutils literal notranslate"><span class="pre">r.remove(id)</span></code></p></td>
 <td><p>organization</p></td>

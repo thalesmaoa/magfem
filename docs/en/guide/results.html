@@ -18,6 +18,8 @@
       <script src="../_static/documentation_options.js?v=8d563738"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -83,6 +85,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="solver.html">Solving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="solver.html#currents">Currents</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solver.html#analysis-types">Analysis types</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="solver.html#magnetostatic">Magnetostatic</a></li>
 <li class="toctree-l3"><a class="reference internal" href="solver.html#harmonic-ac">Harmonic (AC)</a></li>
@@ -294,6 +297,9 @@ view. In the layer properties: quantity, value range, number of lines, colormap,
 <tr class="row-odd"><td><p>Formula</p></td>
 <td><p>an expression of the other variables (for example <code class="docutils literal notranslate"><span class="pre">0.5*Coil_L*Coil_I^2</span></code>)</p></td>
 </tr>
+<tr class="row-even"><td><p>Time plot</p></td>
+<td><p>transient: the variables you choose, by name (with autocomplete) or as an expression of them, <code class="docutils literal notranslate"><span class="pre">t</span></code> and the project variables (e.g. <code class="docutils literal notranslate"><span class="pre">Primary_I*Primary_V</span></code>, <code class="docutils literal notranslate"><span class="pre">Primary_V/127</span></code> in pu), each on the left or right axis; each curve’s style button edits the expression and sets its label, color, line type, width and area fill; the limits of t and of each y axis are in the properties (empty means automatic); the mouse shows the values; resizable from the corner; exports CSV, MAT (MATLAB v5: <code class="docutils literal notranslate"><span class="pre">scipy.io.loadmat</span></code>, <code class="docutils literal notranslate"><span class="pre">MAT.jl</span></code>, <code class="docutils literal notranslate"><span class="pre">load</span></code>), SVG and PNG</p></td>
+</tr>
 </tbody>
 </table>
 <p>Each output has an editable name (by default the item prefix plus the quantity, such as <code class="docutils literal notranslate"><span class="pre">S1_fx</span></code>). Circuit variables
@@ -312,14 +318,17 @@ are named <code class="docutils literal notranslate"><span class="pre">&lt;circu
 </section>
 <section id="transient-and-ac">
 <h2>Transient and AC<a class="headerlink" href="#transient-and-ac" title="Link to this heading"></a></h2>
+<p>In transient analysis, the <strong>Circuits</strong> item becomes curves over time for each circuit: current <span class="math notranslate nohighlight">\(i\)</span>, flux linkage
+<span class="math notranslate nohighlight">\(\lambda\)</span>, <span class="math notranslate nohighlight">\(L = \lambda/i\)</span> (instants with <span class="math notranslate nohighlight">\(i = 0\)</span> are left out of the plot), terminal voltage <span class="math notranslate nohighlight">\(v = R\,i + d\lambda/dt\)</span> and
+losses <span class="math notranslate nohighlight">\(R\,i^2\)</span>.</p>
 <p>In transient and AC analysis, the view bar has a <strong>time bar</strong>, ▶ to animate, frames per second and <strong>Export animation
 (WebM)</strong>. Table items become <strong>curves over time</strong>; in the item properties you can see the table at a chosen instant.
 The signals of an external circuit show up when you click a component.</p>
 </section>
 <section id="export">
 <h2>Export<a class="headerlink" href="#export" title="Link to this heading"></a></h2>
-<p>The <strong>Export</strong> button on the top bar exports the active tab: a field view as PNG or JPG, a plot as SVG, PNG, JPG or
-CSV, and a table as CSV. The animation (WebM) comes from the view bar. See
+<p>The <strong>Export</strong> button on the top bar exports the active tab: a field view as PNG or JPG, a plot over a line as SVG,
+PNG, JPG or CSV, and the circuit table as CSV. The <strong>Time plot</strong> has its own CSV, SVG and PNG buttons. The animation (WebM) comes from the view bar. See
 <a class="reference internal" href="files.html#export"><span class="std std-ref">Files, import and export</span></a>.</p>
 </section>
 </section>

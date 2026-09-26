@@ -43,14 +43,15 @@ O botão **Exportar** (barra superior) exporta o que está na aba ativa:
 |---|---|
 | Desenho | SVG (vetorial, em mm), DXF (LibreCAD, FreeCAD…), PNG, JPG |
 | Vista de campo | PNG, JPG |
-| Gráfico | SVG, PNG, JPG, CSV |
-| Tabela | CSV |
+| Gráfico sobre linha, curva B-H | SVG, PNG, JPG, CSV |
+| Tabela de circuitos | CSV |
 
 Além disso:
 
 | O quê | Onde |
 |---|---|
 | Animação (WebM) | barra da vista, no transitório e no AC |
+| Gráfico no tempo (CSV, MAT, SVG, PNG) | botões abaixo do gráfico, na aba da tabela |
 | Modelo como código | botão `</>` ao lado de **Modelo**: script do console que recria o projeto |
 
 O script exportado recria o modelo exatamente, com os mesmos ids. Ele é a base para

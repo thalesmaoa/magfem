@@ -84,6 +84,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="solver.html">Resolução</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="solver.html#correntes">Correntes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solver.html#tipos-de-analise">Tipos de análise</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="solver.html#magnetostatica">Magnetostática</a></li>
 <li class="toctree-l3"><a class="reference internal" href="solver.html#harmonica-ac">Harmônica (AC)</a></li>
@@ -280,7 +281,9 @@ sua instalação.</p></li>
 <p>Em <strong>Malha › Circuitos</strong>, <code class="docutils literal notranslate"><span class="pre">+</span></code> cria um circuito. Nas propriedades da região, ligue-a a um circuito com um número de
 <strong>espiras</strong>; espiras negativas invertem o sentido (ida e volta de uma bobina).</p>
 <p>A <strong>corrente</strong> é uma fonte da análise, então fica em <strong>Método de resolução › (física) › Correntes</strong>: em A, aceita
-variáveis e, no transitório, funções de <code class="docutils literal notranslate"><span class="pre">t</span></code>, como <code class="docutils literal notranslate"><span class="pre">2*sin(2*pi*60*t)</span></code>.</p>
+variáveis e, no transitório, funções de <code class="docutils literal notranslate"><span class="pre">t</span></code>, como <code class="docutils literal notranslate"><span class="pre">2*sin(2*pi*60*t)</span></code>. <strong>Cada física tem as suas correntes</strong>: mudar
+a corrente do estático não muda a do transitório nem a do AC. Sem valor próprio, a física usa a corrente padrão do
+circuito.</p>
 <ul class="simple">
 <li><p>Todas as regiões de um circuito levam a mesma corrente (circuito <strong>série</strong>). O tipo “paralelo” dos arquivos do
 FEMM é guardado, mas a divisão da corrente entre regiões em paralelo ainda não foi implementada.</p></li>

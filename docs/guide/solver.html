@@ -84,6 +84,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Resolução</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#correntes">Correntes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tipos-de-analise">Tipos de análise</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#magnetostatica">Magnetostática</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#harmonica-ac">Harmônica (AC)</a></li>
@@ -246,6 +247,12 @@
 o <code class="docutils literal notranslate"><span class="pre">+</span></code> ao lado de <strong>Modelo</strong> cria outras físicas, como um <strong>circuito externo</strong>. O ▶ resolve (gerando a malha
 antes, se precisar), e mensagens explicam o que falta: região sem material, falta de um contorno com A
 prescrito, curva B-H inválida…</p>
+<section id="correntes">
+<h2>Correntes<a class="headerlink" href="#correntes" title="Link para este cabeçalho"></a></h2>
+<p>Cada física tem a sua seção <strong>Correntes</strong>, com a corrente de cada circuito e de cada região com corrente própria.
+Os valores valem só para aquela física: um estudo estático, um AC e um transitório podem ter correntes
+diferentes no mesmo projeto. No console: <code class="docutils literal notranslate"><span class="pre">s.current(&quot;n2&quot;,</span> <span class="pre">&quot;Bobina&quot;,</span> <span class="pre">&quot;10*sin(2*pi*60*t)&quot;)</span></code>.</p>
+</section>
 <section id="tipos-de-analise">
 <h2>Tipos de análise<a class="headerlink" href="#tipos-de-analise" title="Link para este cabeçalho"></a></h2>
 <p>Nas propriedades da física, escolha a <strong>análise</strong>:</p>

@@ -31,6 +31,7 @@ Uma **Tabela** reúne itens, e cada item gera **variáveis de resultado** com no
 | Integral de superfície | nas regiões escolhidas: área, volume, ∫A, corrente, energia, B médio, perdas (Joule e ferro), **força Fx, Fy e torque** |
 | Integral sobre linha | sobre uma curva: comprimento, fluxo Φ, força magnetomotriz ∫H·dl, ∫B, B médio, **força e torque** (contorno fechado) |
 | Fórmula | uma expressão sobre as outras variáveis (por exemplo `0.5*Bobina_L*Bobina_I^2`) |
+| Gráfico no tempo | transitório: as variáveis que você escolher, pelo nome (com autocompletar) ou por uma expressão com elas, `t` e as variáveis do projeto (ex.: `Primario_I*Primario_V`, `Primario_V/127` em pu), cada uma no eixo esquerdo ou direito; o botão de estilo de cada curva edita a expressão e define rótulo, cor, tipo de linha, espessura e área preenchida; os limites de t e de cada eixo y ficam nas propriedades (em branco, automático); o mouse mostra os valores; redimensionável pelo canto; exporta CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG e PNG |
 
 Cada saída tem um nome editável (o padrão é o prefixo do item mais a grandeza, como `S1_fx`). As variáveis de
 circuito se chamam `<circuito>_I`, `<circuito>_lambda`, `<circuito>_L` e `<circuito>_R`.
@@ -49,12 +50,16 @@ O torque é em torno da origem. No plano, os valores já incluem a profundidade.
 
 ## Transitório e AC
 
+No transitório, o item **Circuitos** vira curvas no tempo de cada circuito: corrente $i$, fluxo concatenado $\lambda$,
+$L = \lambda/i$ (instantes com $i = 0$ ficam de fora do gráfico), tensão nos terminais $v = R\,i + d\lambda/dt$ e
+perdas $R\,i^2$.
+
 Na análise transitória e na AC, a barra da vista tem uma **barra de tempo**, ▶ para animar, quadros por segundo e
 **Exportar animação (WebM)**. Os itens de tabela viram **curvas no tempo**; nas propriedades do item dá para ver a
 tabela num instante escolhido. Os sinais de um circuito externo aparecem ao clicar num componente.
 
 ## Exportar
 
-O botão **Exportar** da barra superior exporta a aba ativa: vista de campo em PNG ou JPG, gráfico em SVG, PNG, JPG
-ou CSV, e tabela em CSV. A animação (WebM) sai pela barra da vista. Veja
+O botão **Exportar** da barra superior exporta a aba ativa: vista de campo em PNG ou JPG, gráfico sobre linha em SVG,
+PNG, JPG ou CSV, e a tabela de circuitos em CSV. O **Gráfico no tempo** tem os próprios botões CSV, SVG e PNG. A animação (WebM) sai pela barra da vista. Veja
 [Arquivos, importar e exportar](./files.md#exportar).

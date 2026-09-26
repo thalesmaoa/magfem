@@ -83,6 +83,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="solver.html">Solving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="solver.html#currents">Currents</a></li>
 <li class="toctree-l2"><a class="reference internal" href="solver.html#analysis-types">Analysis types</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="solver.html#magnetostatic">Magnetostatic</a></li>
 <li class="toctree-l3"><a class="reference internal" href="solver.html#harmonic-ac">Harmonic (AC)</a></li>
@@ -279,7 +280,9 @@ installation.</p></li>
 <p>Under <strong>Mesh › Circuits</strong>, <code class="docutils literal notranslate"><span class="pre">+</span></code> creates a circuit. In the region properties, connect it to a circuit with a number
 of <strong>turns</strong>; negative turns reverse the direction (the go and return sides of a coil).</p>
 <p>The <strong>current</strong> is a source of the analysis, so it lives under <strong>Solver › (physics) › Currents</strong>: in A, it accepts
-variables and, in transient analysis, functions of <code class="docutils literal notranslate"><span class="pre">t</span></code> such as <code class="docutils literal notranslate"><span class="pre">2*sin(2*pi*60*t)</span></code>.</p>
+variables and, in transient analysis, functions of <code class="docutils literal notranslate"><span class="pre">t</span></code> such as <code class="docutils literal notranslate"><span class="pre">2*sin(2*pi*60*t)</span></code>. <strong>Each physics has its own
+currents</strong>: changing the static current does not change the transient or AC one. Without a value of its own, a
+physics uses the circuit’s default current.</p>
 <ul class="simple">
 <li><p>Every region of a circuit carries the same current (a <strong>series</strong> circuit). The “parallel” type of FEMM files is
 kept, but splitting the current among parallel regions is not implemented yet.</p></li>

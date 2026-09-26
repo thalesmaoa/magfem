@@ -105,6 +105,7 @@ Boundary types for `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`, 
 |---|---|
 | `s.add_physics(name="Magnetic field", circuit=False)` | new physics (field, or circuit with `circuit=True`) |
 | `s.physics("n2", analysis="magnetostatic" \| "harmonic" \| "transient", frequency=, dt=, t_end=, schematic=)` | sets the analysis (frequency in Hz, times in s) |
+| `s.current("n2", "Coil", "10*sin(2*pi*60*t)")` | current of a circuit (or region) in this physics only; `None` goes back to the default |
 | `s.solve("n2")` | solves (generating the mesh first if needed) |
 | `s.rename(id, name)`, `s.remove(id)` | organization |
 
@@ -117,7 +118,9 @@ Boundary types for `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`, 
 | `r.plot(view, "surface" \| "contour" \| "arrow" \| "line", quantity="b" \| "h" \| "a" \| "j" \| "bn" \| "bt")` | layer in a view (or plot over line) |
 | `r.show(id, visible=, range=(0, 1.5), n_lines=20, spacing=, scale=, curve=, quantity=, color=, color_by_value=, colormap=, regions=[(x, y)], outputs=[("fx", "Fx")], var_name=, expr=, unit_label=, at_time=, legend=(x, y, s))` | options of a layer or item |
 | `r.table("n2", name=)` | new table |
-| `r.item(table, "circuits" \| "lineint" \| "surfint" \| "formula", name=)` | table item |
+| `r.item(table, "circuits" \| "lineint" \| "surfint" \| "formula" \| "timeplot", name=)` | table item |
+| `r.show(item, curves=[("Coil_V", "left"), ("Coil_lambda", "right", "#1f6fd1", "Flux", "dash", 2.5)])` | time plot: variable, axis and, optionally, color, label, line type (`solid`, `dash`, `dot`), width and area fill (`True`); the name can be an expression |
+| `r.show(item, t_range=(0, 20), y_left=(-100, 100), y_right=(None, 2))` | time plot: axis limits (t in ms; `None` = automatic) |
 | `r.move(layer, view)`, `r.duplicate(id)`, `r.rename(id, name)`, `r.remove(id)` | organization |
 | `r.result("Fx", physics="n2")` | number of a result variable (at the shown instant, in transient) |
 | `r.results("n2")` | list `[(name, value, unit), ...]` |

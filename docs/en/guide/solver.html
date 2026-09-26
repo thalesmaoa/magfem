@@ -83,6 +83,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Solving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#currents">Currents</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#analysis-types">Analysis types</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#magnetostatic">Magnetostatic</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#harmonic-ac">Harmonic (AC)</a></li>
@@ -245,6 +246,12 @@
 to <strong>Model</strong> creates other physics, such as an <strong>external circuit</strong>. The ▶ button solves (generating the mesh
 first if needed), and messages explain what is missing: a region without a material, no boundary with a prescribed
 A, an invalid B-H curve…</p>
+<section id="currents">
+<h2>Currents<a class="headerlink" href="#currents" title="Link to this heading"></a></h2>
+<p>Each physics has its own <strong>Currents</strong> section, with the current of each circuit and of each region with its own
+current. The values apply to that physics only: a static, an AC and a transient study can have different currents in
+the same project. In the console: <code class="docutils literal notranslate"><span class="pre">s.current(&quot;n2&quot;,</span> <span class="pre">&quot;Coil&quot;,</span> <span class="pre">&quot;10*sin(2*pi*60*t)&quot;)</span></code>.</p>
+</section>
 <section id="analysis-types">
 <h2>Analysis types<a class="headerlink" href="#analysis-types" title="Link to this heading"></a></h2>
 <p>In the physics properties, choose the <strong>analysis</strong>:</p>
