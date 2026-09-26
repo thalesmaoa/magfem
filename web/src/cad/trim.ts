@@ -95,6 +95,16 @@ export function trim(sk: Sketch, id: Id, p: Vec): Sketch | null {
     d.sk.groups = d.sk.groups.map((g) => (gids.includes(g.id) ? { ...g, members: [...g.members, ...ids] } : g));
   };
   const gids = groupsOf(id);
+  // Um ponto que vira ponta da curva já está nela: "ponto sobre" a própria curva ficaria redundante (o solver recusa).
+  const done = (ids: Id[]) => {
+    d.sk.constraints = d.sk.constraints.filter((k) => {
+      if (k.type !== 'pointOn' || !ids.includes(k.refs[1])) return true;
+      const e = d.sk.entities[k.refs[1]] as Curve & Record<string, unknown>;
+      const ends = e.type === 'line' ? [e.p1, e.p2] : e.type === 'arc' ? [e.s, e.e] : [];
+      return !ends.includes(k.refs[0]);
+    });
+    return deleteItems(d.sk, []);
+  };
   // Cotas de comprimento/raio e "igual" da curva cortada deixam de valer.
   d.sk.constraints = d.sk.constraints.filter(
     (k) => !((k.refs.length === 1 && k.refs[0] === id && (k.type === 'distance' || k.type === 'diameter')) || (k.type === 'equal' && k.refs.includes(id))),
@@ -104,11 +114,12 @@ export function trim(sk: Sketch, id: Id, p: Vec): Sketch | null {
     const s = cutPoint(piece.t1, piece.by1), e = cutPoint(piece.t0, piece.by0);
     d.sk.entities[id] = { id, type: 'arc', c: c.c, s, e, r: c.r, ...(c.construction ? { construction: true } : {}) };
     addToGroups(gids, [s, e]);
-    return deleteItems(d.sk, []);
+    return done([id]);
   }
   const atStart = Math.abs(piece.t0 - P.t0) < 1e-9, atEnd = Math.abs(piece.t1 - P.t1) < 1e-9;
   const startKey = c.type === 'line' ? 'p1' : 's', endKey = c.type === 'line' ? 'p2' : 'e';
   const cur = d.sk.entities[id] as Curve & Record<string, unknown>;
+  const touched: Id[] = [id];
   if (atStart) {
     const np = cutPoint(piece.t1, piece.by1);
     d.sk.entities[id] = { ...cur, [startKey]: np } as Curve;
@@ -131,6 +142,7 @@ export function trim(sk: Sketch, id: Id, p: Vec): Sketch | null {
       nid = d.addArc((c as { c: Id }).c, b, oldEnd, c.r, !!c.construction);
     }
     addToGroups(gids, [a, b, nid]);
+    touched.push(nid);
   }
-  return deleteItems(d.sk, []);
+  return done(touched);
 }
