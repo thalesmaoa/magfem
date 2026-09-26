@@ -117,6 +117,18 @@ export function movePlot(sk: Sketch, id: Id, viewId: Id): Sketch {
   return { ...sk, nodes: rest };
 }
 
+/** O projeto visto por uma física: correntes de circuitos e regiões trocadas pelas dela (quando definidas). */
+export function physicsSketch(sk: Sketch, physics: Id | undefined): Sketch {
+  const node = physics ? sk.nodes.find((n) => n.id === physics) : undefined;
+  const cur = node?.kind === 'physics' ? node.currents : undefined;
+  if (!cur || !Object.keys(cur).length) return sk;
+  return {
+    ...sk,
+    circuits: sk.circuits.map((c) => (cur[c.id] !== undefined ? { ...c, current: cur[c.id] } : c)),
+    regionAssigns: sk.regionAssigns.map((a) => (cur[a.id] !== undefined ? { ...a, current: cur[a.id] } : a)),
+  };
+}
+
 export function updateNode(sk: Sketch, id: Id, patch: Partial<TreeNode>): Sketch {
   return { ...sk, nodes: sk.nodes.map((n) => (n.id === id ? ({ ...n, ...patch } as TreeNode) : n)) };
 }

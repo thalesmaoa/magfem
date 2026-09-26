@@ -159,6 +159,11 @@ export interface PhysicsNode {
   /** Passo e tempo final (transiente), expressões em s. */
   dt: string;
   tEnd: string;
+  /**
+   * Correntes desta física (id do circuito ou da atribuição de região → expressão). Sem entrada, vale a corrente
+   * gravada no circuito/região; assim estático, AC e transitório podem ter correntes diferentes.
+   */
+  currents?: Record<Id, string>;
 }
 
 export interface MeshNode {

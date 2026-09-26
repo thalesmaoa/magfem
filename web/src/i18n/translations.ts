@@ -465,6 +465,7 @@ export interface Translations {
     openCircuit: string;
     sources: string;
     sourcesTime: string;
+    sourcesPeak: string;
     fromCircuit: string;
     staticHelp: string;
     timeHelp: string;
@@ -1206,9 +1207,10 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     openCircuit: 'Abrir o circuito',
     sources: 'Correntes',
     sourcesTime: 'Correntes no tempo',
+    sourcesPeak: 'Correntes (amplitude de pico)',
     fromCircuit: 'vem do circuito',
-    staticHelp: 'Correntes dos circuitos e regiões (expressões com as variáveis do projeto; t = 0 no estático).',
-    timeHelp: 'Escreva cada corrente como função do tempo t (s), com as variáveis do projeto. Ex.: I0*sin(2*pi*60*t). O transitório atualiza t a cada passo.',
+    staticHelp: 'Correntes desta física: cada física (estática, AC, transitória) tem as suas. Expressões com as variáveis do projeto; no AC, amplitude de pico.',
+    timeHelp: 'Correntes desta física (as outras físicas têm as suas). Escreva cada corrente como função do tempo t (s), com as variáveis do projeto. Ex.: I0*sin(2*pi*60*t). O transitório atualiza t a cada passo.',
     schematic: 'Circuito',
     frame: (k, n, t) => `passo ${k}/${n} · t = ${t}`,
     play: 'Animar',
@@ -1299,7 +1301,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     title: 'Circuitos',
     add: 'Novo circuito',
     current: 'Corrente (A) — expressão, pode usar t',
-    currentInSolver: (i) => `Corrente: ${i} A. Ela é definida em Método de resolução › (física) › Correntes, junto com a análise.`,
+    currentInSolver: (i) => `Corrente padrão: ${i} A. Cada física define a sua em Método de resolução › (física) › Correntes.`,
     kind: 'Ligação',
     series: 'Série',
     parallel: 'Paralelo',
@@ -1962,9 +1964,10 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     openCircuit: 'Open the circuit',
     sources: 'Currents',
     sourcesTime: 'Currents in time',
+    sourcesPeak: 'Currents (peak amplitude)',
     fromCircuit: 'from the circuit',
-    staticHelp: 'Circuit and region currents (expressions with project variables; t = 0 in statics).',
-    timeHelp: 'Write each current as a function of time t (s), with project variables. E.g. I0*sin(2*pi*60*t). The transient updates t at every step.',
+    staticHelp: 'Currents of this physics: each physics (static, AC, transient) has its own. Expressions with project variables; peak amplitude in AC.',
+    timeHelp: 'Currents of this physics (the other physics have their own). Write each current as a function of time t (s), with project variables. E.g. I0*sin(2*pi*60*t). The transient updates t at every step.',
     schematic: 'Circuit',
     frame: (k, n, t) => `step ${k}/${n} · t = ${t}`,
     play: 'Animate',
@@ -2055,7 +2058,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     title: 'Circuits',
     add: 'New circuit',
     current: 'Current (A) — expression, may use t',
-    currentInSolver: (i) => `Current: ${i} A. It is set under Solver › (physics) › Currents, together with the analysis.`,
+    currentInSolver: (i) => `Default current: ${i} A. Each physics sets its own under Solver › (physics) › Currents.`,
     kind: 'Connection',
     series: 'Series',
     parallel: 'Parallel',

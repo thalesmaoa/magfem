@@ -892,6 +892,21 @@ export class CommandConsole {
         const r = addNode(sk, kind, name);
         return this.commitWithId(r.sketch, r.node.id, kw.id);
       }
+      case 'current': {
+        // s.current("n2", "Bobina", "10*sin(2*pi*60*t)"): corrente de um circuito (ou atribuição de região) só nesta física.
+        need(3);
+        const id = String(a[0]);
+        const node = sk.nodes.find((n) => n.id === id);
+        if (node?.kind !== 'physics') throw new ConsoleError(t.notFound(id));
+        const ref = String(a[1]);
+        const target = findCircuit(sk, ref)?.id ?? sk.regionAssigns.find((x) => x.id === ref || x.name === ref)?.id;
+        if (!target) throw new ConsoleError(t.notFound(ref));
+        const currents = { ...node.currents };
+        if (a[2] === null) delete currents[target];
+        else currents[target] = String(a[2]);
+        this.commit(updateNode(sk, id, { currents: Object.keys(currents).length ? currents : undefined }));
+        return null;
+      }
       case 'physics': {
         need(1);
         const id = String(a[0]);
@@ -1347,6 +1362,7 @@ const NODE_METHODS = {
       rename: 'rename("n2", "...")',
     remove: 'remove("n2")',
     solve: 'solve("n2")',
+    current: 'current("n2", "Bobina", "10*sin(2*pi*60*t)")  # corrente só nesta física (None volta à do circuito)',
   },
   r: {
     view: 'view("n2", name="Vista 2")',

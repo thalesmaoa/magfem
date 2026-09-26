@@ -6,7 +6,7 @@ import { updateMaterial } from '../cad/mesh';
 import { circuitResults, lineProfile, quantityLabel, frameOf } from '../cad/solve';
 import { findRegion } from '../cad/regions';
 import { outputsOf, resultVars, safeName, varNameOf } from '../cad/results';
-import type { TreeSel } from '../cad/tree';
+import { physicsSketch, type TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT, displayName } from '../i18n';
 import { MultiChart } from './SchematicPane';
@@ -509,7 +509,7 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
   const sol = ed.shownSol(physics);
   if (!ed.sketch.circuits.length) return <p className="muted">{t.circuit.empty}</p>;
   if (!sol) return <p className="muted">{t.solve.noSolution}</p>;
-  const rows = circuitResults(ed.sketch, ed.arrangement(), sol);
+  const rows = circuitResults(physicsSketch(ed.sketch, physics), ed.arrangement(), sol);
   const c = t.circuit.cols;
   return (
     <div className={big ? 'circ big' : 'circ'}>
@@ -577,12 +577,30 @@ export function itemTimeSeries(ed: SketchEditor, it: PostNode): { t: number[]; s
   const names = itemVarNames(ed, it);
   const arr = ed.arrangement();
   const series = names.map((label) => ({ label, unit: '', y: [] as number[] }));
+  const resist = new Map<string, number>();
   for (let k = 0; k < full.times.length; k++) {
     const rv = resultVars(ed.sketch, arr, frameOf(full, k), it.physics);
     for (const s of series) {
       const v = rv.list.find((x) => x.name === s.label);
       s.y.push(v ? v.value : NaN);
       if (v) s.unit = v.unit;
+    }
+    if (it.item === 'circuits') for (const v of rv.list) if (v.name.endsWith('_R')) resist.set(v.name.slice(0, -2), v.value);
+  }
+  if (it.item === 'circuits') {
+    // Circuitos no tempo: além de i e λ, L = λ/i, tensão nos terminais v = R·i + dλ/dt e perdas R·i².
+    const t = full.times;
+    for (const c of ed.sketch.circuits) {
+      const p = safeName(c.name);
+      const I = series.find((s) => s.label === `${p}_I`)?.y;
+      const lam = series.find((s) => s.label === `${p}_lambda`)?.y;
+      if (!I || !lam) continue;
+      series.push({ label: `${p}_L`, unit: 'H', y: I.map((i, k) => (Math.abs(i) > 1e-12 ? lam[k] / i : NaN)) });
+      const R = resist.get(p);
+      // Derivada para trás; antes do primeiro passo, λ = 0 em t = 0 (o transitório parte de A = 0).
+      const dl = lam.map((l, k) => (l - (k ? lam[k - 1] : 0)) / (t[k] - (k ? t[k - 1] : 0) || NaN));
+      series.push({ label: `${p}_V`, unit: 'V', y: I.map((i, k) => (R !== undefined ? R * i : 0) + dl[k]) });
+      if (R !== undefined) series.push({ label: `${p}_P`, unit: 'W', y: I.map((i) => R * i * i) });
     }
   }
   const res = { t: Array.from(full.times), series: series.filter((s) => s.y.some((v) => Number.isFinite(v))) };

@@ -15,7 +15,6 @@ import { Icons } from './icons';
 import { GeometryProps } from './GeometryProps';
 import { useDocVersion, useEditor } from './useStore';
 import { ScriptExportButton } from './ScriptExport';
-import { assignRegion, pointCode, regionKey, updateCircuit } from '../cad/mesh';
 import { findRegion } from '../cad/regions';
 import { SchematicSidebar } from './SchematicPane';
 import { activateTab, openTab, useTabs } from './tabsStore';
@@ -190,7 +189,7 @@ function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsN
           </>
         )}
       </section>
-      {node.analysis !== 'harmonic' && !node.coupled && <TimeSources ed={ed} node={node} />}
+      {!node.coupled && <TimeSources ed={ed} node={node} />}
       <SolveSection ed={ed} node={node} onSelect={onSelect} />
     </div>
   );
@@ -211,9 +210,13 @@ function TimeSources({ ed, node }: { ed: SketchEditor; node: PhysicsNode }) {
     .map((a) => ({ a, r: findRegion(arr, a) }))
     .filter((x): x is { a: RegionAssign; r: NonNullable<ReturnType<typeof findRegion>> } => !!x.r && !x.a.circuit && !!x.a.current?.trim());
   if (!sk.circuits.length && !regions.length) return null;
+  // Cada física tem as suas correntes (sem valor próprio, vale a do circuito/região).
+  const cur = (id: Id, fallback: string) => node.currents?.[id] ?? fallback;
+  const setCurrent = (id: Id, ref: string, v: string) =>
+    ed.commit(updateNode(sk, node.id, { currents: { ...node.currents, [id]: v } }), [`s.current(${q(node.id)}, ${q(ref)}, ${q(v)})`]);
   return (
     <section>
-      <h3>{node.analysis === 'transient' ? t.solve.sourcesTime : t.solve.sources}</h3>
+      <h3>{node.analysis === 'transient' ? t.solve.sourcesTime : node.analysis === 'harmonic' ? t.solve.sourcesPeak : t.solve.sources}</h3>
       {sk.circuits.map((c) =>
         inCircuit.has(c.id) ? (
           <label className="field" key={c.id}>
@@ -224,9 +227,9 @@ function TimeSources({ ed, node }: { ed: SketchEditor; node: PhysicsNode }) {
           <label className="field" key={c.id}>
             <span>{c.name} (A)</span>
             <LazyInput
-              value={c.current}
+              value={cur(c.id, c.current)}
               ariaLabel={`${c.name} (A)`}
-              onCommit={(v) => v.trim() && ed.meshOp((s2) => updateCircuit(s2, c.id, { current: v.trim() }), `m.circuit(${q(c.name)}, current=${q(v.trim())})`)}
+              onCommit={(v) => v.trim() && setCurrent(c.id, c.name, v.trim())}
             />
           </label>
         ),
@@ -235,9 +238,9 @@ function TimeSources({ ed, node }: { ed: SketchEditor; node: PhysicsNode }) {
         <label className="field" key={a.id}>
           <span>{a.name ?? t.mesh.region(r.index + 1)} (A)</span>
           <LazyInput
-            value={a.current ?? ''}
+            value={cur(a.id, a.current ?? '')}
             ariaLabel={`${a.name ?? t.mesh.region(r.index + 1)} (A)`}
-            onCommit={(v) => ed.meshOp((s2) => assignRegion(s2, ed.arrangement(), regionKey(r), { current: v.trim() || undefined }), `m.region(${pointCode(r.label)}, current=${q(v.trim())})`)}
+            onCommit={(v) => v.trim() && setCurrent(a.id, a.id, v.trim())}
           />
         </label>
       ))}

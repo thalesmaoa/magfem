@@ -39,7 +39,9 @@ Under **Mesh › Circuits**, `+` creates a circuit. In the region properties, co
 of **turns**; negative turns reverse the direction (the go and return sides of a coil).
 
 The **current** is a source of the analysis, so it lives under **Solver › (physics) › Currents**: in A, it accepts
-variables and, in transient analysis, functions of `t` such as `2*sin(2*pi*60*t)`.
+variables and, in transient analysis, functions of `t` such as `2*sin(2*pi*60*t)`. **Each physics has its own
+currents**: changing the static current does not change the transient or AC one. Without a value of its own, a
+physics uses the circuit's default current.
 
 - Every region of a circuit carries the same current (a **series** circuit). The "parallel" type of FEMM files is
   kept, but splitting the current among parallel regions is not implemented yet.

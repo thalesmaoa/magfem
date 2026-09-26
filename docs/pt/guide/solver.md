@@ -5,6 +5,12 @@ o `+` ao lado de **Modelo** cria outras físicas, como um **circuito externo**. 
 antes, se precisar), e mensagens explicam o que falta: região sem material, falta de um contorno com A
 prescrito, curva B-H inválida…
 
+## Correntes
+
+Cada física tem a sua seção **Correntes**, com a corrente de cada circuito e de cada região com corrente própria.
+Os valores valem só para aquela física: um estudo estático, um AC e um transitório podem ter correntes
+diferentes no mesmo projeto. No console: `s.current("n2", "Bobina", "10*sin(2*pi*60*t)")`.
+
 ## Tipos de análise
 
 Nas propriedades da física, escolha a **análise**:

@@ -134,3 +134,66 @@ test('transitório: resultados viram curvas no tempo (corrente senoidal) e tabel
   });
   expect(inst[0][1]).toMatch(/800/);
 });
+
+test('correntes por física: o transitório não muda a do estático; circuito no tempo traz L, V e perdas', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  const run = async (c: string) => {
+    await box.fill(c);
+    await box.press('Enter');
+  };
+  for (const c of [
+    'g.rectangle((-105, -110), (105, 110))',
+    'g.rectangle((-45, -70), (45, 70))',
+    'g.rectangle((-25, -50), (25, 50))',
+    'm.circuit("Bobina", current="1")',
+    'm.region((0, 90), material="Ar")',
+    'm.region((-35, 0), material="Aço M400-50A")',
+    'm.region((0, 0), material="Cobre", circuit="Bobina", turns=400)',
+    's.add_physics(name="Transitório", id="n7")',
+    's.physics("n7", analysis="transient", dt="0.001", t_end="0.02")',
+    's.current("n7", "Bobina", "2*sin(2*pi*50*t)")',
+    'r.table("n7", id="tb2")',
+    'r.item("tb2", "circuits", id="ic")',
+  ])
+    await run(c);
+  let sk = await sketch(page);
+  expect(sk.circuits[0].current).toBe('1');
+  expect(sk.nodes.find((n: any) => n.id === 'n2').currents).toBeUndefined();
+  expect(sk.nodes.find((n: any) => n.id === 'n7').currents).toEqual({ [sk.circuits[0].id]: '2*sin(2*pi*50*t)' });
+  // Na interface: cada física mostra (e edita) só a sua corrente.
+  await page.getByRole('treeitem', { name: /Transitório/ }).first().click();
+  await expect(page.getByRole('textbox', { name: 'Bobina (A)' })).toHaveValue('2*sin(2*pi*50*t)');
+  await page.getByRole('treeitem', { name: /Campo magnético/ }).first().click();
+  await expect(page.getByRole('textbox', { name: 'Bobina (A)' })).toHaveValue('1');
+  await page.getByRole('textbox', { name: 'Bobina (A)' }).fill('3');
+  await page.getByRole('textbox', { name: 'Bobina (A)' }).press('Enter');
+  sk = await sketch(page);
+  expect(sk.nodes.find((n: any) => n.id === 'n7').currents[sk.circuits[0].id]).toBe('2*sin(2*pi*50*t)');
+  // O script exportado recria as correntes de cada física.
+  const script = await page.evaluate(async () => {
+    const { generateScript } = await import('/tools/magfem-web/src/cad/script.ts');
+    return generateScript((window as any).__magfem.sketch);
+  });
+  expect(script).toContain('s.current("n7", ');
+  // Resolve o transitório: corrente senoidal e as curvas de L, V e perdas do circuito.
+  await run('s.solve("n7")');
+  await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.has('n7')), { timeout: 30000 }).toBe(true);
+  const ts = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { itemTimeSeries } = await import('/tools/magfem-web/src/ui/CanvasTabs.tsx');
+    return itemTimeSeries(ed, ed.sketch.nodes.find((n: any) => n.id === 'ic'));
+  });
+  const labels = ts.series.map((s: any) => s.label);
+  expect(labels).toEqual(expect.arrayContaining(['Bobina_I', 'Bobina_lambda', 'Bobina_L', 'Bobina_V', 'Bobina_P']));
+  const I = ts.series.find((s: any) => s.label === 'Bobina_I').y;
+  for (let k = 0; k < ts.t.length; k++) expect(I[k]).toBeCloseTo(2 * Math.sin(2 * Math.PI * 50 * ts.t[k]), 6);
+  const L = ts.series.find((s: any) => s.label === 'Bobina_L').y.filter((v: number) => Number.isFinite(v));
+  expect(L.length).toBeGreaterThan(5);
+  expect(Math.min(...L)).toBeGreaterThan(0);
+  // Na aba da tabela, o gráfico de L omite os instantes com i = 0 (sem "NaN" na escala nem no traço).
+  const tbName = (await sketch(page)).nodes.find((n: any) => n.id === 'tb2').name;
+  await page.getByRole('treeitem', { name: tbName, exact: true }).click();
+  const chartL = page.locator('svg.xychart[aria-label^="Bobina_L"]');
+  await expect(chartL).toBeVisible();
+  expect(await chartL.innerHTML()).not.toContain('NaN');
+});

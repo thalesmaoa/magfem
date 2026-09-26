@@ -48,6 +48,10 @@ Torque is about the origin. In planar problems the values already include the de
 
 ## Transient and AC
 
+In transient analysis, the **Circuits** item becomes curves over time for each circuit: current $i$, flux linkage
+$\lambda$, $L = \lambda/i$ (instants with $i = 0$ are left out of the plot), terminal voltage $v = R\,i + d\lambda/dt$ and
+losses $R\,i^2$.
+
 In transient and AC analysis, the view bar has a **time bar**, ▶ to animate, frames per second and **Export animation
 (WebM)**. Table items become **curves over time**; in the item properties you can see the table at a chosen instant.
 The signals of an external circuit show up when you click a component.

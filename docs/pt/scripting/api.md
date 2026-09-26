@@ -105,6 +105,7 @@ Tipos de contorno em `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`
 |---|---|
 | `s.add_physics(name="Campo magnético", circuit=False)` | nova física (campo, ou circuito com `circuit=True`) |
 | `s.physics("n2", analysis="magnetostatic" \| "harmonic" \| "transient", frequency=, dt=, t_end=, schematic=)` | configura a análise (frequência em Hz, tempos em s) |
+| `s.current("n2", "Bobina", "10*sin(2*pi*60*t)")` | corrente de um circuito (ou região) só nesta física; `None` volta à padrão |
 | `s.solve("n2")` | resolve (gera a malha antes, se preciso) |
 | `s.rename(id, nome)`, `s.remove(id)` | organização |
 

@@ -480,8 +480,20 @@ const SERIES_COLORS = ['#e8408a', '#1f6fd1', '#2e8b57', '#d4880f', '#8e44ad', '#
 export function MultiChart({ x, series, xLabel, yLabel, cursor }: { x: number[]; series: { label: string; y: number[] }[]; xLabel: string; yLabel: string; cursor?: number }) {
   const Wc = 520, Hc = 200, L = 56, R = 10, Tt = 10, B = 34;
   const x0 = x[0], x1 = x[x.length - 1];
-  let lo = Math.min(...series.flatMap((s2) => s2.y)), hi = Math.max(...series.flatMap((s2) => s2.y));
+  // Pontos não finitos (ex.: L = λ/i com i = 0) ficam de fora da escala e do traço.
+  const finite = series.flatMap((s2) => s2.y.filter((v) => Number.isFinite(v)));
+  let lo = finite.length ? Math.min(...finite) : 0, hi = finite.length ? Math.max(...finite) : 1;
   if (!(hi > lo)) hi = lo + 1;
+  const segments = (y: number[]) => {
+    const out: string[] = [];
+    let cur: string[] = [];
+    y.forEach((v, k) => {
+      if (Number.isFinite(v)) cur.push(`${X(x[k]).toFixed(1)},${Y(v).toFixed(1)}`);
+      else if (cur.length) (out.push(cur.join(' ')), (cur = []));
+    });
+    if (cur.length) out.push(cur.join(' '));
+    return out;
+  };
   const X = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * (Wc - L - R);
   const Y = (v: number) => Tt + (1 - (v - lo) / (hi - lo)) * (Hc - Tt - B);
   const fmt = (v: number) => Number(v.toPrecision(3)).toString();
@@ -490,7 +502,11 @@ export function MultiChart({ x, series, xLabel, yLabel, cursor }: { x: number[];
       <rect x={L} y={Tt} width={Wc - L - R} height={Hc - Tt - B} className="frame" />
       {lo < 0 && hi > 0 && <line x1={L} x2={Wc - R} y1={Y(0)} y2={Y(0)} className="grid" />}
       {series.map((s2, i) => (
-        <polyline key={s2.label} points={s2.y.map((v, k) => `${X(x[k]).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')} fill="none" stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={1.8} />
+        <g key={s2.label}>
+          {segments(s2.y).map((pts, j) => (
+            <polyline key={j} points={pts} fill="none" stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={1.8} />
+          ))}
+        </g>
       ))}
       {cursor !== undefined && <line x1={X(cursor)} x2={X(cursor)} y1={Tt} y2={Hc - B} className="cursor" />}
       <text x={L - 4} y={Tt + 8} textAnchor="end">{fmt(hi)}</text>

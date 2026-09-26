@@ -1,6 +1,7 @@
 // Exportação das abas de gráfico (sobre linha, B-H, circuitos): SVG, PNG/JPG e CSV.
 import type { SketchEditor } from '../cad/editor';
 import { circuitResults, lineProfile } from '../cad/solve';
+import { physicsSketch } from '../cad/tree';
 
 const CHART_STYLE = `
   .grid { stroke: #d9dee5; stroke-width: 1; }
@@ -79,7 +80,7 @@ export function tabCSV(ed: SketchEditor, tab: string): string | null {
     const sol = ed.shownSol(tab.slice(9));
     if (!sol) return null;
     rows.push(['circuito', 'I (A)', 'espiras', 'lambda (Wb)', 'L (H)', 'R (ohm)', 'V (V)', 'P (W)']);
-    for (const r of circuitResults(sk, ed.arrangement(), sol)) rows.push([r.name, r.I, r.turns, r.lambda, r.L ?? '', r.R ?? '', r.V ?? '', r.P ?? '']);
+    for (const r of circuitResults(physicsSketch(sk, tab.slice(9)), ed.arrangement(), sol)) rows.push([r.name, r.I, r.turns, r.lambda, r.L ?? '', r.R ?? '', r.V ?? '', r.P ?? '']);
   } else return null;
   const cell = (v: string | number) => (typeof v === 'number' ? String(v) : /[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   return rows.map((r) => r.map(cell).join(';')).join('\n') + '\n';

@@ -5,6 +5,12 @@ to **Model** creates other physics, such as an **external circuit**. The ▶ but
 first if needed), and messages explain what is missing: a region without a material, no boundary with a prescribed
 A, an invalid B-H curve…
 
+## Currents
+
+Each physics has its own **Currents** section, with the current of each circuit and of each region with its own
+current. The values apply to that physics only: a static, an AC and a transient study can have different currents in
+the same project. In the console: `s.current("n2", "Coil", "10*sin(2*pi*60*t)")`.
+
 ## Analysis types
 
 In the physics properties, choose the **analysis**:

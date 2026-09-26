@@ -105,6 +105,7 @@ Boundary types for `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`, 
 |---|---|
 | `s.add_physics(name="Magnetic field", circuit=False)` | new physics (field, or circuit with `circuit=True`) |
 | `s.physics("n2", analysis="magnetostatic" \| "harmonic" \| "transient", frequency=, dt=, t_end=, schematic=)` | sets the analysis (frequency in Hz, times in s) |
+| `s.current("n2", "Coil", "10*sin(2*pi*60*t)")` | current of a circuit (or region) in this physics only; `None` goes back to the default |
 | `s.solve("n2")` | solves (generating the mesh first if needed) |
 | `s.rename(id, name)`, `s.remove(id)` | organization |
 

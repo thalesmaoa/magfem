@@ -39,7 +39,9 @@ Em **Malha › Circuitos**, `+` cria um circuito. Nas propriedades da região, l
 **espiras**; espiras negativas invertem o sentido (ida e volta de uma bobina).
 
 A **corrente** é uma fonte da análise, então fica em **Método de resolução › (física) › Correntes**: em A, aceita
-variáveis e, no transitório, funções de `t`, como `2*sin(2*pi*60*t)`.
+variáveis e, no transitório, funções de `t`, como `2*sin(2*pi*60*t)`. **Cada física tem as suas correntes**: mudar
+a corrente do estático não muda a do transitório nem a do AC. Sem valor próprio, a física usa a corrente padrão do
+circuito.
 
 - Todas as regiões de um circuito levam a mesma corrente (circuito **série**). O tipo "paralelo" dos arquivos do
   FEMM é guardado, mas a divisão da corrente entre regiões em paralelo ainda não foi implementada.

@@ -42,7 +42,7 @@ import type { MagOut, TriangulateOut } from '../wasm/core';
 import { buildMagInput, depthOf, frameOf, regionJ, smoothSolution, typicalSize, type Solution } from './solve';
 import type { LegendLayout, PostNode, SchematicNode } from './types';
 import { buildNetlist, sourceSteps } from './schematic';
-import { addNode } from './tree';
+import { addNode, physicsSketch } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern, type MirrorAxis } from './patterns';
@@ -326,7 +326,7 @@ export class SketchEditor {
     const sk = this.sketch;
     const meshNode = sk.nodes.find((n) => n.kind === 'mesh');
     const meshKey = meshNode?.kind === 'mesh' ? inputKey(buildMeshInput(sk, this.arrangement(), meshNode).input) : '';
-    const physics = sk.nodes.map((n) => (n.kind === 'physics' ? [n.analysis, n.frequency, n.dt, n.tEnd] : null)).filter(Boolean);
+    const physics = sk.nodes.map((n) => (n.kind === 'physics' ? [n.analysis, n.frequency, n.dt, n.tEnd, n.currents ?? null] : null)).filter(Boolean);
     const key = inputKey({
       meshKey,
       materials: sk.materials,
@@ -375,7 +375,9 @@ export class SketchEditor {
       if (!mesh) return fail(this.meshErrors.get(meshNode.id) ?? t.mesh.noRegions);
     }
     const key = this.solveKey();
-    const { input, problems } = buildMagInput(this.sketch, this.arrangement(), mesh, this.defaultOuter());
+    // Correntes desta física (cada física pode ter as suas).
+    const psk = physicsSketch(this.sketch, id);
+    const { input, problems } = buildMagInput(psk, this.arrangement(), mesh, this.defaultOuter());
     if (problems.length) return fail(problems.join(' · '));
     let netInfo: { schematic: Id; partOf: Id[]; nodeOf: Map<string, number>; netNodes: number } | null = null;
     // Transitório: correntes = funções de t (avaliadas a cada passo), passo dt até t_final (A(0) = 0).
@@ -414,10 +416,10 @@ export class SketchEditor {
       }
       try {
         const jSteps: number[] = [];
-        for (let k = 1; k <= steps; k++) jSteps.push(...regionJ(this.sketch, arr, k * dt, coupled));
+        for (let k = 1; k <= steps; k++) jSteps.push(...regionJ(psk, arr, k * dt, coupled));
         input.jSteps = jSteps;
         // J de referência (para os mapas de J por passo): o do último passo.
-        input.J = regionJ(this.sketch, arr, steps * dt, coupled);
+        input.J = regionJ(psk, arr, steps * dt, coupled);
       } catch (e) {
         return fail((e as Error).message);
       }

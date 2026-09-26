@@ -3,6 +3,7 @@ import { T } from '../i18n';
 import { evaluate, evaluateVariables, type Q } from './expr';
 import { findRegion, type Arrangement } from './regions';
 import { circuitResults, depthOf, lineIntegrals, MU0, surfaceIntegrals, type Solution } from './solve';
+import { physicsSketch } from './tree';
 import type { Id, PostNode, Sketch } from './types';
 
 const num = (v: number): Q => ({ v, L: 0, A: 0 });
@@ -67,7 +68,8 @@ export interface ResultVars {
 }
 
 /** Calcula todas as variáveis de resultado de uma física, na ordem da árvore (fórmulas veem as anteriores). */
-export function resultVars(sk: Sketch, arr: Arrangement, sol: Solution, physics: Id): ResultVars {
+export function resultVars(sk0: Sketch, arr: Arrangement, sol: Solution, physics: Id): ResultVars {
+  const sk = physicsSketch(sk0, physics);
   const { values } = evaluateVariables(sk.variables, sk.settings.unit);
   const env = new Map<string, Q>(values);
   const list: ResultVars['list'] = [];

@@ -49,6 +49,10 @@ O torque é em torno da origem. No plano, os valores já incluem a profundidade.
 
 ## Transitório e AC
 
+No transitório, o item **Circuitos** vira curvas no tempo de cada circuito: corrente $i$, fluxo concatenado $\lambda$,
+$L = \lambda/i$ (instantes com $i = 0$ ficam de fora do gráfico), tensão nos terminais $v = R\,i + d\lambda/dt$ e
+perdas $R\,i^2$.
+
 Na análise transitória e na AC, a barra da vista tem uma **barra de tempo**, ▶ para animar, quadros por segundo e
 **Exportar animação (WebM)**. Os itens de tabela viram **curvas no tempo**; nas propriedades do item dá para ver a
 tabela num instante escolhido. Os sinais de um circuito externo aparecem ao clicar num componente.
