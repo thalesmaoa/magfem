@@ -595,7 +595,7 @@ export interface Translations {
     addItem: string;
     items: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
-    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string, why: string) => string; help: string; color: string; label: string; labelPh: string; matHint: string; style: string; dash: string; dashes: { solid: string; dash: string; dot: string }; width: string; cancel: string; expr: string; exprHelp: string; dup: (n: string) => string; fill: string };
+    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string, why: string) => string; help: string; color: string; label: string; labelPh: string; matHint: string; style: string; dash: string; dashes: { solid: string; dash: string; dot: string }; width: string; cancel: string; expr: string; exprHelp: string; dup: (n: string) => string; fill: string; axes: string; axisT: string; axisLeft: string; axisRight: string; auto: string; min: string; max: string; axesHelp: string };
     varName: string;
     show: string;
     loss: string;
@@ -1371,6 +1371,14 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
       width: 'Espessura',
       cancel: 'Cancelar',
       fill: 'Preencher a área sob a curva',
+      axes: 'Eixos',
+      axisT: 't (ms)',
+      axisLeft: 'y esquerdo',
+      axisRight: 'y direito',
+      auto: 'auto',
+      min: 'mínimo',
+      max: 'máximo',
+      axesHelp: 'Mínimo e máximo de cada eixo; em branco, automático.',
       expr: 'Variável ou expressão',
       exprHelp: 'Ex.: Primario_V/127 (pu), Primario_I*1000 (mA), Primario_I*Primario_V (potência).',
       dup: (n) => `"${n}" já está no gráfico.`,
@@ -2159,6 +2167,14 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
       width: 'Width',
       cancel: 'Cancel',
       fill: 'Fill the area under the curve',
+      axes: 'Axes',
+      axisT: 't (ms)',
+      axisLeft: 'left y',
+      axisRight: 'right y',
+      auto: 'auto',
+      min: 'minimum',
+      max: 'maximum',
+      axesHelp: 'Minimum and maximum of each axis; empty means automatic.',
       expr: 'Variable or expression',
       exprHelp: 'E.g. Primary_V/127 (pu), Primary_I*1000 (mA), Primary_I*Primary_V (power).',
       dup: (n) => `"${n}" is already in the plot.`,

@@ -1246,6 +1246,9 @@ export class CommandConsole {
         if (kw.outputs !== undefined) patch.outputs = kw.outputs === null ? undefined : (seq(kw.outputs) ?? []).map((o) => { const t2 = seq(o) ?? []; return { q: String(t2[0]), name: String(t2[1]) }; });
         if (kw.curves !== undefined)
           patch.curves = kw.curves === null ? undefined : (seq(kw.curves) ?? []).map((o) => { const c = seq(o) ?? []; return { name: String(c[0]), axis: String(c[1]) === 'right' ? 'right' : 'left', ...(c[2] ? { color: String(c[2]) } : {}), ...(c[3] ? { label: String(c[3]) } : {}), ...(c[4] ? { dash: (['solid', 'dash', 'dot'].includes(String(c[4])) ? String(c[4]) : 'solid') as 'solid' | 'dash' | 'dot' } : {}), ...(c[5] ? { width: Number(c[5]) } : {}), ...(c[6] ? { fill: true } : {}) }; });
+        // Gráfico no tempo: limites dos eixos, (mín, máx) com None para automático; None tira.
+        for (const [k, f] of [['t_range', 'tRange'], ['y_left', 'yLeft'], ['y_right', 'yRight']] as const)
+          if (kw[k] !== undefined) patch[f] = kw[k] === null ? undefined : ((seq(kw[k]) ?? []).slice(0, 2).map((v) => (v === null ? null : Number(v))) as [number | null, number | null]);
         if (kw.var_name !== undefined) patch.varName = kw.var_name === null ? undefined : String(kw.var_name);
         if (kw.expr !== undefined) patch.expr = kw.expr === null ? undefined : String(kw.expr);
         if (kw.unit_label !== undefined) patch.unitLabel = kw.unit_label === null ? undefined : String(kw.unit_label);

@@ -120,6 +120,7 @@ Boundary types for `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`, 
 | `r.table("n2", name=)` | new table |
 | `r.item(table, "circuits" \| "lineint" \| "surfint" \| "formula" \| "timeplot", name=)` | table item |
 | `r.show(item, curves=[("Coil_V", "left"), ("Coil_lambda", "right", "#1f6fd1", "Flux", "dash", 2.5)])` | time plot: variable, axis and, optionally, color, label, line type (`solid`, `dash`, `dot`), width and area fill (`True`); the name can be an expression |
+| `r.show(item, t_range=(0, 20), y_left=(-100, 100), y_right=(None, 2))` | time plot: axis limits (t in ms; `None` = automatic) |
 | `r.move(layer, view)`, `r.duplicate(id)`, `r.rename(id, name)`, `r.remove(id)` | organization |
 | `r.result("Fx", physics="n2")` | number of a result variable (at the shown instant, in transient) |
 | `r.results("n2")` | list `[(name, value, unit), ...]` |

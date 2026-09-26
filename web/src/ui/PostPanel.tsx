@@ -1123,6 +1123,33 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
             </>
           )}
         </section>
+        <section>
+          <h3>{t.table.tp.axes}</h3>
+          {(
+            [
+              ['tRange', 't_range', t.table.tp.axisT],
+              ['yLeft', 'y_left', t.table.tp.axisLeft],
+              ['yRight', 'y_right', t.table.tp.axisRight],
+            ] as const
+          ).map(([key, kw, label]) => {
+            const r = node[key] ?? [null, null];
+            const setR = (i: 0 | 1, v: string) => {
+              const n = v.trim() === '' ? null : Number(v.replace(',', '.'));
+              if (n !== null && !Number.isFinite(n)) return;
+              const next: [number | null, number | null] = i === 0 ? [n, r[1]] : [r[0], n];
+              const empty = next[0] === null && next[1] === null;
+              set({ [key]: empty ? undefined : next }, `r.show(${q(node.id)}, ${kw}=${empty ? 'None' : `(${next.map((x) => (x === null ? 'None' : x)).join(', ')})`})`);
+            };
+            return (
+              <div className="field tp-range" key={key}>
+                <span>{label}</span>
+                <LazyInput value={r[0] === null ? '' : String(r[0])} placeholder={t.table.tp.auto} ariaLabel={`${label} ${t.table.tp.min}`} onCommit={(v) => setR(0, v)} />
+                <LazyInput value={r[1] === null ? '' : String(r[1])} placeholder={t.table.tp.auto} ariaLabel={`${label} ${t.table.tp.max}`} onCommit={(v) => setR(1, v)} />
+              </div>
+            );
+          })}
+          <p className="help-line">{t.table.tp.axesHelp}</p>
+        </section>
       </div>
     );
   }

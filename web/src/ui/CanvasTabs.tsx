@@ -765,6 +765,9 @@ function TimePlot({ ed, it }: { ed: SketchEditor; it: PostNode }) {
           cursor={cur !== undefined ? cur * 1e3 : undefined}
           width={size?.w}
           height={size?.h}
+          xRange={it.tRange}
+          yLeft={it.yLeft}
+          yRight={it.yRight}
         />
       </div>
       <div className="tp-export" role="group" aria-label={t.table.tp.exportHint}>

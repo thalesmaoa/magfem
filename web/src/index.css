@@ -591,6 +591,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .time-charts { display: grid; gap: 8px; }
 .tp-export { display: flex; gap: 6px; margin-top: 6px; }
 .field.tp-curve { grid-template-columns: 1fr auto auto; }
+.field.tp-range { grid-template-columns: 70px 1fr 1fr; }
 .field.tp-curve > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tp-style-btn { display: inline-flex; align-items: center; padding: 3px 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg, #fff); cursor: pointer; }
 dialog.tp-style { max-width: 360px; }

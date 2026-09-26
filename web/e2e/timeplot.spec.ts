@@ -95,6 +95,22 @@ test('gráfico no tempo: variáveis nos eixos esquerdo e direito, exportação, 
   });
   expect(ser.b).toBeCloseTo(ser.a * 1000, 6);
   expect(ser.pv).toBeCloseTo(ser.iv, 9);
+  // Limites dos eixos: t de 5 a 15 ms e y esquerdo de -2000 a 2000.
+  await page.getByRole('textbox', { name: 't (ms) mínimo' }).fill('5');
+  await page.getByRole('textbox', { name: 't (ms) mínimo' }).press('Enter');
+  await page.getByRole('textbox', { name: 't (ms) máximo' }).fill('15');
+  await page.getByRole('textbox', { name: 't (ms) máximo' }).press('Enter');
+  await page.getByRole('textbox', { name: 'y esquerdo mínimo' }).fill('-2000');
+  await page.getByRole('textbox', { name: 'y esquerdo mínimo' }).press('Enter');
+  await page.getByRole('textbox', { name: 'y esquerdo máximo' }).fill('2000');
+  await page.getByRole('textbox', { name: 'y esquerdo máximo' }).press('Enter');
+  expect((await sketch(page)).nodes.find((n: any) => n.id === 'tp')).toMatchObject({ tRange: [5, 15], yLeft: [-2000, 2000] });
+  await page.getByRole('treeitem', { name: tbName, exact: true }).click();
+  const texts = (await page.locator('svg.xychart.dual text').allTextContents()).map((s) => s.trim());
+  // Marcas redondas dentro dos limites: x de 6 a 14 ms; y esquerdo até ±2000.
+  expect(texts.slice(0, 5)).toEqual(['6', '8', '10', '12', '14']);
+  expect(texts).toContain('2000');
+  expect(texts).toContain('-2000');
   // Recarregar a página: os itens de Resultados continuam (sem virar "Mapa 2D"/"Linhas de fluxo") e a solução volta.
   await page.waitForTimeout(1000);
   await page.reload();

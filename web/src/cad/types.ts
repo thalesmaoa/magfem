@@ -226,6 +226,10 @@ export interface PostNode {
   unitLabel?: string;
   /** Transitório: instante (índice do passo) para mostrar como tabela; ausente = curva no tempo. */
   atTime?: number;
+  /** Gráfico no tempo: limites dos eixos (t em ms; y na unidade das curvas); ausente = automático. */
+  tRange?: [number | null, number | null];
+  yLeft?: [number | null, number | null];
+  yRight?: [number | null, number | null];
   /** Gráfico no tempo (item 'timeplot'): variáveis de resultado escolhidas e o eixo y de cada uma. */
   curves?: { name: string; axis: 'left' | 'right'; color?: string; label?: string; dash?: 'solid' | 'dash' | 'dot'; width?: number; fill?: boolean }[];
   /** Integral de superfície: regiões escolhidas (identidade pelas curvas + ponto interno). */

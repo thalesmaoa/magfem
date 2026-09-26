@@ -146,6 +146,8 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       if (p.varName) kw.push(`var_name=${q(p.varName)}`);
       if (p.outputs) kw.push(`outputs=[${p.outputs.map((o) => `(${q(o.q)}, ${q(o.name)})`).join(', ')}]`);
       if (p.curves) kw.push(`curves=${curvesCode(p.curves)}`);
+      for (const [k, v] of [['t_range', p.tRange], ['y_left', p.yLeft], ['y_right', p.yRight]] as const)
+        if (v) kw.push(`${k}=(${v.map((x) => (x === null ? 'None' : String(x))).join(', ')})`);
       if (p.expr) kw.push(`expr=${q(p.expr)}`);
       if (p.unitLabel) kw.push(`unit_label=${q(p.unitLabel)}`);
       if (p.atTime !== undefined) kw.push(`at_time=${p.atTime}`);

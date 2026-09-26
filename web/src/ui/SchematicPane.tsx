@@ -570,17 +570,23 @@ function HoverBox({ px, top, width, lines }: { px: number; top: number; width: n
   );
 }
 
-/** Uma escala "bonita" (limites e marcas) para os valores finitos dados. */
-function niceScale(vals: number[]) {
+/**
+ * Uma escala "bonita" (limites e marcas) para os valores finitos dados. `fixed` fixa o mínimo e/ou o máximo
+ * (null = automático); as marcas ficam dentro dos limites.
+ */
+function niceScale(vals: number[], fixed?: [number | null, number | null]) {
   const f = vals.filter((v) => Number.isFinite(v));
   let lo = f.length ? Math.min(...f) : 0, hi = f.length ? Math.max(...f) : 1;
+  const flo = fixed?.[0] ?? null, fhi = fixed?.[1] ?? null;
+  if (flo !== null) lo = flo;
+  if (fhi !== null) hi = fhi;
   if (!(hi > lo)) (lo -= Math.abs(lo) * 0.1 || 1), (hi += Math.abs(hi) * 0.1 || 1);
   const step0 = (hi - lo) / 5, mag = 10 ** Math.floor(Math.log10(step0)), r = step0 / mag;
   const step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
-  lo = Math.floor(lo / step) * step;
-  hi = Math.ceil(hi / step) * step;
+  if (flo === null) lo = Math.floor(lo / step) * step;
+  if (fhi === null) hi = Math.ceil(hi / step) * step;
   const ticks: number[] = [];
-  for (let v = lo; v <= hi + step / 2; v += step) ticks.push(Math.abs(v) < step * 1e-9 ? 0 : v);
+  for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + step * 1e-9; v += step) ticks.push(Math.abs(v) < step * 1e-9 ? 0 : v);
   return { lo, hi, ticks };
 }
 
@@ -598,6 +604,10 @@ export function DualAxisChart(props: {
   /** Tamanho em px (a caixa redimensionável); o gráfico é desenhado nesse tamanho. */
   width?: number;
   height?: number;
+  /** Limites dos eixos (x na unidade de x; y na das curvas); null = automático. */
+  xRange?: [number | null, number | null];
+  yLeft?: [number | null, number | null];
+  yRight?: [number | null, number | null];
 }) {
   const { x, series, xLabel, cursor } = props;
   const right = series.some((s2) => s2.axis === 'right');
@@ -615,12 +625,15 @@ export function DualAxisChart(props: {
     }
   }
   const rows = (legendPos.length ? legendPos[legendPos.length - 1].row : 0) + 1;
-  const B = 44 + 16 * rows;
+  const B = 58 + 16 * rows;
   const Hc = Math.max(200, Math.round(props.height ?? 300));
-  const x0 = x[0], x1 = x[x.length - 1];
+  const x0 = props.xRange?.[0] ?? x[0], x1 = props.xRange?.[1] ?? x[x.length - 1];
   const X = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * (Wc - L - R);
-  const sl = niceScale(series.filter((s2) => s2.axis === 'left').flatMap((s2) => s2.y));
-  const sr = niceScale(series.filter((s2) => s2.axis === 'right').flatMap((s2) => s2.y));
+  // A escala automática de y usa só os pontos dentro do intervalo de x mostrado.
+  const inX = (s2: (typeof series)[number]) => s2.y.filter((_, k) => x[k] >= x0 - 1e-12 && x[k] <= x1 + 1e-12);
+  const sl = niceScale(series.filter((s2) => s2.axis === 'left').flatMap(inX), props.yLeft);
+  const sr = niceScale(series.filter((s2) => s2.axis === 'right').flatMap(inX), props.yRight);
+  const clipId = `tpclip${Math.round(Wc)}x${Math.round(Hc)}`;
   const Y = (v: number, sc: { lo: number; hi: number }) => Tt + (1 - (v - sc.lo) / (sc.hi - sc.lo)) * (Hc - Tt - B);
   const fmt = (v: number) => Number(v.toPrecision(3)).toString();
   const unitsOf = (axis: 'left' | 'right') => [...new Set(series.filter((s2) => s2.axis === axis).map((s2) => s2.unit).filter(Boolean))].join(', ');
@@ -635,11 +648,23 @@ export function DualAxisChart(props: {
     return out;
   };
   const yb = Hc - B;
+  const xt = niceScale([x0, x1], [x0, x1]).ticks;
   const colorOf = (i: number) => series[i].color || SERIES_COLORS[i % SERIES_COLORS.length];
   const hv = useHoverIndex(x, X, L, Wc - R);
   return (
     <svg className="xychart dual" viewBox={`0 0 ${Wc} ${Hc}`} role="img" aria-label={series.map((s2) => s2.label).join(', ')} onMouseMove={hv.onMove} onMouseLeave={hv.onLeave}>
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={L} y={Tt} width={Wc - L - R} height={yb - Tt} />
+        </clipPath>
+      </defs>
       <rect x={L} y={Tt} width={Wc - L - R} height={yb - Tt} className="frame" />
+      {xt.map((v) => (
+        <g key={`x${v}`}>
+          <line x1={X(v)} x2={X(v)} y1={yb} y2={yb + 4} className="grid" />
+          <text x={X(v)} y={yb + 14} textAnchor="middle">{fmt(v)}</text>
+        </g>
+      ))}
       {sl.ticks.map((v) => (
         <g key={`l${v}`}>
           <line x1={L} x2={Wc - R} y1={Y(v, sl)} y2={Y(v, sl)} className="grid" />
@@ -650,7 +675,7 @@ export function DualAxisChart(props: {
         <text key={`r${v}`} x={Wc - R + 4} y={Y(v, sr) + 4}>{fmt(v)}</text>
       ))}
       {series.map((s2, i) => (
-        <g key={s2.label}>
+        <g key={s2.label} clipPath={`url(#${clipId})`}>
           {s2.fill &&
             segs(s2.y, s2.axis === 'left' ? sl : sr).map((pts, j) => {
               // Área entre a curva e o zero do eixo dela (ou a borda, se o zero estiver fora da escala).
@@ -665,13 +690,11 @@ export function DualAxisChart(props: {
         </g>
       ))}
       {cursor !== undefined && <line x1={X(cursor)} x2={X(cursor)} y1={Tt} y2={yb} className="cursor" />}
-      <text x={L} y={yb + 14}>{fmt(x0)}</text>
-      <text x={Wc - R} y={yb + 14} textAnchor="end">{fmt(x1)}</text>
-      <text x={(L + Wc - R) / 2} y={yb + 14} textAnchor="middle">{xLabel}</text>
+      <text x={(L + Wc - R) / 2} y={yb + 28} textAnchor="middle">{xLabel}</text>
       <text x={14} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(-90 14 ${(Tt + yb) / 2})`}>{unitsOf('left')}</text>
       {right && <text x={Wc - 12} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(90 ${Wc - 12} ${(Tt + yb) / 2})`}>{unitsOf('right')}</text>}
       {series.map((s2, i) => (
-        <text key={s2.label} x={legendPos[i].x} y={yb + 32 + 16 * legendPos[i].row} style={{ fill: colorOf(i) }} className="axis-label">
+        <text key={s2.label} x={legendPos[i].x} y={yb + 46 + 16 * legendPos[i].row} style={{ fill: colorOf(i) }} className="axis-label">
           {legendText(s2)}
         </text>
       ))}

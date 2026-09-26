@@ -120,6 +120,7 @@ Tipos de contorno em `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`
 | `r.table("n2", name=)` | nova tabela |
 | `r.item(tabela, "circuits" \| "lineint" \| "surfint" \| "formula" \| "timeplot", name=)` | item de tabela |
 | `r.show(item, curves=[("Bobina_V", "left"), ("Bobina_lambda", "right", "#1f6fd1", "Fluxo", "dash", 2.5)])` | gráfico no tempo: variável, eixo e, opcionais, cor, rótulo, traço (`solid`, `dash`, `dot`), espessura e área preenchida (`True`); o nome pode ser uma expressão |
+| `r.show(item, t_range=(0, 20), y_left=(-100, 100), y_right=(None, 2))` | gráfico no tempo: limites dos eixos (t em ms; `None` = automático) |
 | `r.move(camada, vista)`, `r.duplicate(id)`, `r.rename(id, nome)`, `r.remove(id)` | organização |
 | `r.result("Fx", physics="n2")` | número de uma variável de resultado (no instante mostrado, no transitório) |
 | `r.results("n2")` | lista `[(nome, valor, unidade), ...]` |

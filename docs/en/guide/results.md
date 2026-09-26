@@ -30,7 +30,7 @@ A **Table** collects items, and each item produces named **result variables** th
 | Surface integral | over the chosen regions: area, volume, ∫A, current, energy, mean B, losses (Joule and iron), **force Fx, Fy and torque** |
 | Line integral | along a curve: length, flux Φ, magnetomotive force ∫H·dl, ∫B, mean B, **force and torque** (closed contour) |
 | Formula | an expression of the other variables (for example `0.5*Coil_L*Coil_I^2`) |
-| Time plot | transient: the variables you choose, by name (with autocomplete) or as an expression of them, `t` and the project variables (e.g. `Primary_I*Primary_V`, `Primary_V/127` in pu), each on the left or right axis; each curve's style button edits the expression and sets its label, color, line type, width and area fill; the mouse shows the values; resizable from the corner; exports CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG and PNG |
+| Time plot | transient: the variables you choose, by name (with autocomplete) or as an expression of them, `t` and the project variables (e.g. `Primary_I*Primary_V`, `Primary_V/127` in pu), each on the left or right axis; each curve's style button edits the expression and sets its label, color, line type, width and area fill; the limits of t and of each y axis are in the properties (empty means automatic); the mouse shows the values; resizable from the corner; exports CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG and PNG |
 
 Each output has an editable name (by default the item prefix plus the quantity, such as `S1_fx`). Circuit variables
 are named `<circuit>_I`, `<circuit>_lambda`, `<circuit>_L` and `<circuit>_R`.
