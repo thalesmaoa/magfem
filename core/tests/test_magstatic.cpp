@@ -1,5 +1,6 @@
 // Validação do solver magnetostático contra soluções analíticas.
 #include <algorithm>
+#include <complex>
 #include <cmath>
 #include <cstdio>
 
@@ -8,6 +9,7 @@
 
 using namespace magfem;
 static const double MU0 = 4e-7 * M_PI;
+static const double TWO_PI_T = 2 * M_PI;
 
 // Retângulo [x0,x1]×[y0,y1] com divisões uniformes na borda (n por lado) e uma região.
 // Marcadores por lado: 1 baixo, 2 direita, 3 cima, 4 esquerda; periodicX casa direita com esquerda.
@@ -92,6 +94,32 @@ int main() {
     double err = 0;
     for (size_t i = 0; i < m.xy.size() / 2; ++i) err = std::max(err, std::fabs(o.A[i] - (1 - m.xy[2 * i] / (2 * L))));
     check(o.error.empty() && err < 1e-6, "contorno misto: erro máx. de A (A(L) = 1/2)", err, 0);
+  }
+  // 1c) Harmônico: efeito pelicular numa placa de cobre (50 Hz, δ ≈ 9,3 mm). A = A0 em x = 0, Neumann em x = L:
+  //     A(x) = A0 cosh(k(L − x))/cosh(kL), k = (1 + j)/δ.
+  {
+    const double L = 0.03, H = 0.004, sigma = 5.8e7, f = 50, A0 = 1e-3;
+    const double delta = std::sqrt(2 / (TWO_PI_T * f * MU0 * sigma));
+    MeshOutput m = rectMesh(0, 0, L, H, 60, 4, 4e-8);
+    MagInput in;
+    in.xy = m.xy;
+    in.triangles = m.triangles;
+    in.triRegion.assign(m.triangles.size() / 3, 0);
+    in.nu = {1 / MU0};
+    in.J = {0};
+    in.sigma = {sigma};
+    in.freq = f;
+    in.harmonic = true;
+    for (size_t i = 0; i < m.xy.size() / 2; ++i)
+      if (m.xy[2 * i] < 1e-12) in.dirichletNodes.push_back(static_cast<int>(i)), in.dirichletValues.push_back(A0);
+    MagOutput o = solve_magnetostatic(in);
+    const std::complex<double> k(1 / delta, 1 / delta);
+    double err = 0;
+    for (size_t i = 0; i < m.xy.size() / 2; ++i) {
+      const std::complex<double> want = A0 * std::cosh(k * (L - m.xy[2 * i])) / std::cosh(k * L);
+      err = std::max(err, std::abs(std::complex<double>(o.A[i], o.Aim[i]) - want) / A0);
+    }
+    check(o.error.empty() && err < 0.01 && o.times.size() == 24, "harmônico: efeito pelicular, erro máx. |Â − exato|/A0", err, 0);
   }
   // 2) Ímã preenchendo o domínio, Neumann em tudo e um nó fixo: B = Br exatamente.
   {

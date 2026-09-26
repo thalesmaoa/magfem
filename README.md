@@ -43,6 +43,8 @@ such as **contactors**. The final step is **rotating machines**, with a moving a
 - **Solver** (C++/Eigen compiled to WebAssembly, running in a Web Worker):
   - magnetostatic, **nonlinear** whenever a material has a B-H curve (Newton-Raphson);
   - **transient** analysis with eddy currents, where currents can be functions of time;
+  - **AC (harmonic)** analysis with phasors: eddy currents, effective permeability for B-H materials,
+    eddy-current losses, and results animated over one period;
   - **"Magnetic field + circuit"**: a schematic editor with R, L, C, V and I parts and FEM coils,
     solved together with the field in one system;
   - validated against analytical solutions.

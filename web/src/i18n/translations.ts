@@ -181,6 +181,7 @@ export interface Translations {
     transient: string;
     circuit: string;
     frequency: string;
+    harmonicHelp: string;
     dt: string;
     tEnd: string;
   };
@@ -434,7 +435,7 @@ export interface Translations {
     noDirichlet: string;
     boundaryUnsupported: (name: string, type: string) => string;
     mixedAxi: (name: string) => string;
-    onlyStatic: string;
+    badFreq: string;
     badTime: string;
     noSchematic: string;
     openCircuit: string;
@@ -568,6 +569,7 @@ export interface Translations {
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula', string>;
     varName: string;
     show: string;
+    loss: string;
     fx: string;
     fy: string;
     torque: string;
@@ -871,6 +873,7 @@ const PT: Translations = {
     transient: 'Transitória',
     circuit: 'Transitória com circuito',
     frequency: 'Frequência (Hz)',
+    harmonicHelp: 'Fasores: correntes das regiões e circuitos são amplitudes de pico. Os resultados aparecem em um período (animação e curvas no tempo); a integral de superfície dá as perdas por correntes parasitas.',
     dt: 'Passo de tempo (s)',
     tEnd: 'Tempo final (s)',
   },
@@ -1147,7 +1150,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     noDirichlet: 'Falta um contorno com A prescrito (sem ele o potencial fica indefinido).',
     boundaryUnsupported: (n, ty) => `${n}: contorno "${ty}" ainda não é resolvido pelo solver.`,
     mixedAxi: (n) => `${n}: contorno misto ainda só no problema planar.`,
-    onlyStatic: 'Harmônica ainda não resolve; use magnetostática ou transitória.',
+    badFreq: 'Harmônica: a frequência precisa ser positiva.',
     badTime: 'Transitório: passo e tempo final precisam ser positivos (t final > passo).',
     noSchematic: 'O circuito desta física está vazio: abra o circuito e ligue as bobinas às fontes.',
     openCircuit: 'Abrir o circuito',
@@ -1290,6 +1293,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     itemHelp: { circuits: 'λ, L, R, V, perdas', lineint: 'fluxo, ∫H·dl, ∫|B| dl', surfint: 'área, ∫A dS, corrente, energia', formula: 'expressão com variáveis de resultado' },
     varName: 'Nome (variáveis)',
     show: 'Mostrar',
+    loss: 'Perdas por correntes parasitas (média, AC)',
     fx: 'Força F_x (tensor de Maxwell)',
     fy: 'Força F_y (F_z no axissimétrico)',
     torque: 'Torque (em torno da origem)',
@@ -1599,6 +1603,7 @@ const EN: Translations = {
     transient: 'Transient',
     circuit: 'Transient with circuit',
     frequency: 'Frequency (Hz)',
+    harmonicHelp: 'Phasors: region and circuit currents are peak amplitudes. Results are shown over one period (animation and curves over time); the surface integral gives the eddy-current losses.',
     dt: 'Time step (s)',
     tEnd: 'End time (s)',
   },
@@ -1875,7 +1880,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     noDirichlet: 'A boundary with prescribed A is missing (without it the potential is undefined).',
     boundaryUnsupported: (n, ty) => `${n}: "${ty}" boundary is not solved yet.`,
     mixedAxi: (n) => `${n}: mixed boundary is planar-only for now.`,
-    onlyStatic: 'Harmonic does not solve yet; use magnetostatic or transient.',
+    badFreq: 'Harmonic: the frequency must be positive.',
     badTime: 'Transient: step and end time must be positive (end > step).',
     noSchematic: 'This physics circuit is empty: open the circuit and connect the coils to sources.',
     openCircuit: 'Open the circuit',
@@ -2018,6 +2023,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     itemHelp: { circuits: 'λ, L, R, V, losses', lineint: 'flux, ∫H·dl, ∫|B| dl', surfint: 'area, ∫A dS, current, energy', formula: 'expression with result variables' },
     varName: 'Name (variables)',
     show: 'Show',
+    loss: 'Eddy-current losses (average, AC)',
     fx: 'Force F_x (Maxwell stress)',
     fy: 'Force F_y (F_z if axisymmetric)',
     torque: 'Torque (about the origin)',

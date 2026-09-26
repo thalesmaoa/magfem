@@ -7,6 +7,7 @@
 #include <Eigen/SparseLU>
 #include <algorithm>
 #include <cmath>
+#include <complex>
 
 namespace magfem {
 
@@ -334,6 +335,109 @@ MagOutput solve_magnetostatic(const MagInput& in) {
     return true;  // devolve a melhor estimativa (a interface avisa pelo número de iterações)
   };
 
+  // ---------- Harmônico (AC): (K(ν_ef) + jωσM) Â = Ĵ, fasores complexos (SparseLU) ----------
+  const bool harmonic = in.harmonic && in.freq > 0;
+  if (harmonic) {
+    using C = std::complex<double>;
+    const double w = TWO_PI * in.freq;
+    // ν efetiva por elemento (como no FEMM): começa na inicial (B pequeno) e segue ν = H(B_pico)/B_pico.
+    std::vector<double> nuE(nt);
+    for (int t = 0; t < nt; ++t) {
+      double nuv, dnu;
+      if (el[t].r >= 0 && el[t].r < nr && curves[el[t].r].ok) curves[el[t].r].nu(1e-6, nuv, dnu);
+      else nuv = regv(el[t].r, in.nu, nu0);
+      nuE[t] = nuv;
+    }
+    std::vector<C> Ac(nn, C(0, 0));
+    Eigen::SparseLU<Eigen::SparseMatrix<C>> lu;
+    const int maxIt = nonlinear ? std::max(1, in.maxIter) : 1;
+    for (int it = 0; it < maxIt; ++it) {
+      std::vector<Eigen::Triplet<C>> trip;
+      trip.reserve(static_cast<size_t>(nt) * 9);
+      Eigen::Matrix<C, Eigen::Dynamic, 1> F = Eigen::Matrix<C, Eigen::Dynamic, 1>::Zero(nfree);
+      auto addK = [&](int vi, int vj, C k) {
+        const Dof& di = dof[vi];
+        if (di.free < 0) return;
+        const Dof& dj = dof[vj];
+        if (dj.free >= 0) trip.emplace_back(di.free, dj.free, di.sign * k * dj.sign);
+        else F[di.free] -= di.sign * k * dj.value;  // Dirichlet (real) vai para o lado direito
+      };
+      auto addF = [&](int vi, C f) {
+        const Dof& di = dof[vi];
+        if (di.free >= 0) F[di.free] += di.sign * f;
+      };
+      for (int t = 0; t < nt; ++t) {
+        const Elem& e = el[t];
+        if (e.area <= 0) continue;
+        const double sg = regv(e.r, in.sigma, 0);
+        const C J = std::polar(regv(e.r, in.J, 0), regv(e.r, in.jPhase, 0));
+        const double brx = regv(e.r, in.brx, 0), bry = regv(e.r, in.bry, 0);
+        for (int i = 0; i < 3; ++i) {
+          const double gix = e.b[i] / (2 * e.area), giy = e.c[i] / (2 * e.area);
+          C f = J * (e.area / 3);
+          if (in.axisymmetric) f += nuE[t] * e.w * (-brx * e.c[i] + bry * e.b[i]) / 2;
+          else f += nuE[t] * (brx * e.c[i] - bry * e.b[i]) / 2;
+          addF(e.v[i], f);
+          for (int j = 0; j < 3; ++j) {
+            const double gjx = e.b[j] / (2 * e.area), gjy = e.c[j] / (2 * e.area);
+            C k = nuE[t] * e.w * (gix * gjx + giy * gjy) * e.area;
+            if (sg > 0) k += C(0, w * sg * e.w * e.area * (i == j ? 2 : 1) / 12);
+            addK(e.v[i], e.v[j], k);
+          }
+        }
+      }
+      // Contorno misto: c0 na matriz, c1 no lado direito.
+      for (size_t k = 0; k < in.robinA.size() && k < in.robinB.size(); ++k) {
+        const int v[2] = {in.robinA[k], in.robinB[k]};
+        if (v[0] < 0 || v[0] >= nn || v[1] < 0 || v[1] >= nn || v[0] == v[1]) continue;
+        const double c0 = k < in.robinC0.size() ? in.robinC0[k] : 0, c1 = k < in.robinC1.size() ? in.robinC1[k] : 0;
+        const double L = std::hypot(in.xy[2 * v[1]] - in.xy[2 * v[0]], in.xy[2 * v[1] + 1] - in.xy[2 * v[0] + 1]);
+        for (int i = 0; i < 2; ++i) {
+          addF(v[i], -c1 * L / 2);
+          for (int j = 0; j < 2; ++j) addK(v[i], v[j], c0 * L * (i == j ? 2 : 1) / 6);
+        }
+      }
+      Eigen::SparseMatrix<C> K(nfree, nfree);
+      K.setFromTriplets(trip.begin(), trip.end());
+      lu.compute(K);
+      if (lu.info() != Eigen::Success) {
+        out.error = "sistema harmônico singular (falta contorno com A prescrito?)";
+        return out;
+      }
+      Eigen::Matrix<C, Eigen::Dynamic, 1> a = lu.solve(F);
+      for (int i = 0; i < nn; ++i) Ac[i] = dof[i].free < 0 ? C(dof[i].value, 0) : dof[i].sign * a[dof[i].free];
+      out.iterations = it + 1;
+      if (in.progress) in.progress(it + 1, maxIt);
+      if (!nonlinear) break;
+      // Atualiza ν_ef com |B| de pico (média com a anterior para estabilizar).
+      double change = 0;
+      for (int t = 0; t < nt; ++t) {
+        const Elem& e = el[t];
+        if (!(e.r >= 0 && e.r < nr && curves[e.r].ok)) continue;
+        C gx = 0, gy = 0;
+        for (int k = 0; k < 3; ++k) gx += e.b[k] * Ac[e.v[k]] / (2 * e.area), gy += e.c[k] * Ac[e.v[k]] / (2 * e.area);
+        const double bpk = e.w * std::sqrt(std::norm(gx) + std::norm(gy));
+        double nuv, dnu;
+        curves[e.r].nu(std::max(bpk * bpk, 1e-12), nuv, dnu);
+        const double next = 0.5 * nuE[t] + 0.5 * nuv;
+        change = std::max(change, std::fabs(next - nuE[t]) / nuE[t]);
+        nuE[t] = next;
+      }
+      if (change < 1e-4) break;
+    }
+    // Instantes de um período: A(t) = Re(Â e^{jωt}).
+    const int nf = std::max(8, in.harmonicFrames);
+    out.At.reserve(static_cast<size_t>(nf) * nn);
+    for (int k = 0; k < nf; ++k) {
+      const double time = k / (nf * in.freq);
+      const C rot = std::polar(1.0, w * time);
+      for (int i = 0; i < nn; ++i) out.At.push_back((Ac[i] * rot).real());
+      out.times.push_back(time);
+    }
+    out.Aim.resize(nn);
+    for (int i = 0; i < nn; ++i) A[i] = Ac[i].real(), out.Aim[i] = Ac[i].imag();
+  }
+
   // ---------- Circuito externo acoplado (Newton sobre o sistema monolítico, SparseLU) ----------
   const int ne = static_cast<int>(in.elType.size());
   const int nk = in.coilStart.empty() ? 0 : static_cast<int>(in.coilStart.size()) - 1;
@@ -514,7 +618,7 @@ MagOutput solve_magnetostatic(const MagInput& in) {
       Aprev = A;
       if (in.progress) in.progress(k, in.steps);
     }
-  } else if (!solveStep(0)) {
+  } else if (!harmonic && !solveStep(0)) {
     return out;
   }
   out.A = A;

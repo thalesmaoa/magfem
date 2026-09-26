@@ -334,7 +334,6 @@ export class SketchEditor {
       return false;
     };
     this.solveErrors.delete(id);
-    if (node.analysis === 'harmonic') return fail(t.solve.onlyStatic);
     this.solveBusy = id;
     this.changed();
     let meshId = this.sketch.nodes.find((n) => n.kind === 'mesh')?.id;
@@ -398,6 +397,26 @@ export class SketchEditor {
         return fail((e as Error).message);
       }
     }
+    // Harmônico (AC): fasores na frequência da física; correntes = amplitude de pico (fase 0).
+    let harmonicJ: number[] | undefined;
+    if (node.analysis === 'harmonic') {
+      try {
+        const { values } = evaluateVariables(this.sketch.variables, this.sketch.settings.unit);
+        const f = evaluate(node.frequency, { env: values, unit: this.sketch.settings.unit }).v;
+        if (!(f > 0)) return fail(t.solve.badFreq);
+        const frames = 24;
+        input.harmonic = true;
+        input.harmonicFrames = frames;
+        input.freq = f;
+        input.steps = 0;
+        input.dt = 0;
+        // J(t) = J·cos(ωt) em cada instante mostrado (mapas de J na animação).
+        harmonicJ = [];
+        for (let k = 0; k < frames; k++) harmonicJ.push(...input.J.map((j) => j * Math.cos((2 * Math.PI * k) / frames)));
+      } catch (e) {
+        return fail((e as Error).message);
+      }
+    }
     const t0 = performance.now();
     try {
       this.solveProgress = 0;
@@ -434,10 +453,11 @@ export class SketchEditor {
         times: out.times.length ? out.times : undefined,
         freq: input.freq,
         jPhase: input.jPhase,
-        jSteps: input.jSteps,
+        jSteps: harmonicJ ?? input.jSteps,
+        harmonic: input.harmonic ? { freq: input.freq!, Are: out.A, Aim: out.Aim, sigma: input.sigma ?? [] } : undefined,
         circuit: netInfo && out.nodeV ? { ...netInfo, nodeV: out.nodeV, elI: out.elI } : undefined,
       });
-      this.postFrame = out.times.length ? out.times.length - 1 : 0;
+      this.postFrame = out.times.length && !input.harmonic ? out.times.length - 1 : 0;
       this.shownSolution = id;
       this.solveBusy = null;
       this.changed();

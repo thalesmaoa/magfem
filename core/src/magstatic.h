@@ -62,12 +62,18 @@ struct MagInput {
   //   elSteps: valor de cada elemento-fonte do circuito em cada passo (steps × elementos).
   std::vector<double> jSteps;
   std::vector<double> elSteps;
+  // Harmônico (AC): fasores na frequência freq; J[r] é a amplitude (pico) com fase jPhase[r]; correntes parasitas
+  // jωσA nas regiões com sigma > 0. Materiais com curva B-H usam a permeabilidade efetiva ν(|B| de pico), iterada.
+  // A saída traz A(t) = Re(Â e^{jωt}) em harmonicFrames instantes de um período (At/times) e Â (A = Re, Aim = Im).
+  bool harmonic = false;
+  int harmonicFrames = 24;
   // Progresso (passo feito, total) — chamado a cada passo do transitório e a cada iteração de Newton no estático.
   std::function<void(int, int)> progress;
 };
 
 struct MagOutput {
-  std::vector<double> A;   // potencial por nó (A_z ou ψ)
+  std::vector<double> A;   // potencial por nó (A_z ou ψ); no harmônico, a parte real do fasor
+  std::vector<double> Aim; // harmônico: parte imaginária do fasor
   std::vector<double> bx;  // B por triângulo (x ou r), T
   std::vector<double> by;  // B por triângulo (y ou z), T
   double energy = 0;       // ∫ w(B) dΩ, w = ∫₀^B H dB (por metro no plano; volume total no axissimétrico), J

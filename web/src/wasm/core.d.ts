@@ -17,6 +17,8 @@ export interface MagOut {
   energy: number;
   iterations: number;
   At: Float64Array;
+  /** Harmônico: parte imaginária do fasor (A traz a parte real). */
+  Aim: Float64Array;
   times: Float64Array;
   nodeV: Float64Array;
   elI: Float64Array;

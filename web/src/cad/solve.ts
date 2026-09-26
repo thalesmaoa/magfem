@@ -38,6 +38,9 @@ export interface MagInput {
   freq?: number;
   dt?: number;
   steps?: number;
+  /** Harmônico (AC): fasores na frequência freq; J = amplitude de pico. */
+  harmonic?: boolean;
+  harmonicFrames?: number;
   /** Fontes por passo: J das regiões (steps × regiões) e das fontes do circuito (steps × elementos). */
   jSteps?: number[];
   elSteps?: number[];
@@ -87,6 +90,8 @@ export interface Solution {
   times?: Float64Array;
   freq?: number;
   jPhase?: number[];
+  /** Harmônico (AC): fasor Â (partes real e imaginária por nó), frequência e σ por região (S/m). */
+  harmonic?: { freq: number; Are: Float64Array; Aim: Float64Array; sigma: number[] };
   /** J de cada região em cada passo (transitório com correntes em função de t). */
   jSteps?: number[];
   /** Circuito externo acoplado: tensões de nó e correntes de elemento por passo. */
@@ -740,8 +745,9 @@ export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): Cir
   return sk.circuits.map((c) => {
     let I = 0;
     try {
-      // Transitório: corrente no tempo do quadro (a expressão pode usar t).
-      I = num(sk, c.current, 0, sol.time !== undefined ? envAt(sk, sol.time) : undefined);
+      // Transitório: corrente no tempo do quadro (a expressão pode usar t). Harmônico: amplitude·cos(ωt).
+      if (sol.harmonic) I = num(sk, c.current, 0) * Math.cos(2 * Math.PI * sol.harmonic.freq * (sol.time ?? 0));
+      else I = num(sk, c.current, 0, sol.time !== undefined ? envAt(sk, sol.time) : undefined);
     } catch {
       I = 0;
     }
@@ -850,6 +856,7 @@ export interface SurfaceIntegrals {
   bx: number; // média de B_x (ou B_r) (T)
   by: number; // média de B_y (ou B_z) (T)
   intA: number; // ∫A dS (Wb·m no plano; ∫ψ dS no axissimétrico)
+  loss: number; // harmônico: perda média por correntes parasitas ½σω²|Â|² (W)
   fx: number; // força (N) pelo tensor de Maxwell ponderado sobre o corpo formado pelas regiões
   fy: number; // (axissimétrico: F_z em fy)
   torque: number; // torque em torno da origem (N·m)
@@ -859,7 +866,8 @@ export interface SurfaceIntegrals {
 export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>): SurfaceIntegrals {
   const { xy, triangles, triRegion } = sol.mesh;
   const depth = depthOf(sk);
-  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0, intA: 0, fx: 0, fy: 0, torque: 0 };
+  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0, intA: 0, loss: 0, fx: 0, fy: 0, torque: 0 };
+  const hm = sol.harmonic;
   for (let t = 0; t < triangles.length / 3; t++) {
     const r = triRegion[t];
     if (!regions.has(r)) continue;
@@ -879,6 +887,13 @@ export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>
     out.bx += bx * ar;
     out.by += by * ar;
     out.intA += ((sol.A[a] + sol.A[b] + sol.A[c]) / 3) * ar;
+    // Perda por correntes parasitas (média no período): ½ σ ω² |Â|² (Â médio no elemento; ψ/r no axissimétrico).
+    if (hm && r >= 0 && hm.sigma[r] > 0) {
+      const w = 2 * Math.PI * hm.freq;
+      let re = (hm.Are[a] + hm.Are[b] + hm.Are[c]) / 3, im = (hm.Aim[a] + hm.Aim[b] + hm.Aim[c]) / 3;
+      if (sol.axisymmetric) (re /= Math.max(rc, 1e-12)), (im /= Math.max(rc, 1e-12));
+      out.loss += 0.5 * hm.sigma[r] * w * w * (re * re + im * im) * dV;
+    }
   }
   if (out.area > 0) {
     out.bAvg /= out.area;

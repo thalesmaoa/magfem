@@ -172,7 +172,12 @@ function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsN
             </select>
           </label>
         )}
-        {node.analysis === 'harmonic' && field(t.problem.frequency, 'frequency', 'frequency')}
+        {node.analysis === 'harmonic' && (
+          <>
+            {field(t.problem.frequency, 'frequency', 'frequency')}
+            <p className="help-line">{t.problem.harmonicHelp}</p>
+          </>
+        )}
         {node.analysis === 'transient' && (
           <>
             {field(t.problem.dt, 'dt', 'dt')}

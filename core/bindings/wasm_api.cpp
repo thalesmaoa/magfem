@@ -72,6 +72,8 @@ val solveMagnetostatic(val in) {
   if (has("freq")) m.freq = in["freq"].as<double>();
   if (has("dt")) m.dt = in["dt"].as<double>();
   if (has("steps")) m.steps = in["steps"].as<int>();
+  if (has("harmonic")) m.harmonic = in["harmonic"].as<bool>();
+  if (has("harmonicFrames")) m.harmonicFrames = in["harmonicFrames"].as<int>();
   if (has("maxIter")) m.maxIter = in["maxIter"].as<int>();
   if (has("elType")) {
     m.netNodes = in["netNodes"].as<int>();
@@ -103,6 +105,7 @@ val solveMagnetostatic(val in) {
   r.set("energy", o.energy);
   r.set("iterations", o.iterations);
   r.set("At", toTyped(o.At, "Float64Array"));
+  r.set("Aim", toTyped(o.Aim, "Float64Array"));
   r.set("times", toTyped(o.times, "Float64Array"));
   r.set("nodeV", toTyped(o.nodeV, "Float64Array"));
   r.set("elI", toTyped(o.elI, "Float64Array"));
