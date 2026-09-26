@@ -116,10 +116,10 @@ class Bridge:
         """Manda código ao navegador e espera a resposta (dict com ok, value, out, error)."""
         if not self._loop:
             raise BridgeError("a ponte não está rodando")
-        fut = asyncio.run_coroutine_threadsafe(self._run(code), self._loop)
+        fut = asyncio.run_coroutine_threadsafe(self._run(code, log=False), self._loop)
         return fut.result(timeout)
 
-    async def _run(self, code: str) -> dict[str, Any]:
+    async def _run(self, code: str, log: bool = True) -> dict[str, Any]:
         if not self.browser_connected:
             return {"ok": False, "error": "nenhuma página do MagFEM conectada (clique em 'Script local' no app e cole a chave)"}
         rid = next(self._ids)
@@ -128,7 +128,8 @@ class Bridge:
         try:
             await self._browser.send(json.dumps({"type": "run", "id": rid, "code": code}))
             res = await fut
-            self._log("run:" + json.dumps({"code": code, "ok": res.get("ok"), "error": res.get("error")}))
+            if log:  # comandos vindos de scripts (HTTP); os do próprio console do terminal não se repetem
+                self._log("run:" + json.dumps({"code": code, "ok": res.get("ok"), "error": res.get("error")}))
             return res
         finally:
             self._pending.pop(rid, None)

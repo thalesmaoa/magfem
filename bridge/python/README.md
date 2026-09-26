@@ -20,8 +20,28 @@ t, i = mf.series("Primario_I")   # transitório: curva no tempo
 mf.run('g.circle((0, 0), r=5)')  # qualquer linha do console do MagFEM
 ```
 
-Também dá para deixar a ponte rodando num terminal (`python -m magfem`): ela avisa quando a página conecta e mostra
-cada comando recebido; os scripts, em outro terminal, usam `magfem.connect(key="<chave>")`.
+## Console no terminal
+
+`python -m magfem` sobe a ponte e abre um console `magfem>` ligado à página, como o console da web: cada linha
+digitada roda no app (`help()` lista os comandos; ↑ repete; Ctrl+D sai). Com ela aberta, scripts em outro terminal
+usam a mesma ponte com `magfem.connect(key="<chave>")`, e seus comandos aparecem marcados com `[script]`.
+
+## Erros nos scripts
+
+Um comando que falha no app levanta `magfem.BridgeError` (com a mensagem e a linha); a página que não conecta a tempo
+também:
+
+```python
+import magfem
+
+try:
+    mf = magfem.connect(key="<chave>", timeout=60)
+    mf.run("g.circle((0, 0), r=5)")
+    mf.solve()
+    print(mf.result("Fx"))
+except magfem.BridgeError as e:
+    print("MagFEM:", e)
+```
 
 No app, clique em **Script local** (barra de status), informe a porta e cole a chave. Os comandos do
 script aparecem no histórico e o desenho muda ao vivo. O "exportar código" do app gera um script que
