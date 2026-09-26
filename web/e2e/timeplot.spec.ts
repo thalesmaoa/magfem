@@ -55,6 +55,14 @@ test('gráfico no tempo: variáveis nos eixos esquerdo e direito, exportação, 
   const csv = await (await dl.createReadStream()).toArray().then((b) => Buffer.concat(b).toString());
   expect(csv.split('\n')[0]).toBe('t (s);Bobina_V (V);Bobina_lambda (Wb)');
   expect(csv.trim().split('\n')).toHaveLength(21);
+  // .mat (MATLAB v5): cabeçalho, ordem "IM" e o vetor t com 20 amostras (confere a estrutura byte a byte).
+  const [dm] = await Promise.all([page.waitForEvent('download'), page.locator('.tp-export').getByRole('button', { name: 'MAT' }).click()]);
+  const mat = await (await dm.createReadStream()).toArray().then((b) => Buffer.concat(b));
+  expect(mat.subarray(0, 10).toString()).toBe('MATLAB 5.0');
+  expect(mat.subarray(126, 128).toString()).toBe('IM');
+  expect(mat.readUInt32LE(128)).toBe(14); // miMATRIX
+  expect(mat.readInt32LE(128 + 8 + 16 + 8)).toBe(20); // dimensões: 20 × 1
+  expect(mat.subarray(128 + 8 + 32 + 8, 128 + 8 + 32 + 9).toString()).toBe('t');
   // Nas propriedades do item: adicionar uma variável pelo nome.
   await page.getByRole('treeitem', { name: 'Tensão e fluxo', exact: true }).click();
   const add = page.getByRole('combobox', { name: 'Adicionar variável' });

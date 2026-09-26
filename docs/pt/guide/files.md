@@ -51,7 +51,7 @@ Além disso:
 | O quê | Onde |
 |---|---|
 | Animação (WebM) | barra da vista, no transitório e no AC |
-| Gráfico no tempo (CSV, SVG, PNG) | botões abaixo do gráfico, na aba da tabela |
+| Gráfico no tempo (CSV, MAT, SVG, PNG) | botões abaixo do gráfico, na aba da tabela |
 | Modelo como código | botão `</>` ao lado de **Modelo**: script do console que recria o projeto |
 
 O script exportado recria o modelo exatamente, com os mesmos ids. Ele é a base para

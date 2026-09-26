@@ -490,6 +490,8 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .script-modal .modal-actions .btn { margin-left: 6px; }
 .canvas-fit { position: absolute; left: 10px; top: 10px; z-index: 4; width: 30px; height: 30px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
 .table-pane { max-width: 900px; }
+/* Com um gráfico no tempo, a aba usa a largura toda (o gráfico pode ser alargado até a borda). */
+.table-pane:has(.tp-box) { max-width: none; }
 .table-pane h3 { margin: 0 0 8px; }
 .table-item { margin: 10px 0 16px; }
 .table-item h4 { margin: 0 0 4px; font-size: 13px; color: var(--accent); }
@@ -587,8 +589,14 @@ body.resizing { cursor: col-resize; user-select: none; }
 .mat-menu { max-height: 60vh; overflow-y: auto; }
 .fps-pick { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
 .time-charts { display: grid; gap: 8px; }
-.time-plot svg { max-width: 860px; width: 100%; }
 .tp-export { display: flex; gap: 6px; margin-top: 6px; }
+.field.tp-curve { grid-template-columns: 1fr auto; row-gap: 3px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.field.tp-curve > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field.tp-curve input[type='color'] { width: 34px; height: 24px; padding: 0 2px; }
+/* Gráfico no tempo redimensionável pelo canto (o SVG se redesenha no tamanho da caixa). */
+.tp-box { resize: both; overflow: hidden; width: min(760px, 100%); height: 340px; min-width: 320px; min-height: 200px; border: 1px dashed transparent; }
+.tp-box:hover { border-color: var(--border); }
+.tp-box svg.xychart { width: 100%; height: 100%; max-width: none; display: block; }
 .time-charts svg { max-width: 720px; }
 
 .bridge { position: relative; margin-right: 10px; }

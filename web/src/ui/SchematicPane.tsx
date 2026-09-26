@@ -595,10 +595,28 @@ export function DualAxisChart(props: {
   leftTag: string;
   rightTag: string;
   cursor?: number;
+  /** Tamanho em px (a caixa redimensionável); o gráfico é desenhado nesse tamanho. */
+  width?: number;
+  height?: number;
 }) {
   const { x, series, xLabel, cursor } = props;
   const right = series.some((s2) => s2.axis === 'right');
-  const Wc = 640, Hc = 300, L = 64, R = right ? 64 : 14, Tt = 12, B = 44 + 16 * Math.ceil(series.length / 3);
+  const Wc = Math.max(320, Math.round(props.width ?? 640)), L = 64, R = right ? 64 : 14, Tt = 12;
+  // Legenda: cada entrada com a largura do próprio texto, quebrando linha quando não cabe.
+  const legendText = (s2: (typeof series)[number]) => `${s2.axis === 'right' ? '┅' : '━'} ${s2.label}${s2.unit ? ` (${s2.unit})` : ''} · ${s2.axis === 'left' ? props.leftTag : props.rightTag}`;
+  const legendPos: { x: number; row: number }[] = [];
+  {
+    let lx = L, row = 0;
+    for (const s2 of series) {
+      const w = legendText(s2).length * 7 + 28;
+      if (lx > L && lx + w > Wc - 8) (lx = L), row++;
+      legendPos.push({ x: lx, row });
+      lx += w;
+    }
+  }
+  const rows = (legendPos.length ? legendPos[legendPos.length - 1].row : 0) + 1;
+  const B = 44 + 16 * rows;
+  const Hc = Math.max(200, Math.round(props.height ?? 300));
   const x0 = x[0], x1 = x[x.length - 1];
   const X = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * (Wc - L - R);
   const sl = niceScale(series.filter((s2) => s2.axis === 'left').flatMap((s2) => s2.y));
@@ -645,8 +663,8 @@ export function DualAxisChart(props: {
       <text x={14} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(-90 14 ${(Tt + yb) / 2})`}>{unitsOf('left')}</text>
       {right && <text x={Wc - 12} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(90 ${Wc - 12} ${(Tt + yb) / 2})`}>{unitsOf('right')}</text>}
       {series.map((s2, i) => (
-        <text key={s2.label} x={L + (i % 3) * 190} y={yb + 32 + 16 * Math.floor(i / 3)} style={{ fill: colorOf(i) }} className="axis-label">
-          {s2.axis === 'right' ? '┅' : '━'} {s2.label}{s2.unit ? ` (${s2.unit})` : ''} · {s2.axis === 'left' ? props.leftTag : props.rightTag}
+        <text key={s2.label} x={legendPos[i].x} y={yb + 32 + 16 * legendPos[i].row} style={{ fill: colorOf(i) }} className="axis-label">
+          {legendText(s2)}
         </text>
       ))}
       {hv.k !== null && (

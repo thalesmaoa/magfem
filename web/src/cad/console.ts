@@ -1245,7 +1245,7 @@ export class CommandConsole {
         if (kw.colormap !== undefined) patch.colormap = String(kw.colormap);
         if (kw.outputs !== undefined) patch.outputs = kw.outputs === null ? undefined : (seq(kw.outputs) ?? []).map((o) => { const t2 = seq(o) ?? []; return { q: String(t2[0]), name: String(t2[1]) }; });
         if (kw.curves !== undefined)
-          patch.curves = kw.curves === null ? undefined : (seq(kw.curves) ?? []).map((o) => { const c = seq(o) ?? []; return { name: String(c[0]), axis: String(c[1]) === 'right' ? 'right' : 'left', ...(c[2] ? { color: String(c[2]) } : {}) }; });
+          patch.curves = kw.curves === null ? undefined : (seq(kw.curves) ?? []).map((o) => { const c = seq(o) ?? []; return { name: String(c[0]), axis: String(c[1]) === 'right' ? 'right' : 'left', ...(c[2] ? { color: String(c[2]) } : {}), ...(c[3] ? { label: String(c[3]) } : {}) }; });
         if (kw.var_name !== undefined) patch.varName = kw.var_name === null ? undefined : String(kw.var_name);
         if (kw.expr !== undefined) patch.expr = kw.expr === null ? undefined : String(kw.expr);
         if (kw.unit_label !== undefined) patch.unitLabel = kw.unit_label === null ? undefined : String(kw.unit_label);

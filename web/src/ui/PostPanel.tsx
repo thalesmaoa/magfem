@@ -964,12 +964,13 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
     const all = node.physics ? physicsTimeSeries(ed, node.physics) : null;
     const curves = node.curves ?? [];
     const curveCode = (list: typeof curves) =>
-      `r.show(${q(node.id)}, curves=[${list.map((c) => `(${q(c.name)}, ${q(c.axis)}${c.color ? `, ${q(c.color)}` : ''})`).join(', ')}])`;
+      `r.show(${q(node.id)}, curves=[${list.map((c) => `(${q(c.name)}, ${q(c.axis)}${c.color || c.label ? `, ${c.color ? q(c.color) : 'None'}` : ''}${c.label ? `, ${q(c.label)}` : ''})`).join(', ')}])`;
     const setCurves = (list: typeof curves) => set({ curves: list.length ? list : undefined }, curveCode(list));
     // Mantém a ordem em que as variáveis foram escolhidas.
     const setAxis = (name: string, axis: string) =>
       setCurves(!axis ? curves.filter((c) => c.name !== name) : curves.some((c) => c.name === name) ? curves.map((c) => (c.name === name ? { ...c, axis: axis as 'left' | 'right' } : c)) : [...curves, { name, axis: axis as 'left' | 'right' }]);
     const setColor = (name: string, color: string) => setCurves(curves.map((c) => (c.name === name ? { ...c, color } : c)));
+    const setLabel = (name: string, label: string) => setCurves(curves.map((c) => (c.name === name ? { ...c, label: label || undefined } : c)));
     return (
       <div className="props-body">
         <section>
@@ -1004,7 +1005,7 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
               {curves.map((c) => {
                 const s = all.series.find((x) => x.label === c.name);
                 return (
-                  <label className="field" key={c.name}>
+                  <label className="field tp-curve" key={c.name}>
                     <span>
                       {c.name}
                       {s?.unit ? ` (${s.unit})` : ''}
@@ -1014,6 +1015,7 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
                       <option value="right">{t.table.tp.right}</option>
                       <option value="">{t.table.tp.remove}</option>
                     </select>
+                    <LazyInput className="tp-label" value={c.label ?? ''} placeholder={t.table.tp.labelPh} ariaLabel={`${t.table.tp.label}: ${c.name}`} onCommit={(v) => setLabel(c.name, v.trim())} />
                     <input type="color" aria-label={`${t.table.tp.color}: ${c.name}`} value={c.color ?? TP_COLORS[curves.indexOf(c) % TP_COLORS.length]} onChange={(e) => setColor(c.name, e.target.value)} />
                   </label>
                 );

@@ -51,7 +51,7 @@ Also:
 | What | Where |
 |---|---|
 | Animation (WebM) | view bar, in transient and AC |
-| Time plot (CSV, SVG, PNG) | buttons below the plot, in the table tab |
+| Time plot (CSV, MAT, SVG, PNG) | buttons below the plot, in the table tab |
 | Model as code | `</>` button next to **Model**: console script that rebuilds the project |
 
 The exported script rebuilds the model exactly, with the same ids. It is the basis for

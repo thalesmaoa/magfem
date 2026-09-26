@@ -1,5 +1,5 @@
 // Barra de abas do canvas e painéis de gráfico (gráfico sobre linha, curva B-H) com escala linear/log.
-import { useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { updateMaterial } from '../cad/mesh';
@@ -12,6 +12,7 @@ import { T, useT, displayName } from '../i18n';
 import { DualAxisChart, MultiChart } from './SchematicPane';
 import { chartImage, chartSVG, seriesCSV } from './chartExport';
 import { download } from '../io/export';
+import { matFile } from '../io/matfile';
 import { LazyInput } from './common';
 import { useDocVersion, useEditor } from './useStore';
 import { activateTab, closeTab, tabKey, useTabs, type CanvasTab } from './tabsStore';
@@ -698,12 +699,21 @@ function fmtUnit(v: number, u: string) {
 function TimePlot({ ed, it }: { ed: SketchEditor; it: PostNode }) {
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
   const all = it.physics ? physicsTimeSeries(ed, it.physics) : null;
   if (!all) return <p className="muted">{t.table.tp.needTransient}</p>;
   const series = (it.curves ?? [])
     .map((c) => {
       const s = all.series.find((x) => x.label === c.name);
-      return s ? { ...s, axis: c.axis, color: c.color } : null;
+      return s ? { ...s, label: c.label || s.label, axis: c.axis, color: c.color } : null;
     })
     .filter((s): s is NonNullable<typeof s> => !!s);
   if (!series.length) return <p className="muted">{t.table.tp.empty}</p>;
@@ -712,17 +722,28 @@ function TimePlot({ ed, it }: { ed: SketchEditor; it: PostNode }) {
   const svgEl = () => ref.current?.querySelector('svg.xychart') ?? null;
   return (
     <div className="time-plot" ref={ref}>
-      <DualAxisChart
-        x={all.t.map((v) => v * 1e3)}
-        series={series}
-        xLabel="t (ms)"
-        leftTag={t.table.tp.leftShort}
-        rightTag={t.table.tp.rightShort}
-        cursor={cur !== undefined ? cur * 1e3 : undefined}
-      />
+      <div className="tp-box" ref={box}>
+        <DualAxisChart
+          x={all.t.map((v) => v * 1e3)}
+          series={series}
+          xLabel="t (ms)"
+          leftTag={t.table.tp.leftShort}
+          rightTag={t.table.tp.rightShort}
+          cursor={cur !== undefined ? cur * 1e3 : undefined}
+          width={size?.w}
+          height={size?.h}
+        />
+      </div>
       <div className="tp-export" role="group" aria-label={t.table.tp.exportHint}>
         <button className="btn secondary" onClick={() => download(`${base}.csv`, new Blob([seriesCSV(all.t, series)], { type: 'text/csv' }))}>
           CSV
+        </button>
+        <button
+          className="btn secondary"
+          title={t.table.tp.matHint}
+          onClick={() => download(`${base}.mat`, new Blob([matFile([{ name: 't', data: all.t }, ...series.map((s) => ({ name: s.label, data: s.y }))])], { type: 'application/octet-stream' }))}
+        >
+          MAT
         </button>
         <button
           className="btn secondary"

@@ -119,7 +119,7 @@ Tipos de contorno em `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`
 | `r.show(id, visible=, range=(0, 1.5), n_lines=20, spacing=, scale=, curve=, quantity=, color=, color_by_value=, colormap=, regions=[(x, y)], outputs=[("fx", "Fx")], var_name=, expr=, unit_label=, at_time=, legend=(x, y, s))` | opções de uma camada ou item |
 | `r.table("n2", name=)` | nova tabela |
 | `r.item(tabela, "circuits" \| "lineint" \| "surfint" \| "formula" \| "timeplot", name=)` | item de tabela |
-| `r.show(item, curves=[("Bobina_V", "left"), ("Bobina_lambda", "right", "#1f6fd1")])` | gráfico no tempo: variáveis, eixo e cor (opcional) |
+| `r.show(item, curves=[("Bobina_V", "left"), ("Bobina_lambda", "right", "#1f6fd1", "Fluxo")])` | gráfico no tempo: variável, eixo, cor e rótulo (opcionais) |
 | `r.move(camada, vista)`, `r.duplicate(id)`, `r.rename(id, nome)`, `r.remove(id)` | organização |
 | `r.result("Fx", physics="n2")` | número de uma variável de resultado (no instante mostrado, no transitório) |
 | `r.results("n2")` | lista `[(nome, valor, unidade), ...]` |

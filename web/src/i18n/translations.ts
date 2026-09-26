@@ -593,7 +593,7 @@ export interface Translations {
     addItem: string;
     items: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
-    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string) => string; help: string; color: string };
+    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string) => string; help: string; color: string; label: string; labelPh: string; matHint: string };
     varName: string;
     show: string;
     loss: string;
@@ -1360,6 +1360,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
       addPlaceholder: 'nome (Tab/↓ lista), Enter',
       remove: 'tirar do gráfico',
       color: 'Cor',
+      label: 'Rótulo na legenda',
+      labelPh: 'rótulo (opcional)',
+      matHint: 'MATLAB .mat: t e uma variável por curva (scipy.io.loadmat no Python, MAT.jl no Julia, load no Octave)',
       unknown: (n) => `Variável de resultado "${n}" não existe nesta física.`,
       help: 'Qualquer variável de resultado da física: circuitos (_I, _lambda, _L, _V, _P), integrais (ex.: Fx) e fórmulas.',
     },
@@ -2135,6 +2138,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
       addPlaceholder: 'name (Tab/↓ lists), Enter',
       remove: 'remove from plot',
       color: 'Color',
+      label: 'Legend label',
+      labelPh: 'label (optional)',
+      matHint: 'MATLAB .mat: t and one variable per curve (scipy.io.loadmat in Python, MAT.jl in Julia, load in Octave)',
       unknown: (n) => `Result variable "${n}" does not exist in this physics.`,
       help: 'Any result variable of the physics: circuits (_I, _lambda, _L, _V, _P), integrals (e.g. Fx) and formulas.',
     },
