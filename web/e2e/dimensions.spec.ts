@@ -115,7 +115,7 @@ test('distância ponto-linha e cotas horizontal/vertical pelo posicionamento', a
   await typeDim(page, '5');
   sk = await sketch(page);
   const types = sk.constraints.map((c: any) => c.type);
-  expect(types).toEqual(['hdistance', 'vdistance', 'distance']);
+  expect(types).toEqual(['coincident', 'hdistance', 'vdistance', 'distance']);
   const B = sk.entities[line.p2];
   expect(B.x).toBeCloseTo(40, 6);
   expect(B.y).toBeCloseTo(10, 6);

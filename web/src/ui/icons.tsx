@@ -21,6 +21,14 @@ export const Icons = {
       {dot(16, 4)}
     </S>
   ),
+  trim: (
+    // Tesoura (aparar).
+    <S>
+      <circle cx="5.5" cy="14.5" r="2.5" />
+      <circle cx="14.5" cy="14.5" r="2.5" />
+      <path d="M7.3 12.7L15 3M12.7 12.7L5 3" />
+    </S>
+  ),
   measure: (
     <S>
       <rect x="2" y="7" width="16" height="6" rx="1" transform="rotate(-30 10 10)" />

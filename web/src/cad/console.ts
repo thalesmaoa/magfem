@@ -1,6 +1,7 @@
 // Console de comandos (estilo console Python do FreeCAD): executa a mesma API do histórico.
 // Subconjunto de Python: atribuição, chamadas s.metodo(...)/funcao(...), argumentos nomeados,
 // strings, números, True/False/None, tuplas, listas, + − * / e comentários com #.
+import { trim } from './trim';
 import { T } from '../i18n';
 import { q } from './code';
 import type { SketchDoc } from './doc';
@@ -485,6 +486,14 @@ export class CommandConsole {
         const e = sk.entities[id];
         const g = sk.groups.find((x) => x.id === id);
         return JSON.stringify(e ?? g);
+      }
+      case 'trim': {
+        // g.trim("l5", (x, y)): remove o trecho da curva que contém o ponto, até as interseções mais próximas.
+        need(2);
+        const next = trim(sk, this.id(a[0]), this.xy(a[1]));
+        if (!next) throw new ConsoleError(t.notFound(String(a[0])));
+        this.commit(next);
+        return null;
       }
       case 'list':
         return Object.keys(sk.entities);

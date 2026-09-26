@@ -3,6 +3,7 @@ import { constraintCode, creationCode, q, xy } from './code';
 import type { SketchDoc } from './doc';
 import { dimAnchor, dimDrawing } from './dimgeom';
 import { asLength, evaluate, evaluateVariables, formatLength } from './expr';
+import { trim, trimPiece, type TrimPiece } from './trim';
 import { circleFrom3, closestOnCurve, cross, curvePoints, dist, dot, entityBBox, entityTouchesBox, norm, normAngle, pt, sketchBBox, sub, type Vec } from './geometry';
 import { angleSectorAt, dimPointIds, lineDir, measure } from './measure';
 import {
@@ -47,7 +48,7 @@ import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern,
 import { subscribeLang, T } from '../i18n';
 import { isDark, subscribeTheme } from '../theme';
 
-export type Tool = 'select' | 'measure' | 'line' | 'cline' | 'rect' | 'rectc' | 'circle' | 'arc3' | 'arcc' | 'point' | 'dimension';
+export type Tool = 'select' | 'measure' | 'line' | 'cline' | 'rect' | 'rectc' | 'circle' | 'arc3' | 'arcc' | 'point' | 'dimension' | 'trim';
 
 export const TOOL_KEYS: Record<string, Tool> = {
   s: 'select',
@@ -61,6 +62,7 @@ export const TOOL_KEYS: Record<string, Tool> = {
   p: 'point',
   d: 'dimension',
   u: 'measure',
+  x: 'trim',
 };
 
 export const GEOM_KEYS: Record<string, GeomTool> = {
@@ -76,6 +78,7 @@ export const GEOM_KEYS: Record<string, GeomTool> = {
 
 const POINT_SNAP_PX = 9;
 const CURVE_SNAP_PX = 7;
+const AXIS_SNAP = false;
 const HV_TOL = Math.tan((3 * Math.PI) / 180);
 const PARALLEL_TOL = Math.sin((1 * Math.PI) / 180);
 
@@ -83,6 +86,7 @@ interface Pick {
   pos: Vec;
   pointId?: Id; // encaixou num ponto existente
   curveId?: Id; // encaixou sobre uma curva
+  axis?: 'x' | 'y'; // encaixou num eixo (x: y = 0; y: x = 0)
   midOf?: Id; // encaixou no ponto médio de uma linha
 }
 
@@ -1159,6 +1163,7 @@ export class SketchEditor {
       groupBoxes,
       hideDim: this.editing?.id ?? null,
       measure: this.measureOverlay(),
+      trim: this.tool === 'trim' && this.trimHover ? this.trimHover.pts : null,
       dark: isDark(),
       mesh: this.mode === 'mesh' ? this.meshView() : undefined,
       post: this.mode === 'post' ? this.postView() : undefined,
@@ -1320,6 +1325,7 @@ export class SketchEditor {
 
   private snapIndicator(): RenderState['snap'] {
     const kind = (p: Pick) => (p.pointId ? 'point' : p.midOf ? 'mid' : 'curve') as 'point' | 'mid' | 'curve';
+    if (this.tool !== 'select' && this.tool !== 'dimension' && this.cursorPick?.axis) return { pos: this.cursorPick.pos, kind: 'curve' };
     const d = this.drag;
     if (d?.single && d.dropOn && (d.dropOn.pointId || d.dropOn.curveId || d.dropOn.midOf)) return { pos: d.dropOn.pos, kind: kind(d.dropOn) };
     if (this.tool === 'select' || this.tool === 'dimension') return null;
@@ -1393,7 +1399,9 @@ export class SketchEditor {
     for (const e of Object.values(sk.entities)) {
       if (e.type !== 'point' || exclude.has(e.id) || hidden.has(e.id)) continue;
       const d = dist(this.view.toScreen(e), s);
-      if (d <= POINT_SNAP_PX && (!bestP || d < bestP.d)) bestP = { id: e.id, d };
+      // Empate (pontos no mesmo lugar): o ponto do desenho vence a Origem (fecha a polilinha nele).
+      const better = !bestP || d < bestP.d - 1e-6 || (Math.abs(d - bestP.d) <= 1e-6 && bestP.id === ORIGIN_ID);
+      if (d <= POINT_SNAP_PX && better) bestP = { id: e.id, d };
     }
     if (bestP) {
       const p = pt(sk, bestP.id);
@@ -1418,6 +1426,11 @@ export class SketchEditor {
       if (dp <= CURVE_SNAP_PX && (!bestC || dp < bestC.d)) bestC = { id: e.id, d: dp, q };
     }
     if (bestC) return { pos: bestC.q, curveId: bestC.id };
+    // Eixos (x = 0 e y = 0) por último.
+    const o = this.view.toScreen({ x: 0, y: 0 });
+    const dy = Math.abs(s.x - o.x), dx = Math.abs(s.y - o.y);
+    if (AXIS_SNAP && dy <= CURVE_SNAP_PX && dy <= dx) return { pos: { x: 0, y: w.y }, axis: "y" };
+    if (AXIS_SNAP && dx <= CURVE_SNAP_PX) return { pos: { x: w.x, y: 0 }, axis: "x" };
     return { pos: w };
   }
 
@@ -1432,6 +1445,14 @@ export class SketchEditor {
       Math.abs(dx) > 1e-9 && Math.abs(dy) <= HV_TOL * Math.abs(dx) ? 'H' : Math.abs(dy) > 1e-9 && Math.abs(dx) <= HV_TOL * Math.abs(dy) ? 'V' : null;
     if (!hv) return p;
     const pos = hv === 'H' ? { x: p.pos.x, y: a.y } : { x: a.x, y: p.pos.y };
+    if (p.axis) {
+      // Eixo cruzando a reta H/V: o ponto fica na interseção (as duas restrições valem); paralelos: vale o eixo.
+      if ((p.axis === 'y' && hv === 'H') || (p.axis === 'x' && hv === 'V')) {
+        this.inferHV = hv;
+        return { pos: p.axis === 'y' ? { x: 0, y: a.y } : { x: a.x, y: 0 }, axis: p.axis };
+      }
+      return p;
+    }
     if (p.curveId) {
       // Encaixado numa curva: vai para a interseção da reta H/V com a curva (as duas restrições valem);
       // se ela estiver longe do cursor, a curva vence a inferência.
@@ -1552,7 +1573,30 @@ export class SketchEditor {
       this.dimensionClick(s);
       return;
     }
+    if (this.tool === 'trim') {
+      this.trimClick(s);
+      return;
+    }
     this.drawClick(s);
+  }
+
+  /** Trecho que a tesoura removeria sob o cursor (destacado no desenho). */
+  private trimHover: TrimPiece | null = null;
+  private trimAt(s: Vec): TrimPiece | null {
+    const h = this.hitTest(s, { entitiesOnly: true });
+    if (!h || h.kind !== 'curve') return null;
+    return trimPiece(this.sketch, h.id, this.view.toWorld(s));
+  }
+  private trimClick(s: Vec) {
+    const piece = this.trimAt(s);
+    if (!piece) return;
+    const w = this.view.toWorld(s);
+    const next = trim(this.sketch, piece.curve, w);
+    if (!next) return;
+    const r = this.doc.commitWithOptional(next, [], [`g.trim(${q(piece.curve)}, ${pointCode(w)})`]);
+    if (!r.ok) this.flash(r.message!);
+    this.trimHover = this.trimAt(s);
+    this.changed();
   }
 
   private onMove(e: PointerEvent) {
@@ -1639,6 +1683,9 @@ export class SketchEditor {
     } else if (this.tool === 'dimension') {
       const h = this.hitTest(s, { entitiesOnly: true });
       if (h?.id !== this.hover?.id) this.hover = h;
+    } else if (this.tool === 'trim') {
+      this.trimHover = this.trimAt(s);
+      this.canvas.style.cursor = this.trimHover ? 'pointer' : 'crosshair';
     } else {
       this.cursorPick = this.applyInference(this.pickAt(s));
       this.trackArcSweep();
@@ -1887,7 +1934,8 @@ export class SketchEditor {
       return;
     }
     if (!pts.length && !d.radiusOf) {
-      if (h.kind === 'point' && h.id === ORIGIN_ID) this.flash(T().msg.originFixed);
+      // A origem usada como ponto de uma curva (desenho antigo): explica como soltar.
+      if (h.kind === 'point' && h.id === ORIGIN_ID) this.flash(curvesUsing(sk, ORIGIN_ID).length ? T().msg.gluedToFixed : T().msg.originFixed);
       else if (h.kind === 'point' || h.kind === 'curve') this.flash(T().msg.cannotDrag);
       d.kind = 'box';
       return;
@@ -2038,9 +2086,18 @@ export class SketchEditor {
 
   /** Id do ponto para um clique: reaproveita o ponto encaixado ou cria um novo (com "ponto sobre"). */
   private pointFor(d: Draft, p: Pick, optional: OptC[], free = false): Id {
+    // Na origem: ponto próprio + "coincidente" com a Origem (restrição visível e apagável, como no Onshape);
+    // reaproveitar o ponto fixo da origem prenderia a curva sem nenhuma restrição para soltar.
+    if (p.pointId === ORIGIN_ID) {
+      const id = d.addPoint(0, 0, free);
+      optional.push({ type: 'coincident', refs: [id, ORIGIN_ID] });
+      return id;
+    }
     if (p.pointId) return p.pointId;
     const id = d.addPoint(p.pos.x, p.pos.y, free);
     if (p.curveId) optional.push({ type: 'pointOn', refs: [id, p.curveId] });
+    // Sobre um eixo: alinhado com a origem (vertical no eixo y, horizontal no eixo x).
+    if (p.axis) optional.push({ type: p.axis === 'y' ? 'vertical' : 'horizontal', refs: [id, ORIGIN_ID] });
     if (p.midOf) optional.push({ type: 'midpoint', refs: [id, p.midOf] });
     return id;
   }
@@ -2125,7 +2182,8 @@ export class SketchEditor {
     const a = { x: 2 * c.x - b.x, y: 2 * c.y - b.y };
     const d = new Draft(this.sketch);
     const opt: OptC[] = [];
-    const center = this.pointFor(d, cp, opt, true);
+    // Centro na Origem: usa a própria Origem (a simetria já é uma restrição visível e apagável).
+    const center = cp.pointId ?? this.pointFor(d, cp, opt, true);
     const c1 = d.addPoint(a.x, a.y);
     const c3 = this.pointFor(d, corner, opt);
     const ls = this.rectLines(d, c1, c3, a, b, opt);

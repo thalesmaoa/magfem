@@ -45,7 +45,8 @@ test('polilinha com inferência H/V, fechamento e desfazer', async ({ page }) =>
   let sk = await sketch(page);
   expect(Object.values(sk.entities).filter((e: any) => e.type === 'line')).toHaveLength(3);
   const types = sk.constraints.map((c: any) => c.type).sort();
-  expect(types).toEqual(['horizontal', 'vertical']);
+  // Início na origem: ponto próprio + coincidente com a Origem (o fechamento une ao 1º ponto da polilinha).
+  expect(types).toEqual(['coincident', 'horizontal', 'vertical']);
   // A polilinha terminou: próximo clique inicia outra, não liga ao último ponto.
   await clickWorld(page, { x: -20, y: -20 });
   sk = await sketch(page);
@@ -160,7 +161,7 @@ test('apagar e persistência do rascunho após recarregar', async ({ page }) => 
   await page.keyboard.press('Delete');
   let sk = await sketch(page);
   expect(Object.values(sk.entities).filter((e: any) => e.type === 'line')).toHaveLength(1);
-  expect(Object.values(sk.entities).filter((e: any) => e.type === 'point')).toHaveLength(2); // origem + 1
+  expect(Object.values(sk.entities).filter((e: any) => e.type === 'point')).toHaveLength(3); // origem + ponto coincidente com ela + 1
   await page.waitForTimeout(800); // rascunho salvo com debounce
   await page.reload();
   await page.waitForFunction(() => !!(window as any).__magfem);
@@ -199,7 +200,7 @@ test('retângulo nasce agrupado; cotado fica preto e não arrasta (com aviso)', 
   await page.screenshot({ path: 'test-results/r4-definido.png' });
 });
 
-test('retângulo preso à origem: aviso ao arrastar, "Soltar da origem" e então move', async ({ page }) => {
+test('na origem nasce "coincidente": cotado fica preto; apagar a restrição na árvore libera o arraste', async ({ page }) => {
   await page.keyboard.press('r');
   await clickWorld(page, { x: 0, y: 0 });
   await clickWorld(page, { x: 40, y: 20 });
@@ -211,9 +212,41 @@ test('retângulo preso à origem: aviso ao arrastar, "Soltar da origem" e então
   await clickWorld(page, { x: 50, y: 10 });
   await typeDim(page, '20');
   await page.keyboard.press('Escape');
+  let sk = await sketch(page);
+  expect(sk.constraints.filter((c: any) => c.type === 'coincident' && c.refs.includes('O'))).toHaveLength(1);
+  await clickWorld(page, { x: 20, y: 20 });
+  await dragWorld(page, { x: 20, y: 20 }, { x: 30, y: 30 });
+  await expect(page.locator('.status .msg')).toContainText('Totalmente definido');
+  const tree = page.getByRole('tree');
+  await tree.getByRole('treeitem', { name: /^Restrições/ }).click();
+  await tree.getByRole('treeitem', { name: 'Coincidente' }).hover();
+  await tree.getByRole('treeitem', { name: 'Coincidente' }).getByRole('button', { name: /Apagar restrição/ }).click();
+  await page.keyboard.press('Escape');
+  await clickWorld(page, { x: 20, y: 20 });
+  await dragWorld(page, { x: 20, y: 20 }, { x: 30, y: 30 });
+  sk = await sketch(page);
+  const xs = Object.values(sk.entities).filter((e: any) => e.type === 'point' && e.id !== 'O').map((p: any) => Math.round(p.x));
+  expect(Math.min(...xs)).toBe(10);
+  expect(sk.entities.O).toMatchObject({ x: 0, y: 0 });
+});
+
+test('retângulo preso à origem (desenho antigo): aviso ao arrastar, "Soltar da origem" e então move', async ({ page }) => {
+  // Desenhos antigos (e o console com "O") usam a própria Origem como vértice.
+  const box = page.getByRole('textbox', { name: 'Console' });
+  await box.fill('g.rectangle("O", (40, 20))');
+  await box.press('Enter');
+  await box.blur();
+  await page.keyboard.press('d');
+  await clickWorld(page, { x: 20, y: 20 });
+  await clickWorld(page, { x: 20, y: 30 });
+  await typeDim(page, '40');
+  await clickWorld(page, { x: 40, y: 10 });
+  await clickWorld(page, { x: 50, y: 10 });
+  await typeDim(page, '20');
+  await page.keyboard.press('Escape');
   await clickWorld(page, { x: 20, y: 20 }); // seleciona o retângulo (grupo)
   await dragWorld(page, { x: 20, y: 20 }, { x: 30, y: 30 });
-  await expect(page.locator('.status .msg')).toContainText('preso à origem');
+  await expect(page.locator('.status .msg')).toContainText('própria Origem');
   await page.getByRole('button', { name: 'Soltar da origem' }).click();
   await expect(page.locator('.status .msg')).toHaveCount(0);
   await dragWorld(page, { x: 20, y: 20 }, { x: 30, y: 30 });
@@ -284,4 +317,36 @@ test('linha: o segundo ponto também trava sobre uma curva, mesmo com a inferên
   expect(p.x).toBeCloseTo(20, 6);
   expect(p.y).toBeCloseTo(10, 6); // horizontal ao primeiro ponto
   expect(sk.constraints.some((c: any) => c.type === 'horizontal')).toBe(true);
+});
+
+test('tesoura (X): apara a ponta da linha, divide ao meio, círculo vira arco e curva sem cortes some', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  for (const c of ['g.line((0, 0), (60, 0))', 'g.line((20, -10), (20, 10))', 'g.line((40, -10), (40, 10))', 'g.circle((100, 0), r=10)', 'g.line((95, -20), (95, 20))', 'g.line((0, 40), (30, 40))']) {
+    await box.fill(c);
+    await box.press('Enter');
+  }
+  await box.blur();
+  await page.keyboard.press('x');
+  const lines = async () => (Object.values((await sketch(page)).entities).filter((e: any) => e.type === 'line') as any[]);
+  const horiz = async () => {
+    const sk = await sketch(page);
+    return (await lines()).filter((l) => Math.abs(sk.entities[l.p1].y) < 1e-6 && Math.abs(sk.entities[l.p2].y) < 1e-6).map((l) => [sk.entities[l.p1].x, sk.entities[l.p2].x].sort((a, b) => a - b));
+  };
+  // Trecho do meio (entre x = 20 e 40): a linha vira duas.
+  await clickWorld(page, { x: 30, y: 0 });
+  expect((await horiz()).sort((a, b) => a[0] - b[0])).toEqual([[0, 20], [40, 60]]);
+  // Ponta (x > 40): encurta.
+  await clickWorld(page, { x: 50, y: 0 });
+  expect((await horiz()).sort((a, b) => a[0] - b[0])).toEqual([[0, 20]]);
+  // Círculo cortado pela linha x = 95: tirar o lado direito deixa um arco.
+  await clickWorld(page, { x: 110, y: 0 });
+  let sk = await sketch(page);
+  expect(Object.values(sk.entities).filter((e: any) => e.type === 'circle')).toHaveLength(0);
+  expect(Object.values(sk.entities).filter((e: any) => e.type === 'arc')).toHaveLength(1);
+  // Sem cortes: a curva inteira sai.
+  await clickWorld(page, { x: 15, y: 40 });
+  sk = await sketch(page);
+  expect((await lines()).some((l) => sk.entities[l.p1].y === 40)).toBe(false);
+  const code = await page.locator('.console .code').innerText();
+  expect((code.match(/g\.trim\(/g) ?? []).length).toBe(4);
 });

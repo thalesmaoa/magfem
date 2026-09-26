@@ -370,7 +370,7 @@ test('árvore: restrições expansíveis, selecionar, editar cota e apagar', asy
   await typeDim(page, '30');
   await page.keyboard.press('Escape');
   const tree = page.getByRole('tree');
-  const node = tree.getByRole('treeitem', { name: 'Restrições (2)' });
+  const node = tree.getByRole('treeitem', { name: 'Restrições (3)' }); // coincidente com a Origem + H + cota
   await node.click();
   await expect(tree.getByRole('treeitem', { name: 'Horizontal' })).toBeVisible();
   const dim = tree.getByRole('treeitem', { name: 'Distância 30 mm' });
@@ -383,7 +383,7 @@ test('árvore: restrições expansíveis, selecionar, editar cota e apagar', asy
   await expect(tree.getByRole('treeitem', { name: 'Distância 45 mm' })).toBeVisible();
   await tree.getByRole('treeitem', { name: 'Horizontal' }).hover();
   await tree.getByRole('treeitem', { name: 'Horizontal' }).getByRole('button', { name: /Apagar restrição/ }).click();
-  await expect(tree.getByRole('treeitem', { name: 'Restrições (1)' })).toBeVisible();
+  await expect(tree.getByRole('treeitem', { name: 'Restrições (2)' })).toBeVisible();
   await page.screenshot({ path: 'test-results/r7-restricoes.png' });
 });
 
@@ -414,7 +414,7 @@ test('medidas: ponto, linha, distância mínima entre duas entidades, área e r�
   await expect(meas).toContainText(`${String(Math.round(Math.hypot(40, 20) * 1e4) / 1e4).replace('.', ',')} mm`);
   await page.screenshot({ path: 'test-results/r8-regua.png' });
   // A régua não muda o desenho.
-  expect((await sketch(page)).constraints.length).toBe(4);
+  expect((await sketch(page)).constraints.length).toBe(5); // 4 H/V + coincidente com a Origem
 });
 
 test('console: comandos, getid pelo nome, erro legível, ↑ repete, e o desenho acompanha', async ({ page }) => {
@@ -628,8 +628,8 @@ test('offset: filho do retângulo na árvore; distância 2 → 5 → −5 nas pr
   const code = await page.locator('.console .code').innerText();
   expect(code).toMatch(/g\.set_offset\("g\d+", "-5 mm"\)/);
   expect((code.match(/g\.set_offset\(/g) ?? []).length).toBe(3); // 5, −5 e o arraste
-  // Restrições internas do offset não aparecem na lista (só as do usuário: 4 H/V + 2 cotas).
-  await expect(page.getByRole('treeitem', { name: /^Restrições/ })).toHaveAttribute('aria-label', 'Restrições (6)');
+  // Restrições internas do offset não aparecem na lista (só as do usuário: 4 H/V + 2 cotas + coincidente com a Origem).
+  await expect(page.getByRole('treeitem', { name: /^Restrições/ })).toHaveAttribute('aria-label', 'Restrições (7)');
   // Cursor de "mover" (não "proibido") sobre o offset, mesmo definido.
   const sk2 = await sketch(page);
   const ln = (await off()).g.members.map((id: string) => sk2.entities[id]).find((e: any) => e?.type === 'line' && !e.aux);

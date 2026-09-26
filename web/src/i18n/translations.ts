@@ -113,6 +113,7 @@ export interface Translations {
   tools: {
     select: string;
     measure: string;
+    trim: string;
     line: string;
     cline: string;
     rect: string;
@@ -138,6 +139,7 @@ export interface Translations {
   hints: {
     select: string[];
     measure: string[];
+    trim: string[];
     line: string[];
     cline: string[];
     rect: string[];
@@ -788,6 +790,7 @@ const PT: Translations = {
   tools: {
     select: 'Selecionar',
     measure: 'Régua (medir)',
+    trim: 'Aparar (tesoura)',
     line: 'Linha',
     cline: 'Linha de construção',
     rect: 'Retângulo por vértices',
@@ -846,6 +849,7 @@ const PT: Translations = {
   hints: {
     select: ['Clique para selecionar (Shift soma). Arraste para mover; solte um ponto sobre outro para uni-los. Duplo clique entra num grupo.'],
     measure: ['Régua: clique o primeiro ponto (encaixa em pontos e curvas).', 'Clique o segundo ponto.', 'Clique para medir de novo; Esc limpa.'],
+    trim: ['Aparar: clique no trecho de uma curva para removê-lo até as interseções mais próximas (em vermelho).'],
     line: ['Clique o ponto inicial.', 'Clique o próximo ponto. Duplo clique ou Esc termina.'],
     cline: ['Linha de construção (tracejada, só apoio; não vira região): clique o ponto inicial.', 'Clique o próximo ponto. Duplo clique ou Esc termina.'],
     rect: ['Clique o primeiro vértice.', 'Clique o vértice oposto.'],
@@ -877,7 +881,7 @@ const PT: Translations = {
     fixDropped: (n) => `${n} restrição(ões) entre pontos agora fixos foram removidas (ficariam redundantes).`,
     pickGroupMember: 'A seleção tem um grupo inteiro. Para restringir, pegue o lado específico: Shift+clique na linha do grupo.',
     nameTaken: (n) => `O nome "${n}" já está em uso no desenho (nomes são únicos para que getid("${n}") seja inequívoco).`,
-    gluedToFixed: 'Está preso à origem (um canto é o próprio ponto de origem). Use "Soltar da origem" no painel de propriedades para poder mover.',
+    gluedToFixed: 'Este ponto é a própria Origem (fixa), sem restrição para apagar. Selecione a curva e use "Soltar da origem" no painel de propriedades para poder mover.',
   },
   status: {
     empty: 'Sketch vazio',
@@ -1538,6 +1542,7 @@ const EN: Translations = {
   tools: {
     select: 'Select',
     measure: 'Ruler (measure)',
+    trim: 'Trim (scissors)',
     line: 'Line',
     cline: 'Construction line',
     rect: 'Corner rectangle',
@@ -1596,6 +1601,7 @@ const EN: Translations = {
   hints: {
     select: ['Click to select (Shift adds). Drag to move; drop a point on another to join them. Double-click enters a group.'],
     measure: ['Ruler: click the first point (snaps to points and curves).', 'Click the second point.', 'Click to measure again; Esc clears.'],
+    trim: ['Trim: click a stretch of a curve to remove it up to the nearest intersections (in red).'],
     line: ['Click the start point.', 'Click the next point. Double-click or Esc ends.'],
     cline: ['Construction line (dashed, helper only; never becomes a region): click the start point.', 'Click the next point. Double-click or Esc ends.'],
     rect: ['Click the first corner.', 'Click the opposite corner.'],
@@ -1627,7 +1633,7 @@ const EN: Translations = {
     fixDropped: (n) => `${n} constraint(s) between now-fixed points were removed (they would be redundant).`,
     pickGroupMember: 'The selection has a whole group. To constrain, pick the specific side: Shift+click the line in the group.',
     nameTaken: (n) => `The name "${n}" is already used in the drawing (names are unique so getid("${n}") is unambiguous).`,
-    gluedToFixed: 'It is attached to the origin (a corner is the origin point itself). Use "Detach from origin" in the properties panel to move it.',
+    gluedToFixed: 'This point is the Origin itself (fixed), with no constraint to delete. Select the curve and use "Detach from origin" in the properties panel to move it.',
   },
   status: {
     empty: 'Empty sketch',

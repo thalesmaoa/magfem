@@ -92,6 +92,8 @@ export interface RenderState {
   hideDim: Id | null;
   /** Régua / distância mínima: linha tracejada com o valor. */
   measure: { a: Vec; b: Vec; text: string } | null;
+  /** Tesoura: trecho que seria removido (pontos no mundo). */
+  trim?: Vec[] | null;
   /** Exportação de imagem: sem grade, eixos e símbolos de restrição; traço mais grosso. */
   plain?: boolean;
   /** Tema escuro. */
@@ -956,6 +958,20 @@ export function render(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, st: R
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
     ctx.fillText(g.entered ? `${g.name} (editando)` : g.name, a.x - pad, a.y - pad - 2);
+  }
+  if (st.trim && st.trim.length > 1) {
+    // Tesoura: trecho a remover em vermelho tracejado.
+    ctx.strokeStyle = COLORS.conflict;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    st.trim.forEach((p, i) => {
+      const q = v.toScreen(p);
+      if (i === 0) ctx.moveTo(q.x, q.y);
+      else ctx.lineTo(q.x, q.y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
   if (st.measure) {
     const a = v.toScreen(st.measure.a);

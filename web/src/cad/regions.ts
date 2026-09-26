@@ -51,9 +51,9 @@ export interface Arrangement {
   edgeLen: (e: Edge) => { len: number; curved: boolean; angle: number };
 }
 
-type Param = { at: (t: number) => Vec; t0: number; t1: number; closed: boolean };
+export type Param = { at: (t: number) => Vec; t0: number; t1: number; closed: boolean };
 
-function paramOf(sk: Sketch, c: Curve): Param {
+export function paramOf(sk: Sketch, c: Curve): Param {
   if (c.type === 'line') {
     const a = pt(sk, c.p1);
     const b = pt(sk, c.p2);
@@ -68,7 +68,7 @@ function paramOf(sk: Sketch, c: Curve): Param {
 }
 
 /** Parâmetro (na curva) do ponto `p`, supondo que ele está sobre a curva. */
-function paramAt(sk: Sketch, c: Curve, p: Vec): number | null {
+export function paramAt(sk: Sketch, c: Curve, p: Vec): number | null {
   if (c.type === 'line') {
     const a = pt(sk, c.p1);
     const b = pt(sk, c.p2);
@@ -86,15 +86,15 @@ function paramAt(sk: Sketch, c: Curve, p: Vec): number | null {
   return t <= end + 1e-9 ? t : null;
 }
 
-type Shape = { kind: 'seg'; a: Vec; b: Vec } | { kind: 'circ'; c: Vec; r: number };
+export type Shape = { kind: 'seg'; a: Vec; b: Vec } | { kind: 'circ'; c: Vec; r: number };
 
-function shapeOf(sk: Sketch, c: Curve): Shape {
+export function shapeOf(sk: Sketch, c: Curve): Shape {
   if (c.type === 'line') return { kind: 'seg', a: pt(sk, c.p1), b: pt(sk, c.p2) };
   return { kind: 'circ', c: pt(sk, c.c), r: c.r };
 }
 
 /** Pontos de interseção entre as formas-suporte (segmento ou círculo completo). */
-function intersect(s1: Shape, s2: Shape): Vec[] {
+export function intersect(s1: Shape, s2: Shape): Vec[] {
   if (s1.kind === 'seg' && s2.kind === 'seg') {
     const r = { x: s1.b.x - s1.a.x, y: s1.b.y - s1.a.y };
     const s = { x: s2.b.x - s2.a.x, y: s2.b.y - s2.a.y };

@@ -35,7 +35,12 @@ const TOOLS: (ToolItem | { family: 'line' | 'rect' | 'arc'; variants: ToolItem[]
     ],
   },
   { tool: 'point', key: 'P' },
+];
+
+/** Ferramentas que editam o desenho existente: ficam junto com offset, espelho e padrões. */
+const EDIT_TOOLS: ToolItem[] = [
   { tool: 'dimension', key: 'D' },
+  { tool: 'trim', key: 'X' },
 ];
 
 const GEOMS: { tool: GeomTool; key?: string }[] = [
@@ -178,13 +183,20 @@ export function Toolbar({ ed }: { ed: SketchEditor }) {
         <Btn icon={Icons.fix} label={t.tools.fix} disabled={!all.length} onClick={() => ed.toggleFixed()} />
       </div>
       <div className="tb-group">
+        {EDIT_TOOLS.map((x) => (
+          <Btn key={x.tool} icon={Icons[x.tool]} label={t.tools[x.tool]} kbd={x.key} active={snap.tool === x.tool} onClick={() => ed.setTool(x.tool)} />
+        ))}
+        <ModifyTools ed={ed} />
+      </div>
+      <div className="tb-group">
         <span className="tb-anchor" data-transform-btn>
           <Btn icon={Icons.move} label={t.sel.transform} kbd="G" disabled={!snap.selection.some((id) => sk.entities[id] || sk.groups.some((g) => g.id === id))} active={moveOpen} onClick={() => setMoveOpen(!moveOpen)} />
           {moveOpen && <TransformPopover ed={ed} ids={snap.selection.filter((id) => sk.entities[id] || sk.groups.some((g) => g.id === id))} onClose={() => setMoveOpen(false)} />}
         </span>
-        <ModifyTools ed={ed} />
         <Btn icon={Icons.group} label={t.tools.group} kbd="Ctrl+G" disabled={!snap.selection.length} onClick={() => ed.groupSelection()} />
         <Btn icon={Icons.ungroup} label={t.tools.ungroup} kbd="Ctrl+Shift+G" disabled={!hasGroup} onClick={() => ed.ungroupSelection()} />
+      </div>
+      <div className="tb-group">
         <Btn icon={Icons.construction} label={t.tools.construction} kbd="Q" disabled={!hasCurves} onClick={() => ed.toggleConstruction()} />
         <Btn icon={Icons.trash} label={t.tools.delete} kbd="Del" disabled={!snap.selection.length} onClick={() => ed.deleteSelection()} />
         <Btn icon={Icons.fit} label={t.tools.fit} kbd="F" onClick={() => ed.fit()} />
