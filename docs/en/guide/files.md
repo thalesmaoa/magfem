@@ -43,14 +43,15 @@ The **Export** button (top bar) exports what is in the active tab:
 |---|---|
 | Drawing | SVG (vector, in mm), DXF (LibreCAD, FreeCAD…), PNG, JPG |
 | Field view | PNG, JPG |
-| Plot | SVG, PNG, JPG, CSV |
-| Table | CSV |
+| Plot over line, B-H curve | SVG, PNG, JPG, CSV |
+| Circuit table | CSV |
 
 Also:
 
 | What | Where |
 |---|---|
 | Animation (WebM) | view bar, in transient and AC |
+| Time plot (CSV, SVG, PNG) | buttons below the plot, in the table tab |
 | Model as code | `</>` button next to **Model**: console script that rebuilds the project |
 
 The exported script rebuilds the model exactly, with the same ids. It is the basis for

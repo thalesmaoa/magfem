@@ -118,7 +118,8 @@ Boundary types for `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`, 
 | `r.plot(view, "surface" \| "contour" \| "arrow" \| "line", quantity="b" \| "h" \| "a" \| "j" \| "bn" \| "bt")` | layer in a view (or plot over line) |
 | `r.show(id, visible=, range=(0, 1.5), n_lines=20, spacing=, scale=, curve=, quantity=, color=, color_by_value=, colormap=, regions=[(x, y)], outputs=[("fx", "Fx")], var_name=, expr=, unit_label=, at_time=, legend=(x, y, s))` | options of a layer or item |
 | `r.table("n2", name=)` | new table |
-| `r.item(table, "circuits" \| "lineint" \| "surfint" \| "formula", name=)` | table item |
+| `r.item(table, "circuits" \| "lineint" \| "surfint" \| "formula" \| "timeplot", name=)` | table item |
+| `r.show(item, curves=[("Coil_V", "left"), ("Coil_lambda", "right", "#1f6fd1")])` | time plot: variables, axis and (optional) color |
 | `r.move(layer, view)`, `r.duplicate(id)`, `r.rename(id, name)`, `r.remove(id)` | organization |
 | `r.result("Fx", physics="n2")` | number of a result variable (at the shown instant, in transient) |
 | `r.results("n2")` | list `[(name, value, unit), ...]` |

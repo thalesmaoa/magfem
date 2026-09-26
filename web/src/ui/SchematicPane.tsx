@@ -497,8 +497,9 @@ export function MultiChart({ x, series, xLabel, yLabel, cursor }: { x: number[];
   const X = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * (Wc - L - R);
   const Y = (v: number) => Tt + (1 - (v - lo) / (hi - lo)) * (Hc - Tt - B);
   const fmt = (v: number) => Number(v.toPrecision(3)).toString();
+  const hv = useHoverIndex(x, X, L, Wc - R);
   return (
-    <svg className="xychart multi" viewBox={`0 0 ${Wc} ${Hc}`} role="img" aria-label={yLabel}>
+    <svg className="xychart multi" viewBox={`0 0 ${Wc} ${Hc}`} role="img" aria-label={yLabel} onMouseMove={hv.onMove} onMouseLeave={hv.onLeave}>
       <rect x={L} y={Tt} width={Wc - L - R} height={Hc - Tt - B} className="frame" />
       {lo < 0 && hi > 0 && <line x1={L} x2={Wc - R} y1={Y(0)} y2={Y(0)} className="grid" />}
       {series.map((s2, i) => (
@@ -519,7 +520,53 @@ export function MultiChart({ x, series, xLabel, yLabel, cursor }: { x: number[];
         </text>
       ))}
       <text x={12} y={(Tt + Hc - B) / 2} textAnchor="middle" transform={`rotate(-90 12 ${(Tt + Hc - B) / 2})`}>{yLabel}</text>
+      {hv.k !== null && (
+        <>
+          <line x1={X(x[hv.k])} x2={X(x[hv.k])} y1={Tt} y2={Hc - B} className="hover-line" />
+          <HoverBox
+            px={X(x[hv.k])}
+            top={Tt + 4}
+            width={Wc - R}
+            lines={[{ text: `${xLabel.split(' ')[0]} = ${fmt(x[hv.k])} ${xLabel.match(/\((.*)\)/)?.[1] ?? ''}` }, ...series.map((s2, i) => ({ text: `${s2.label} = ${Number.isFinite(s2.y[hv.k!]) ? Number(s2.y[hv.k!].toPrecision(4)) : '—'}`, color: SERIES_COLORS[i % SERIES_COLORS.length] }))]}
+          />
+        </>
+      )}
     </svg>
+  );
+}
+
+/**
+ * Valores sob o mouse (como no mapa de campo): índice da amostra mais próxima em x, para desenhar a linha e a caixa
+ * com os valores de cada curva.
+ */
+function useHoverIndex(x: number[], X: (v: number) => number, x0px: number, x1px: number) {
+  const [k, setK] = useState<number | null>(null);
+  const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    const m = svg.getScreenCTM();
+    if (!m) return;
+    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    if (pt.x < x0px || pt.x > x1px) return setK(null);
+    let best = 0;
+    for (let i = 1; i < x.length; i++) if (Math.abs(X(x[i]) - pt.x) < Math.abs(X(x[best]) - pt.x)) best = i;
+    setK(best);
+  };
+  return { k, onMove, onLeave: () => setK(null) };
+}
+
+/** Caixa com os valores de cada curva no instante apontado. */
+function HoverBox({ px, top, width, lines }: { px: number; top: number; width: number; lines: { text: string; color?: string }[] }) {
+  const w = Math.max(...lines.map((l) => l.text.length)) * 6.6 + 12, h = lines.length * 15 + 8;
+  const left = px + 10 + w > width ? px - 10 - w : px + 10;
+  return (
+    <g className="hover-box" pointerEvents="none">
+      <rect x={left} y={top} width={w} height={h} rx={3} />
+      {lines.map((l, i) => (
+        <text key={i} x={left + 6} y={top + 16 + i * 15} style={l.color ? { fill: l.color } : undefined}>
+          {l.text}
+        </text>
+      ))}
+    </g>
   );
 }
 
@@ -543,7 +590,7 @@ function niceScale(vals: number[]) {
  */
 export function DualAxisChart(props: {
   x: number[];
-  series: { label: string; unit: string; y: number[]; axis: 'left' | 'right' }[];
+  series: { label: string; unit: string; y: number[]; axis: 'left' | 'right'; color?: string }[];
   xLabel: string;
   leftTag: string;
   rightTag: string;
@@ -570,8 +617,10 @@ export function DualAxisChart(props: {
     return out;
   };
   const yb = Hc - B;
+  const colorOf = (i: number) => series[i].color || SERIES_COLORS[i % SERIES_COLORS.length];
+  const hv = useHoverIndex(x, X, L, Wc - R);
   return (
-    <svg className="xychart dual" viewBox={`0 0 ${Wc} ${Hc}`} role="img" aria-label={series.map((s2) => s2.label).join(', ')}>
+    <svg className="xychart dual" viewBox={`0 0 ${Wc} ${Hc}`} role="img" aria-label={series.map((s2) => s2.label).join(', ')} onMouseMove={hv.onMove} onMouseLeave={hv.onLeave}>
       <rect x={L} y={Tt} width={Wc - L - R} height={yb - Tt} className="frame" />
       {sl.ticks.map((v) => (
         <g key={`l${v}`}>
@@ -585,7 +634,7 @@ export function DualAxisChart(props: {
       {series.map((s2, i) => (
         <g key={s2.label}>
           {segs(s2.y, s2.axis === 'left' ? sl : sr).map((pts, j) => (
-            <polyline key={j} points={pts} fill="none" stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={1.8} strokeDasharray={s2.axis === 'right' ? '6 3' : undefined} />
+            <polyline key={j} points={pts} fill="none" stroke={colorOf(i)} strokeWidth={1.8} strokeDasharray={s2.axis === 'right' ? '6 3' : undefined} />
           ))}
         </g>
       ))}
@@ -596,10 +645,21 @@ export function DualAxisChart(props: {
       <text x={14} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(-90 14 ${(Tt + yb) / 2})`}>{unitsOf('left')}</text>
       {right && <text x={Wc - 12} y={(Tt + yb) / 2} textAnchor="middle" transform={`rotate(90 ${Wc - 12} ${(Tt + yb) / 2})`}>{unitsOf('right')}</text>}
       {series.map((s2, i) => (
-        <text key={s2.label} x={L + (i % 3) * 190} y={yb + 32 + 16 * Math.floor(i / 3)} style={{ fill: SERIES_COLORS[i % SERIES_COLORS.length] }} className="axis-label">
+        <text key={s2.label} x={L + (i % 3) * 190} y={yb + 32 + 16 * Math.floor(i / 3)} style={{ fill: colorOf(i) }} className="axis-label">
           {s2.axis === 'right' ? '┅' : '━'} {s2.label}{s2.unit ? ` (${s2.unit})` : ''} · {s2.axis === 'left' ? props.leftTag : props.rightTag}
         </text>
       ))}
+      {hv.k !== null && (
+        <>
+          <line x1={X(x[hv.k])} x2={X(x[hv.k])} y1={Tt} y2={yb} className="hover-line" />
+          <HoverBox
+            px={X(x[hv.k])}
+            top={Tt + 4}
+            width={Wc - R}
+            lines={[{ text: `t = ${fmt(x[hv.k])} ms` }, ...series.map((s2, i) => ({ text: `${s2.label} = ${Number.isFinite(s2.y[hv.k!]) ? Number(s2.y[hv.k!].toPrecision(4)) : '—'} ${s2.unit}`, color: colorOf(i) }))]}
+          />
+        </>
+      )}
     </svg>
   );
 }

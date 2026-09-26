@@ -41,6 +41,16 @@ test('gráfico no tempo: variáveis nos eixos esquerdo e direito, exportação, 
   // A legenda usa a cor de cada curva.
   const legendColors = await chart.locator('text.axis-label').evaluateAll((els) => els.map((e) => getComputedStyle(e).fill));
   expect(new Set(legendColors).size).toBe(2);
+  // Mouse sobre o gráfico: linha e caixa com t e o valor de cada curva.
+  const bb = (await chart.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width * 0.5, bb.y + bb.height * 0.3);
+  await expect(chart.locator('.hover-box')).toContainText('t = ');
+  await expect(chart.locator('.hover-box')).toContainText('Bobina_lambda = ');
+  await page.mouse.move(0, 0);
+  await expect(chart.locator('.hover-box')).toHaveCount(0);
+  // Cor escolhida para uma curva vale no traço e na legenda.
+  await run('r.show("tp", curves=[("Bobina_V", "left", "#00aa00"), ("Bobina_lambda", "right")])');
+  await expect(chart.locator('text.axis-label').first()).toHaveCSS('fill', 'rgb(0, 170, 0)');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.tp-export').getByRole('button', { name: 'CSV' }).click()]);
   const csv = await (await dl.createReadStream()).toArray().then((b) => Buffer.concat(b).toString());
   expect(csv.split('\n')[0]).toBe('t (s);Bobina_V (V);Bobina_lambda (Wb)');

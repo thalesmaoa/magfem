@@ -457,6 +457,9 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .chart-stat { font-size: 12px; color: var(--muted); }
 .xychart { width: 100%; max-width: 1100px; height: auto; flex: 1; min-height: 0; }
 .xychart .grid { stroke: var(--border); stroke-width: 1; }
+.xychart .hover-line { stroke: var(--muted); stroke-dasharray: 3 3; }
+.xychart .hover-box rect { fill: var(--panel, #fff); stroke: var(--border); opacity: .95; }
+.xychart .hover-box text { font-size: 11px; }
 .xychart .frame { fill: none; stroke: var(--muted); }
 .xychart .curve { fill: none; stroke: #e8408a; stroke-width: 2; }
 .xychart .pt { fill: #e8408a; stroke: var(--bg, #fff); stroke-width: 2; cursor: pointer; }

@@ -30,6 +30,7 @@ A **Table** collects items, and each item produces named **result variables** th
 | Surface integral | over the chosen regions: area, volume, ∫A, current, energy, mean B, losses (Joule and iron), **force Fx, Fy and torque** |
 | Line integral | along a curve: length, flux Φ, magnetomotive force ∫H·dl, ∫B, mean B, **force and torque** (closed contour) |
 | Formula | an expression of the other variables (for example `0.5*Coil_L*Coil_I^2`) |
+| Time plot | transient: the variables you choose (by name, with autocomplete), each on the left or right axis and with its own color; the mouse shows the values; exports CSV, SVG and PNG |
 
 Each output has an editable name (by default the item prefix plus the quantity, such as `S1_fx`). Circuit variables
 are named `<circuit>_I`, `<circuit>_lambda`, `<circuit>_L` and `<circuit>_R`.
@@ -58,6 +59,6 @@ The signals of an external circuit show up when you click a component.
 
 ## Export
 
-The **Export** button on the top bar exports the active tab: a field view as PNG or JPG, a plot as SVG, PNG, JPG or
-CSV, and a table as CSV. The animation (WebM) comes from the view bar. See
+The **Export** button on the top bar exports the active tab: a field view as PNG or JPG, a plot over a line as SVG,
+PNG, JPG or CSV, and the circuit table as CSV. The **Time plot** has its own CSV, SVG and PNG buttons. The animation (WebM) comes from the view bar. See
 [Files, import and export](./files.md#export).

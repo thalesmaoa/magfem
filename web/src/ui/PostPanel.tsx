@@ -24,6 +24,8 @@ const PLOT_ICON: Record<PlotKind, JSX.Element> = {
 
 const FILTER_ICON = <span className="plot-ico iso">∿</span>;
 const TABLE_ICON = <span className="plot-ico iso">▦</span>;
+/** Cores padrão das curvas (as mesmas dos gráficos). */
+const TP_COLORS = ['#e8408a', '#1f6fd1', '#2e8b57', '#d4880f', '#8e44ad', '#0aa3a3'];
 const ITEM_ICON: Record<TableItem, JSX.Element> = { circuits: Icons.circuit, lineint: <span className="plot-ico iso">∫ℓ</span>, surfint: <span className="plot-ico iso">∬</span>, formula: <span className="plot-ico iso">ƒx</span>, timeplot: Icons.sine };
 
 /** Botão (+) com uma lista de escolhas. */
@@ -961,12 +963,13 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
     // Gráfico no tempo: cada variável de resultado da física pode ir para o eixo esquerdo, o direito ou ficar fora.
     const all = node.physics ? physicsTimeSeries(ed, node.physics) : null;
     const curves = node.curves ?? [];
-    const setAxis = (name: string, axis: string) => {
-      const next = axis ? [...curves.filter((c) => c.name !== name), { name, axis: axis as 'left' | 'right' }] : curves.filter((c) => c.name !== name);
-      // Mantém a ordem em que as variáveis foram escolhidas.
-      const ordered = axis && curves.some((c) => c.name === name) ? curves.map((c) => (c.name === name ? { name, axis: axis as 'left' | 'right' } : c)) : next;
-      set({ curves: ordered.length ? ordered : undefined }, `r.show(${q(node.id)}, curves=[${ordered.map((c) => `(${q(c.name)}, ${q(c.axis)})`).join(', ')}])`);
-    };
+    const curveCode = (list: typeof curves) =>
+      `r.show(${q(node.id)}, curves=[${list.map((c) => `(${q(c.name)}, ${q(c.axis)}${c.color ? `, ${q(c.color)}` : ''})`).join(', ')}])`;
+    const setCurves = (list: typeof curves) => set({ curves: list.length ? list : undefined }, curveCode(list));
+    // Mantém a ordem em que as variáveis foram escolhidas.
+    const setAxis = (name: string, axis: string) =>
+      setCurves(!axis ? curves.filter((c) => c.name !== name) : curves.some((c) => c.name === name) ? curves.map((c) => (c.name === name ? { ...c, axis: axis as 'left' | 'right' } : c)) : [...curves, { name, axis: axis as 'left' | 'right' }]);
+    const setColor = (name: string, color: string) => setCurves(curves.map((c) => (c.name === name ? { ...c, color } : c)));
     return (
       <div className="props-body">
         <section>
@@ -1011,6 +1014,7 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
                       <option value="right">{t.table.tp.right}</option>
                       <option value="">{t.table.tp.remove}</option>
                     </select>
+                    <input type="color" aria-label={`${t.table.tp.color}: ${c.name}`} value={c.color ?? TP_COLORS[curves.indexOf(c) % TP_COLORS.length]} onChange={(e) => setColor(c.name, e.target.value)} />
                   </label>
                 );
               })}

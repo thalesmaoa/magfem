@@ -703,7 +703,7 @@ function TimePlot({ ed, it }: { ed: SketchEditor; it: PostNode }) {
   const series = (it.curves ?? [])
     .map((c) => {
       const s = all.series.find((x) => x.label === c.name);
-      return s ? { ...s, axis: c.axis } : null;
+      return s ? { ...s, axis: c.axis, color: c.color } : null;
     })
     .filter((s): s is NonNullable<typeof s> => !!s);
   if (!series.length) return <p className="muted">{t.table.tp.empty}</p>;
