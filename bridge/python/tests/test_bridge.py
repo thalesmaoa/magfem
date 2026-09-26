@@ -104,6 +104,19 @@ class BridgeTest(unittest.TestCase):
         self.assertIn("falhou", str(e.exception))
         br.sock.close()
 
+    def test_form_request(self):
+        # Octave/Matlab: formulário key=...&code=...
+        br = FakeBrowser(self.port, "segredo")
+        br.recv()
+        threading.Thread(target=br.serve, daemon=True).start()
+        post = lambda body: json.loads(urllib.request.urlopen(urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/run", data=body.encode(), headers={"Content-Type": "application/x-www-form-urlencoded"}), timeout=5).read())
+        self.assertEqual(post("key=segredo&code=s.solve%28%29")["value"], "S.SOLVE()")
+        bad = post("key=errada&code=x")
+        self.assertFalse(bad["ok"])
+        self.assertIn("chave", bad["error"])
+        br.sock.close()
+
     def test_wrong_key_http(self):
         mf = MagFEM(port=self.port, key="errada", start=False)
         with self.assertRaises(BridgeError) as e:

@@ -21,6 +21,7 @@ import re
 import secrets
 import struct
 import threading
+import urllib.parse
 from typing import Any
 
 VERSION = "1.0.0"
@@ -150,15 +151,24 @@ class Bridge:
             elif path == "/status" and method == "GET":
                 await _reply(writer, 200, {"browser": self.browser_connected, "version": VERSION})
             elif path == "/run" and method == "POST":
-                if not secrets.compare_digest(headers.get("x-magfem-key", ""), self.key):
-                    await _reply(writer, 401, {"ok": False, "error": "chave inválida (cabeçalho X-MagFEM-Key)"})
-                    return
                 n = int(headers.get("content-length", "0") or 0)
-                body = await reader.readexactly(n) if n else b"{}"
-                try:
-                    code = json.loads(body.decode("utf-8")).get("code", "")
-                except (ValueError, AttributeError):
-                    await _reply(writer, 400, {"ok": False, "error": "corpo JSON inválido: {\"code\": \"...\"}"})
+                body = await reader.readexactly(n) if n else b""
+                # JSON {"code": ...} com o cabeçalho X-MagFEM-Key, ou formulário key=...&code=... (Octave/Matlab).
+                key = headers.get("x-magfem-key", "")
+                is_form = "application/x-www-form-urlencoded" in headers.get("content-type", "")
+                if is_form:
+                    form = urllib.parse.parse_qs(body.decode("utf-8"), keep_blank_values=True)
+                    code = form.get("code", [""])[0]
+                    key = key or form.get("key", [""])[0]
+                else:
+                    try:
+                        code = json.loads(body.decode("utf-8") or "{}").get("code", "")
+                    except (ValueError, AttributeError):
+                        await _reply(writer, 400, {"ok": False, "error": "corpo JSON inválido: {\"code\": \"...\"}"})
+                        return
+                if not secrets.compare_digest(key, self.key):
+                    # Formulário (Octave): 200 com ok = false, senão o cliente só vê um erro HTTP genérico.
+                    await _reply(writer, 200 if is_form else 401, {"ok": False, "error": "chave inválida (cabeçalho X-MagFEM-Key)"})
                     return
                 await _reply(writer, 200, await self._run(str(code)))
             else:
