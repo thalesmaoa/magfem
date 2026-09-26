@@ -57,6 +57,9 @@ entreferro móvel.
 - **API/console estilo Python:** cada ação vira um comando (`g.line(...)`, `m.region(...)`,
   `s.solve()`). O botão "exportar código" gera um script que recria o modelo exatamente, base para
   automação e otimização.
+- **Ponte para scripts locais** ([`bridge/python`](bridge/python)): `python -m magfem` liga scripts
+  (Python, ou qualquer linguagem por HTTP/JSON) ao modelo aberto no navegador — muda variáveis, resolve
+  e lê resultados (`r.result`, `r.series`) com o desenho atualizando ao vivo.
 - Interface em **português e inglês**, com tema claro e escuro e "Cite este trabalho".
 
 Veja [`doc/`](doc/) para o guia de uso, a referência da API e a formulação e validação numérica. Veja
@@ -82,6 +85,7 @@ estáticos serve; o CI publica o `dist` na branch `dist`.
 ```
 core/      núcleo numérico C++17 + Eigen + Tangle → WebAssembly (Emscripten) e nativo (testes)
 web/       interface Vite + React + TypeScript; malha e solver rodam num Web Worker
+bridge/    ponte para scripts locais (pacote Python `magfem`, só biblioteca padrão)
 doc/       documentação (uso, API, formulação, validação) e logo
 ```
 

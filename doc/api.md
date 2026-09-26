@@ -47,3 +47,21 @@ são em mm.
 O botão `</>` ao lado de **Modelo** gera um script que começa com `clear()` e recria tudo com os
 mesmos ids (entidades, restrições, grupos, materiais, regiões, árvore). Ele é validado por um teste
 de ida e volta (o modelo recriado é idêntico ao original).
+
+
+## Resultados como números (scripts)
+
+| Comando | Devolve |
+|---|---|
+| `r.result("Fx", physics="n2")` | valor de uma variável de resultado (no instante mostrado, se transitório) |
+| `r.results("n2")` | lista `[(nome, valor, unidade), ...]` |
+| `r.series("Primario_I")` | transitório: `(tempos em s, valores)` |
+
+## Ponte com scripts locais
+
+`python -m magfem` (pasta `bridge/python`) sobe um servidor em `127.0.0.1:8765` e mostra uma chave.
+No app, **Script local** → porta e chave. Scripts mandam linhas do console por `POST /run`
+(`{"code": "..."}`, cabeçalho `X-MagFEM-Key`); a resposta traz `ok`, `value` (valor da última linha),
+`out` e, em erro, `error` e `line`. `s.solve()` e `m.generate()` são esperados antes da linha seguinte.
+Cliente Python: `magfem.connect()`, `mf.run`, `mf.set_var`, `mf.solve`, `mf.result`, `mf.results`,
+`mf.series` — ver `bridge/python/README.md`.

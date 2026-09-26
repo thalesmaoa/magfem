@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { editorConsoleHost } from './consoleHost';
 import { CommandConsole, completions, type Completion } from '../cad/console';
 import type { SketchEditor } from '../cad/editor';
 import { useT } from '../i18n';
@@ -38,7 +39,7 @@ export function HistoryConsole(props: {
   const t = useT();
   useDocVersion(ed.doc);
   const hist = ed.doc.history;
-  const cmd = useMemo(() => new CommandConsole({ doc: ed.doc, fit: () => ed.fit(), undo: () => ed.undo(), redo: () => ed.redo(), mesh: (id) => void ed.generateMesh(id), solve: (id) => void ed.solve(id) }), [ed]);
+  const cmd = useMemo(() => new CommandConsole(editorConsoleHost(ed)), [ed]);
   const [outs, setOuts] = useState<Out[]>([]);
   const [text, setText] = useState('');
   const [past, setPast] = useState<string[]>(loadCmdHistory);

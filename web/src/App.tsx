@@ -14,6 +14,7 @@ import { hasFsAccess, loadDraft, loadFileHandle, openProject, parse, saveDraft, 
 import { download, toDXF, toSVG } from './io/export';
 import { Icons } from './ui/icons';
 import { setThemePref, useThemePref, type ThemePref } from './theme';
+import { BridgeButton } from './ui/BridgeButton';
 import { PanelResizer, useSavedPanelWidths } from './ui/PanelResizer';
 import { CiteDialog } from './ui/CiteDialog';
 import { DimInput } from './ui/DimInput';
@@ -501,6 +502,7 @@ function StatusBar({ ed, core }: { ed: SketchEditor; core: { v?: string; err?: s
       )}
       <span className="hint">{snap.message ? <span className="msg">{snap.message}</span> : snap.hint}</span>
       {ed && <SolveProgress ed={ed} />}
+      {ed && <BridgeButton ed={ed} />}
       <a className="gh-link" href="https://github.com/thalesmaoa/magfem/issues" target="_blank" rel="noopener noreferrer" title={t.status.github}>
         {Icons.github} Bug reports
       </a>

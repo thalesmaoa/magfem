@@ -224,15 +224,34 @@ export interface ConsoleHost {
   undo?: () => void;
   redo?: () => void;
   /** Gera a malha do nó (assíncrono, no Worker). */
-  mesh?: (id: string) => void;
+  mesh?: (id: string) => void | Promise<unknown>;
   /** Resolve a física do nó (assíncrono). */
-  solve?: (id: string) => void;
+  solve?: (id: string) => void | Promise<unknown>;
+  /** Resultados numéricos (r.result, r.results, r.series), quando há editor com soluções. */
+  results?: ResultsApi;
+}
+
+/** Variáveis de resultado de uma física resolvida (a primeira resolvida, se não for dada). */
+export interface ResultsApi {
+  list(physics?: string): { name: string; value: number; unit: string }[] | null;
+  /** Transitório: a variável em todos os instantes (tempos em s). */
+  series(name: string, physics?: string): { t: number[]; y: number[] } | null;
 }
 
 export interface RunResult {
   ok: boolean;
   /** Texto a mostrar (repr do resultado, ou mensagem de erro). */
   out: string | null;
+  /** Valor do resultado em JSON (números, textos, listas), para a ponte com scripts. */
+  value?: unknown;
+}
+
+/** Valor do console em JSON: tuplas viram listas. */
+export function jsonOf(v: Value): unknown {
+  if (v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map(jsonOf);
+  if ('print' in v) return v.print;
+  return v.tuple.map(jsonOf);
 }
 
 
@@ -280,15 +299,17 @@ export class CommandConsole {
       const v = this.eval(st.expr);
       if (st.target) {
         this.env.set(st.target, v);
-        return { ok: true, out: null };
+        return { ok: true, out: null, value: jsonOf(v) };
       }
-      return { ok: true, out: v === null || v === undefined ? null : repr(v) };
+      return { ok: true, out: v === null || v === undefined ? null : repr(v), value: v === undefined ? null : jsonOf(v) };
     } catch (e) {
       return { ok: false, out: (e as Error).message };
     }
   }
 
   private code = '';
+  /** Última tarefa assíncrona iniciada (malha, solução): a ponte com scripts espera por ela. */
+  pending: Promise<unknown> | null = null;
 
   private eval(n: Node): Value {
     switch (n.k) {
@@ -1011,8 +1032,30 @@ export class CommandConsole {
       case 'solve': {
         const id = a.length ? String(a[0]) : sk.nodes.find((n) => n.kind === 'physics')?.id;
         if (!id || !this.host.solve) throw new ConsoleError(t.notFound(String(a[0] ?? 'physics')));
-        this.host.solve(id);
+        const pr = this.host.solve(id);
+        if (pr) this.pending = pr;
         return null;
+      }
+      case 'result': {
+        // r.result("Fx_s", physics="n2"): valor de uma variável de resultado (no instante mostrado, se transitório).
+        need(1);
+        const list = this.host.results?.list(kw.physics ? String(kw.physics) : undefined);
+        if (!list) throw new ConsoleError(t.noResults);
+        const v = list.find((x) => x.name === String(a[0]));
+        if (!v) throw new ConsoleError(t.notFound(String(a[0])));
+        return v.value;
+      }
+      case 'results': {
+        const list = this.host.results?.list(a.length ? String(a[0]) : kw.physics ? String(kw.physics) : undefined);
+        if (!list) throw new ConsoleError(t.noResults);
+        return list.map((x) => ({ tuple: [x.name, x.value, x.unit] }));
+      }
+      case 'series': {
+        // r.series("I_bob"): (tempos em s, valores) no transitório.
+        need(1);
+        const s = this.host.results?.series(String(a[0]), kw.physics ? String(kw.physics) : undefined);
+        if (!s) throw new ConsoleError(t.noSeries);
+        return { tuple: [s.t, s.y] };
       }
       case 'plot': {
         need(2);
@@ -1197,7 +1240,8 @@ export class CommandConsole {
       case 'generate': {
         const id = a.length ? String(a[0]) : sk.nodes.find((n) => n.kind === 'mesh')?.id;
         if (!id || !this.host.mesh) throw new ConsoleError(t.notFound(String(a[0] ?? 'mesh')));
-        this.host.mesh(id);
+        const pr = this.host.mesh(id);
+        if (pr) this.pending = pr;
         return null;
       }
       case 'regions': {
@@ -1285,6 +1329,9 @@ const NODE_METHODS = {
     plot: 'plot("n4 (vista) | n2 (física)", "surface" | "contour" | "arrow" | "line", quantity="b" | "h" | "a" | "j" | "bn" | "bt", name="...")',
     show: 'show("n5", visible=True, n_lines=20, range=(0, 1.5), spacing=5, scale=1, curve="l3", quantity="bn", color="#1f6fd1", color_by_value=False, colormap="viridis")',
     interpolate: 'interpolate("n2", level=3)  # vista interpolada',
+    result: 'result("Fx_s", physics="n2")  # número de uma variável de resultado',
+    results: 'results("n2")  # [(nome, valor, unidade), ...]',
+    series: 'series("I_bob")  # transitório: (tempos em s, valores)',
     rename: 'rename("n5", "...")',
     remove: 'remove("n5")',
   },

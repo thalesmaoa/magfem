@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magfem"
+version = "1.0.0"
+description = "Controle o MagFEM (elementos finitos magnéticos 2D no navegador) a partir de scripts: ponte local WebSocket/HTTP."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Thales Maia" }]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+magfem-bridge = "magfem.__main__:main"
+
+[project.urls]
+Homepage = "https://thalesmaia.com/tools/magfem-web/"
+Source = "https://github.com/thalesmaoa/magfem"

@@ -70,6 +70,18 @@ export interface Translations {
     femm: string;
     source: string;
   };
+  bridge: {
+    button: string;
+    hint: string;
+    howto: string;
+    port: string;
+    key: string;
+    connect: string;
+    disconnect: string;
+    connecting: string;
+    on: (n: number) => string;
+    connected: (port: number) => string;
+  };
   drawer: { open: string; close: string };
   theme: { title: string; auto: string; light: string; dark: string };
   phase: (n: number) => string;
@@ -225,6 +237,8 @@ export interface Translations {
     unknownObject: (o: string) => string;
     wantId: (v: string) => string;
     notFound: (v: string) => string;
+    noResults: string;
+    noSeries: string;
     wantXY: (v: string) => string;
     wantPoint: (v: string) => string;
     wantLength: (v: string) => string;
@@ -709,6 +723,18 @@ const PT: Translations = {
     femm: 'Biblioteca de materiais do FEMM 4.2 (D. Meeker, femm.info) — Aladdin Free Public License',
     source: 'Código-fonte no GitHub',
   },
+  bridge: {
+    button: 'Script local',
+    hint: 'Controle o modelo por um script (Python, Matlab, Julia...) pela ponte local',
+    howto: 'No terminal, rode a ponte e cole aqui a chave que ela mostra (pip install magfem, ou a pasta bridge/python do repositório):',
+    port: 'Porta',
+    key: 'Chave',
+    connect: 'Conectar',
+    disconnect: 'Desconectar',
+    connecting: 'Conectando…',
+    on: (n) => `Script local ● ${n}`,
+    connected: (p) => `Conectado à ponte em 127.0.0.1:${p}. Os comandos do script aparecem no histórico.`,
+  },
   drawer: { open: 'Problema e bibliotecas', close: 'Fechar painel' },
   theme: { title: 'Tema', auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' },
   phase: (n) => `Fase ${n}`,
@@ -901,6 +927,8 @@ const PT: Translations = {
     unknownObject: (o) => `Objeto desconhecido "${o}" (use s.)`,
     wantId: (v) => `Esperado um id ou nome entre aspas, veio ${v}`,
     notFound: (v) => `Não existe "${v}" no desenho`,
+    noResults: 'Nenhuma física resolvida (resolva antes com s.solve()).',
+    noSeries: 'Sem curva no tempo: resolva uma física transitória e use o nome de uma variável de resultado.',
     wantXY: (v) => `Esperado um ponto (x, y), veio ${v}`,
     wantPoint: (v) => `"${v}" não é um ponto`,
     wantLength: (v) => `Esperado um comprimento (número ou "50 mm"), veio ${v}`,
@@ -1423,6 +1451,18 @@ const EN: Translations = {
     femm: 'FEMM 4.2 material library (D. Meeker, femm.info) — Aladdin Free Public License',
     source: 'Source code on GitHub',
   },
+  bridge: {
+    button: 'Local script',
+    hint: 'Drive the model from a script (Python, Matlab, Julia...) through the local bridge',
+    howto: 'In a terminal, run the bridge and paste the key it prints (pip install magfem, or the repository bridge/python folder):',
+    port: 'Port',
+    key: 'Key',
+    connect: 'Connect',
+    disconnect: 'Disconnect',
+    connecting: 'Connecting…',
+    on: (n) => `Local script ● ${n}`,
+    connected: (p) => `Connected to the bridge at 127.0.0.1:${p}. Script commands show up in the history.`,
+  },
   drawer: { open: 'Problem and libraries', close: 'Close panel' },
   theme: { title: 'Theme', auto: 'automatic (follows the system)', light: 'light', dark: 'dark' },
   phase: (n) => `phase ${n}`,
@@ -1615,6 +1655,8 @@ const EN: Translations = {
     unknownObject: (o) => `Unknown object "${o}" (use s.)`,
     wantId: (v) => `Expected an id or name in quotes, got ${v}`,
     notFound: (v) => `"${v}" does not exist in the drawing`,
+    noResults: 'No solved physics (solve first with s.solve()).',
+    noSeries: 'No curve over time: solve a transient physics and use a result variable name.',
     wantXY: (v) => `Expected a point (x, y), got ${v}`,
     wantPoint: (v) => `"${v}" is not a point`,
     wantLength: (v) => `Expected a length (number or "50 mm"), got ${v}`,

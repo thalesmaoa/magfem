@@ -56,6 +56,9 @@ such as **contactors**. The final step is **rotating machines**, with a moving a
 - **Python-like API/console:** every action becomes a command (`g.line(...)`, `m.region(...)`,
   `s.solve()`). "Export code" writes a script that rebuilds the model exactly, which is the basis
   for automation and optimization.
+- **Local scripting bridge** ([`bridge/python`](bridge/python)): `python -m magfem` connects scripts
+  (Python, or any language over HTTP/JSON) to the model open in the browser — set variables, solve and
+  read results (`r.result`, `r.series`) while the drawing updates live.
 - The interface is in **English and Portuguese**, with light and dark themes and "Cite this work".
 
 See [`doc/`](doc/) for the user guide, the API reference and the numerical formulation and
@@ -81,6 +84,7 @@ CI publishes `dist` to the `dist` branch.
 ```
 core/      C++17 numerical core + Eigen + Tangle → WebAssembly (Emscripten) and native (tests)
 web/       Vite + React + TypeScript interface; mesher and solver run in a Web Worker
+bridge/    local bridge for scripts (Python package `magfem`, standard library only)
 doc/       documentation (usage, API, formulation, validation) and logo
 ```
 
