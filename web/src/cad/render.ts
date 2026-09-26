@@ -4,6 +4,7 @@ import { add, arcAngles, mid, mul, norm, perp, pt, sub, type Vec } from './geome
 import { formatValue } from './measure';
 import { isDimension, ORIGIN_ID, type Constraint, type Entity, type Id, PLOT_QUANTITIES, type Colormap, type LegendLayout, type PostNode, type Sketch } from './types';
 import type { View } from './view';
+import { QUALITY_BANDS, triangleMinAngles } from './meshgen';
 import { nodeValues, quantityLabel, sampleCurve, triValues, type Solution, timeRange } from './solve';
 import type { LengthUnit } from './expr';
 
@@ -98,7 +99,7 @@ export interface RenderState {
     selectedCurves: Set<Id>;
     hoverCurve: Id | null;
     /** Malha gerada (triângulos); `stale` = o desenho mudou depois. */
-    tri?: { xy: Float64Array; triangles: Int32Array; stale: boolean };
+    tri?: { xy: Float64Array; triangles: Int32Array; stale: boolean; quality?: boolean };
   };
   /** Escala dos elementos de interface desenhados (legenda) — maior na imagem exportada. */
   uiScale?: number;
@@ -524,6 +525,25 @@ function drawMeshRegions(ctx: CanvasRenderingContext2D, v: View, m: NonNullable<
       const q = v.toScreen({ x: xy[2 * i], y: xy[2 * i + 1] });
       sx[i] = q.x;
       sy[i] = q.y;
+    }
+    if (m.tri.quality) {
+      // Mapa de qualidade: cada triângulo na cor da faixa do seu menor ângulo (um caminho por faixa).
+      const ang = triangleMinAngles(xy, triangles);
+      const paths = QUALITY_BANDS.map(() => new Path2D());
+      for (let t = 0; t < triangles.length; t += 3) {
+        const P = paths[QUALITY_BANDS.findIndex((bd) => ang[t / 3] < bd.max)];
+        const a = triangles[t], b = triangles[t + 1], c = triangles[t + 2];
+        P.moveTo(sx[a], sy[a]);
+        P.lineTo(sx[b], sy[b]);
+        P.lineTo(sx[c], sy[c]);
+        P.closePath();
+      }
+      ctx.globalAlpha = 0.85;
+      QUALITY_BANDS.forEach((bd, i) => {
+        ctx.fillStyle = bd.color;
+        ctx.fill(paths[i]);
+      });
+      ctx.globalAlpha = 1;
     }
     ctx.beginPath();
     for (let t = 0; t < triangles.length; t += 3) {

@@ -195,6 +195,39 @@ export function inputKey(input: MeshInput | Record<string, unknown>): string {
 }
 
 /** Menor ângulo interno (graus) de todos os triângulos. */
+/** Faixas de qualidade (menor ângulo, graus) e as cores do mapa de qualidade. */
+export const QUALITY_BANDS: { max: number; color: string }[] = [
+  { max: 20, color: '#d93025' },
+  { max: 25, color: '#e8893d' },
+  { max: 30, color: '#e3c93b' },
+  { max: 181, color: '#2ea043' },
+];
+const angleCache = new WeakMap<Int32Array, Float32Array>();
+/** Menor ângulo (graus) de cada triângulo (guardado por malha). */
+export function triangleMinAngles(xy: Float64Array, tri: Int32Array): Float32Array {
+  const hit = angleCache.get(tri);
+  if (hit) return hit;
+  const out = new Float32Array(tri.length / 3);
+  for (let t = 0; t < tri.length; t += 3) {
+    let min = 180;
+    for (let k = 0; k < 3; k++) {
+      const a = tri[t + k], b = tri[t + ((k + 1) % 3)], c = tri[t + ((k + 2) % 3)];
+      const ux = xy[2 * b] - xy[2 * a], uy = xy[2 * b + 1] - xy[2 * a + 1];
+      const vx = xy[2 * c] - xy[2 * a], vy = xy[2 * c + 1] - xy[2 * a + 1];
+      min = Math.min(min, (Math.acos(Math.max(-1, Math.min(1, (ux * vx + uy * vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy))))) * 180) / Math.PI);
+    }
+    out[t / 3] = min;
+  }
+  angleCache.set(tri, out);
+  return out;
+}
+/** Quantos triângulos em cada faixa de QUALITY_BANDS. */
+export function qualityCounts(xy: Float64Array, tri: Int32Array): number[] {
+  const counts = QUALITY_BANDS.map(() => 0);
+  for (const a of triangleMinAngles(xy, tri)) counts[QUALITY_BANDS.findIndex((b) => a < b.max)]++;
+  return counts;
+}
+
 export function minTriangleAngle(xy: Float64Array, tri: Int32Array): number {
   let min = 180;
   for (let t = 0; t < tri.length; t += 3) {

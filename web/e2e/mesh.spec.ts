@@ -200,3 +200,21 @@ test('busca de material: filtra o projeto e importa da biblioteca do FEMM ao esc
   expect(m.bh.length).toBeGreaterThan(10);
   expect(sk.regionAssigns[0].material).toBe(m.id);
 });
+
+test('mapa de qualidade da malha: faixas do menor ângulo somam todos os triângulos', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  for (const c of ['g.rectangle((-20, -10), (20, 10))', 'g.circle((0, 0), r=5)', 'm.region((10, 0), material="Ar")', 'm.region((0, 0), material="Cobre")']) {
+    await box.fill(c);
+    await box.press('Enter');
+  }
+  await page.getByRole('treeitem', { name: 'Malha', exact: true }).click();
+  await page.getByRole('treeitem', { name: 'Elementos', exact: true }).getByRole('button', { name: 'Gerar malha' }).click();
+  await expect(page.locator('.props')).toContainText('triângulos');
+  await page.getByLabel('Colorir pela qualidade (menor ângulo)').check();
+  const counts = await page.locator('.quality-legend li b').allTextContents();
+  const total = counts.map(Number).reduce((a, b) => a + b, 0);
+  const elements = await page.evaluate(() => [...(window as any).__magfem.meshes.values()][0].elements);
+  expect(counts).toHaveLength(4);
+  expect(total).toBe(elements);
+  expect(Number(counts[0])).toBe(0); // nenhum triângulo abaixo de 20° (qualidade 30°)
+});

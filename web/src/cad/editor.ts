@@ -191,6 +191,12 @@ export class SketchEditor {
   meshBusy: Id | null = null;
   /** Nó de malha exibido no canvas (modo malha). */
   shownMesh: Id | null = null;
+  /** Mapa de qualidade da malha (cor pelo menor ângulo); estado de interface, não salvo. */
+  meshQuality = false;
+  setMeshQuality(on: boolean) {
+    this.meshQuality = on;
+    this.changed();
+  }
 
   private keyCache: { version: number; id: Id; key: string } | null = null;
 
@@ -1207,7 +1213,7 @@ export class SketchEditor {
       hoverCurve: this.meshHover?.kind === 'curve' ? this.meshHover.id : null,
       tri: (() => {
         const m = this.shownMesh ? this.meshes.get(this.shownMesh) : undefined;
-        return m ? { xy: m.xy, triangles: m.triangles, stale: this.meshStale(this.shownMesh!) } : undefined;
+        return m ? { xy: m.xy, triangles: m.triangles, stale: this.meshStale(this.shownMesh!), quality: this.meshQuality } : undefined;
       })(),
     };
   }

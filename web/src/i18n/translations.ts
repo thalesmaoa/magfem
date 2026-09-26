@@ -426,6 +426,8 @@ export interface Translations {
     unassigned: string;
     elements: (n: number) => string;
     elementsNode: string;
+    qualityMap: string;
+    qualityBand: (from: number, to: number | null) => string;
     regionName: string;
     outerHelp: string;
     outerIncluded: (n: number) => string;
@@ -1157,6 +1159,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     unassigned: 'sem contorno (Neumann natural)',
     elements: (n) => `${n} el.`,
     elementsNode: 'Elementos',
+    qualityMap: 'Colorir pela qualidade (menor ângulo)',
+    qualityBand: (a, b) => (b === null ? `≥ ${a}°` : `${a}°–${b}°`),
     regionName: 'Nome da região',
     bhAdd: 'Incluir curva B-H (não linear)',
     turnsNonZero: 'Espiras: qualquer número diferente de zero (negativo inverte o sentido).',
@@ -1902,6 +1906,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     unassigned: 'no boundary (natural Neumann)',
     elements: (n) => `${n} el.`,
     elementsNode: 'Elements',
+    qualityMap: 'Color by quality (smallest angle)',
+    qualityBand: (a, b) => (b === null ? `≥ ${a}°` : `${a}°–${b}°`),
     regionName: 'Region name',
     bhAdd: 'Add B-H curve (nonlinear)',
     turnsNonZero: 'Turns: any nonzero number (negative reverses the direction).',

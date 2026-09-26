@@ -4,7 +4,7 @@ import { q } from '../cad/code';
 import type { SketchEditor } from '../cad/editor';
 import { formatLength } from '../cad/expr';
 import { addCircuit, assignBoundary, assignRegion, pointCode, regionKey, removeCircuit, updateCircuit } from '../cad/mesh';
-import { autoSize, regionSizes, sizeOf } from '../cad/meshgen';
+import { autoSize, regionSizes, sizeOf, QUALITY_BANDS, qualityCounts } from '../cad/meshgen';
 import { findRegion, type Region } from '../cad/regions';
 import { addNode, updateNode, type MeshSub, type TreeSel } from '../cad/tree';
 import type { Id, MeshNode } from '../cad/types';
@@ -620,6 +620,25 @@ function MeshNodeProps({ ed, node }: { ed: SketchEditor; node: MeshNode }) {
       {ed.meshErrors.get(node.id) && <p className="err-text">{ed.meshErrors.get(node.id)}</p>}
       <p className={stale ? 'err-text' : 'muted'}>{m ? (stale ? t.mesh.stale : t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)) : t.mesh.notGenerated}</p>
       {m && stale && <p className="muted">{t.mesh.stats(m.nodes, m.elements, m.minAngle, m.ms)}</p>}
+      {m && (
+        <>
+          <label className="field check">
+            <input type="checkbox" checked={ed.meshQuality} onChange={(e) => ed.setMeshQuality(e.target.checked)} />
+            <span>{t.mesh.qualityMap}</span>
+          </label>
+          {ed.meshQuality && (
+            <ul className="quality-legend">
+              {qualityCounts(m.xy, m.triangles).map((n, i) => (
+                <li key={i}>
+                  <span className="swatch" style={{ background: QUALITY_BANDS[i].color }} />
+                  {t.mesh.qualityBand(i === 0 ? 0 : QUALITY_BANDS[i - 1].max, QUALITY_BANDS[i].max > 180 ? null : QUALITY_BANDS[i].max)}
+                  <b>{n}</b>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
       <p className="help-line">{t.mesh.mesher}</p>
     </section>
   );
