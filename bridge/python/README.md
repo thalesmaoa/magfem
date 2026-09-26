@@ -2,6 +2,7 @@
 
 Controle o [MagFEM](https://thalesmaia.com/tools/magfem-web/) — elementos finitos magnéticos 2D no
 navegador — a partir de scripts. Sem dependências além do Python ≥ 3.9.
+Documentação completa: <https://thalesmaia.com/tools/magfem-web/docs/scripting/bridge.html>.
 
 ```bash
 pip install "git+https://github.com/thalesmaoa/magfem#subdirectory=bridge/python"

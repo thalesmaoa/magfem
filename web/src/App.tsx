@@ -313,6 +313,7 @@ export default function App() {
           />
           {ed && <ExportMenu ed={ed} name={name} />}
           <span className="sep" />
+          <DocsLink />
           <button onClick={() => setCiting(true)}>{t.cite.button}</button>
           <LangSwitch />
           <ThemeSwitch />
@@ -504,6 +505,23 @@ function ThemeSwitch() {
     <button className="theme-btn" onClick={() => setThemePref(next[pref])} title={label} aria-label={label}>
       {pref === 'dark' ? Icons.moon : pref === 'light' ? Icons.sun : Icons.themeAuto}
     </button>
+  );
+}
+
+/** Documentação (VitePress, publicada junto com o app em ./docs/; no servidor de dev, a do site). */
+export function docsUrl(lang: Lang): string {
+  const base = import.meta.env.DEV ? 'https://thalesmaia.com/tools/magfem-web/' : import.meta.env.BASE_URL;
+  return `${base}docs/${lang === 'en' ? 'en/' : ''}`;
+}
+
+function DocsLink() {
+  const t = useT();
+  const lang = useLang();
+  return (
+    <a className="nav-link" href={docsUrl(lang)} target="_blank" rel="noopener" title={t.docs.hint}>
+      {Icons.book}
+      <span>{t.docs.link}</span>
+    </a>
   );
 }
 

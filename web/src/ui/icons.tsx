@@ -305,6 +305,13 @@ export const Icons = {
       <path d="M10 5v5M7.5 7.5L10 10l2.5-2.5" />
     </S>
   ),
+  book: (
+    <S>
+      <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H16v12H5.5A1.5 1.5 0 0 0 4 16.5z" />
+      <path d="M4 16.5A1.5 1.5 0 0 0 5.5 18H16v-3" />
+      <path d="M7.5 6.5h5M7.5 9h4" />
+    </S>
+  ),
   copy: (
     <S>
       <rect x="6.5" y="6.5" width="10" height="10" rx="1.5" />

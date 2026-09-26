@@ -102,6 +102,7 @@ export interface Translations {
   theme: { title: string; auto: string; light: string; dark: string };
   phase: (n: number) => string;
   console: { title: string; show: string; hide: string; popout: string; dock: string; resize: string; windowTitle: string };
+  docs: { link: string; hint: string };
   cite: {
     button: string;
     title: string;
@@ -781,6 +782,7 @@ const PT: Translations = {
   theme: { title: 'Tema', auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' },
   phase: (n) => `Fase ${n}`,
   console: { title: 'Console', show: 'Mostrar console', hide: 'Ocultar console', popout: 'Abrir em outra janela', dock: 'Voltar para baixo do desenho', resize: 'Arraste para mudar a altura', windowTitle: 'MagFEM — console' },
+  docs: { link: 'Documentação', hint: 'Guia, tutorial, referência da API e teoria (abre numa nova aba)' },
   cite: {
     button: 'Citar',
     title: 'Cite este trabalho',
@@ -1535,6 +1537,7 @@ const EN: Translations = {
   theme: { title: 'Theme', auto: 'automatic (follows the system)', light: 'light', dark: 'dark' },
   phase: (n) => `phase ${n}`,
   console: { title: 'Console', show: 'Show console', hide: 'Hide console', popout: 'Open in a separate window', dock: 'Dock below the drawing', resize: 'Drag to change the height', windowTitle: 'MagFEM — console' },
+  docs: { link: 'Docs', hint: 'Guide, tutorial, API reference and theory (opens in a new tab)' },
   cite: {
     button: 'Cite',
     title: 'Cite this work',

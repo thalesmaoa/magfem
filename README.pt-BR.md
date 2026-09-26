@@ -10,7 +10,7 @@ circuitos, e pós-processamento no estilo do ParaView. Tudo roda localmente no n
 (WebAssembly), sem instalação, sem servidor e sem login. Os projetos ficam na sua máquina, como no
 draw.io.
 
-**Use agora:** <https://thalesmaia.com/tools/magfem-web/>
+**Use agora:** <https://thalesmaia.com/tools/magfem-web/> · **Documentação:** <https://thalesmaia.com/tools/magfem-web/docs/>
 
 ## Foco e roteiro
 
@@ -68,8 +68,9 @@ entreferro móvel.
   Matlab/Octave e Julia; o exemplo do contator acopla circuito, campo e movimento do êmbolo pelo script.
 - Interface em **português e inglês**, com tema claro e escuro e "Cite este trabalho".
 
-Veja [`doc/`](doc/) para o guia de uso, a referência da API e a formulação e validação numérica. Veja
-[`PLAN.md`](PLAN.md) para o histórico do desenvolvimento.
+**Documentação:** <https://thalesmaia.com/tools/magfem-web/docs/> — guia, tutorial do primeiro modelo, referência
+da API, ponte local e a formulação e validação numérica (fonte em [`docs/`](docs/)). Veja [`PLAN.md`](PLAN.md) para
+o histórico do desenvolvimento.
 
 ## Rodar localmente
 
@@ -92,7 +93,8 @@ estáticos serve; o CI publica o `dist` na branch `dist`.
 core/      núcleo numérico C++17 + Eigen + Tangle → WebAssembly (Emscripten) e nativo (testes)
 web/       interface Vite + React + TypeScript; malha e solver rodam num Web Worker
 bridge/    ponte para scripts locais (pacote Python `magfem`, só biblioteca padrão)
-doc/       documentação (uso, API, formulação, validação) e logo
+docs/      documentação (VitePress, PT/EN), publicada em /tools/magfem-web/docs/
+doc/       logo
 ```
 
 ## Contribuir

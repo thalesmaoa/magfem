@@ -1,0 +1,14 @@
+{
+  "name": "magfem-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev --host 0.0.0.0 --port 3003",
+    "build": "vitepress build",
+    "preview": "vitepress preview --port 3003"
+  },
+  "devDependencies": {
+    "markdown-it-mathjax3": "^4.3.2",
+    "vitepress": "^1.6.4"
+  }
+}

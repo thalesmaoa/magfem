@@ -39,6 +39,14 @@ jobs:
           npm test
           npm run build
 
+      # Documentação (VitePress) publicada junto com o app, em /tools/magfem-web/docs/.
+      - name: Build da documentação
+        working-directory: docs
+        run: |
+          npm ci
+          npm run build
+          cp -r .vitepress/dist ../web/dist/docs
+
       # O portal (thalesmaia.com) faz checkout da branch `dist` e copia para docs/tools/magfem-web.
       - name: Publica na branch dist
         if: github.ref == 'refs/heads/main'

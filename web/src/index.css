@@ -24,6 +24,8 @@ button { font: inherit; }
 .filemenu { margin-left: auto; display: flex; gap: 4px; }
 .filemenu button { background: transparent; color: #fff; border: 1px solid transparent; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 13px; }
 .filemenu button:hover { border-color: rgba(255,255,255,.35); }
+.filemenu .nav-link { display: inline-flex; align-items: center; gap: 6px; color: #fff; text-decoration: none; border: 1px solid transparent; border-radius: 4px; padding: 4px 10px; font-size: 13px; }
+.filemenu .nav-link:hover { border-color: rgba(255,255,255,.35); }
 
 .toolbar { display: flex; align-items: center; gap: 6px; padding: 0 8px; background: var(--panel); border-bottom: 1px solid var(--border); overflow-x: auto; }
 .tb-group { display: flex; gap: 2px; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--border); }
@@ -281,7 +283,7 @@ body.popout .popout-root { height: 100vh; display: flex; flex-direction: column;
 .export-menu { position: relative; display: inline-block; }
 .export-menu .menu { right: 0; left: auto; top: 34px; width: 280px; }
 .export-menu .menu button { color: var(--text); }
-@media (max-width: 1250px) { .filemenu > button span, .export-menu > button span { display: none; } }
+@media (max-width: 1250px) { .filemenu > button span, .export-menu > button span, .filemenu .nav-link span { display: none; } }
 
 /* ============ tema escuro ============ */
 :root[data-theme="dark"] {

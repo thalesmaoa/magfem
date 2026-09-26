@@ -1,6 +1,4 @@
-# Documentação do MagFEM
+# doc/
 
-- [Guia de uso](uso.md) — fluxo Geometria → Malha → Método de resolução → Resultados.
-- [Referência da API / console](api.md) — comandos `g.*`, `m.*`, `s.*`, `r.*` e o script exportado.
-- [Formulação e validação](formulacao.md) — equações, hipóteses e casos de teste analíticos.
-- [`logo/`](logo/) — logo e estudos.
+A documentação do MagFEM mudou para [`docs/`](../docs) (VitePress) e é publicada em
+<https://thalesmaia.com/tools/magfem-web/docs/>. Aqui ficam só o logo e os estudos ([`logo/`](logo/)).

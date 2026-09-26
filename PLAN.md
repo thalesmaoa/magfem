@@ -154,6 +154,32 @@ Limitações conhecidas / ideias para depois:
   CADs (janela/cruzamento), busca de material com a biblioteca do FEMM; painéis redimensionáveis; Sobre; OG image.
 - Qualidade: `scripts/check` (unitários, núcleo nativo, ponte Python, E2E) e `scripts/commit-if-green`.
 
+### [✅ CONCLUÍDA] Rodada 19 — Documentação (VitePress)
+- **Plataforma:** VitePress (MIT), em `docs/`: roda no Node que o projeto já usa (`scripts/docs`, container
+  `node:22-alpine --rm`), tem PT/EN nativo (PT na raiz, EN em `docs/en/` com os mesmos caminhos), busca local e
+  fórmulas (MathJax). Alternativas descartadas: MkDocs Material (em modo de manutenção), Sphinx (toolchain Python à
+  parte, pior para guia visual), Docusaurus (mais pesado).
+- **Publicação:** o CI gera `docs/.vitepress/dist` e copia para `web/dist/docs`, então a documentação vai na branch
+  `dist` e o portal a publica em `/tools/magfem-web/docs/` sem mudar o workflow dele (o sitemap já pega as páginas).
+- **Estrutura:** Guia (introdução, primeiro modelo, geometria, malha, resolução, resultados, circuito externo,
+  arquivos, atalhos), Scripts e API (console, referência da API, ponte Python, Matlab/Julia/HTTP, exemplos),
+  Teoria (formulação, validação) e Sobre (citar, licença e créditos, contribuir).
+- **Tutorial "primeiro modelo":** bobina axissimétrica com núcleo de aço 1010 (L ≈ 14,9 mH com 500 espiras), com o
+  script completo; os materiais são citados pelo id (`mat_air`, `mat_cu`, `mat_1010`) para valer nos dois idiomas.
+- **Capturas de tela reproduzíveis:** `web/e2e/docs-shots.spec.ts` monta o modelo do tutorial pelo console e grava
+  as capturas em PT e EN (`./scripts/docs-shots`, só com `DOCS_SHOTS=1`; fora disso o teste é pulado).
+- **App:** link **Documentação/Docs** no topo (ao lado de Citar), no idioma da interface; no servidor de dev aponta
+  para o site publicado.
+- `doc/uso.md`, `doc/api.md` e `doc/formulacao.md` foram absorvidos pela documentação; `doc/` fica só com o logo.
+
+### Plano da documentação (manutenção)
+- A cada funcionalidade nova: atualizar a página do guia correspondente e a referência da API, nos dois idiomas.
+- Quando a interface mudar visivelmente: `./scripts/docs-shots` (com o app em :3002) e conferir as imagens.
+- Próximas páginas: exemplos de problemas planos (indutor EE, atuador com ímã), máquinas rotativas quando houver
+  entreferro móvel, e uma página de perguntas frequentes a partir das issues.
+- Pendência de i18n no app notada nas capturas: nomes de materiais padrão ("Aço 1010", "Cobre") não são traduzidos
+  na interface em inglês.
+
 ### Próximo possível
 - Elementos de 2ª ordem; malha: tamanho por curva, gradação e mapa de qualidade.
 - Circuitos em paralelo no FEM (corrente dividida pela impedância) e fontes de tensão no magnetostático.

@@ -1,0 +1,41 @@
+---
+layout: home
+title: MagFEM
+titleTemplate: Documentation
+
+hero:
+  name: MagFEM
+  text: 2D magnetic finite elements in the browser
+  tagline: Parametric CAD, meshing, a nonlinear solver, transient and AC analysis with circuits, results and scripting. All local, nothing to install.
+  image:
+    src: /logo.svg
+    alt: MagFEM
+  actions:
+    - theme: brand
+      text: First model
+      link: /en/guide/first-model
+    - theme: alt
+      text: Guide
+      link: /en/guide/
+    - theme: alt
+      text: Open MagFEM ↗
+      link: https://thalesmaia.com/tools/magfem-web/
+
+features:
+  - icon: 📐
+    title: Parametric CAD
+    details: Lines, arcs and circles with constraints, dimensions bound to variables, trim, offset, mirror and patterns. Imports DXF, SVG and FEMM .fem files.
+    link: /en/guide/geometry
+  - icon: 🧲
+    title: Magnetostatic, AC and transient
+    details: Planar or axisymmetric, nonlinear materials (B-H curves), magnets, eddy currents and strong coupling with an external circuit.
+    link: /en/guide/solver
+  - icon: 📊
+    title: Results
+    details: Field maps, flux lines, plots along lines, inductance, force and torque (Maxwell stress tensor), losses and animations.
+    link: /en/guide/results
+  - icon: 🐍
+    title: Scripting
+    details: Every action becomes a console command. The local bridge connects Python, Matlab, Julia or any HTTP-capable language to the model open in the browser.
+    link: /en/scripting/bridge
+---

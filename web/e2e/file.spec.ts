@@ -81,3 +81,11 @@ test('exportar SVG, DXF, PNG e JPG', async ({ page }) => {
   expect(jpg.data[0]).toBe(0xff);
   expect(jpg.data[1]).toBe(0xd8);
 });
+
+test('link da documentação no topo, no idioma da interface', async ({ page }) => {
+  const link = page.getByRole('link', { name: 'Documentação' });
+  await expect(link).toHaveAttribute('href', /\/tools\/magfem-web\/docs\/$/);
+  await expect(link).toHaveAttribute('target', '_blank');
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Docs' })).toHaveAttribute('href', /\/docs\/en\/$/);
+});

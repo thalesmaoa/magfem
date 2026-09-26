@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Regenera as capturas de tela da documentação (docs/public/img) com o servidor de dev em :3002.
+set -e
+cd "$(dirname "$0")/.."
+docker run --rm --network host --ipc=host -u "$(id -u):$(id -g)" -e HOME=/tmp -e DOCS_SHOTS=1 \
+  -v "$PWD/web:/app" -w /app mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test docs-shots
+mkdir -p docs/public/img
+cp web/test-results/docs/*.png docs/public/img/
+ls docs/public/img

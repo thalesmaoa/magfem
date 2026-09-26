@@ -10,7 +10,7 @@ coupling, and post-processing in the style of ParaView. It all runs locally in t
 (WebAssembly), with no installation, no server and no login. Your projects stay on your machine,
 as in draw.io.
 
-**Try it:** <https://thalesmaia.com/tools/magfem-web/>
+**Try it:** <https://thalesmaia.com/tools/magfem-web/> · **Docs:** <https://thalesmaia.com/tools/magfem-web/docs/en/>
 
 ## Focus and roadmap
 
@@ -66,8 +66,9 @@ such as **contactors**. The final step is **rotating machines**, with a moving a
   and Julia; the contactor example couples circuit, field and armature motion from a script.
 - The interface is in **English and Portuguese**, with light and dark themes and "Cite this work".
 
-See [`doc/`](doc/) for the user guide, the API reference and the numerical formulation and
-validation. See [`PLAN.md`](PLAN.md) for the development log.
+**Documentation:** <https://thalesmaia.com/tools/magfem-web/docs/en/> — guide, a first-model tutorial, the API
+reference, the local bridge and the numerical formulation and validation (source in [`docs/`](docs/)). See
+[`PLAN.md`](PLAN.md) for the development log.
 
 ## Run locally
 
@@ -90,7 +91,8 @@ CI publishes `dist` to the `dist` branch.
 core/      C++17 numerical core + Eigen + Tangle → WebAssembly (Emscripten) and native (tests)
 web/       Vite + React + TypeScript interface; mesher and solver run in a Web Worker
 bridge/    local bridge for scripts (Python package `magfem`, standard library only)
-doc/       documentation (usage, API, formulation, validation) and logo
+docs/      documentation (VitePress, PT/EN), published at /tools/magfem-web/docs/
+doc/       logo
 ```
 
 ## Contributing
