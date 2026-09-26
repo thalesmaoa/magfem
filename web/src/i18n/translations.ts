@@ -102,6 +102,8 @@ export interface Translations {
   theme: { title: string; auto: string; light: string; dark: string };
   phase: (n: number) => string;
   console: { title: string; show: string; hide: string; popout: string; dock: string; resize: string; windowTitle: string };
+  /** Nomes dos materiais padrão (gravados em português no projeto; mostrados no idioma da interface). */
+  matNames: { air: string; cu: string; al: string; m400: string; s1010: string };
   docs: { link: string; hint: string };
   cite: {
     button: string;
@@ -593,7 +595,7 @@ export interface Translations {
     addItem: string;
     items: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
-    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string) => string; help: string; color: string; label: string; labelPh: string; matHint: string; style: string; dash: string; dashes: { solid: string; dash: string; dot: string }; width: string; cancel: string };
+    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string, why: string) => string; help: string; color: string; label: string; labelPh: string; matHint: string; style: string; dash: string; dashes: { solid: string; dash: string; dot: string }; width: string; cancel: string; expr: string; exprHelp: string; dup: (n: string) => string; fill: string };
     varName: string;
     show: string;
     loss: string;
@@ -785,6 +787,7 @@ const PT: Translations = {
   theme: { title: 'Tema', auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' },
   phase: (n) => `Fase ${n}`,
   console: { title: 'Console', show: 'Mostrar console', hide: 'Ocultar console', popout: 'Abrir em outra janela', dock: 'Voltar para baixo do desenho', resize: 'Arraste para mudar a altura', windowTitle: 'MagFEM — console' },
+  matNames: { air: 'Ar', cu: 'Cobre', al: 'Alumínio', m400: 'Aço M400-50A', s1010: 'Aço 1010' },
   docs: { link: 'Documentação', hint: 'Guia, tutorial, referência da API e teoria (abre numa nova aba)' },
   cite: {
     button: 'Citar',
@@ -1357,7 +1360,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
       solveFirst: 'Resolva a física (transitória) para listar as variáveis de resultado.',
       exportHint: 'Exportar este gráfico',
       add: 'Adicionar variável',
-      addPlaceholder: 'nome (Tab/↓ lista), Enter',
+      addPlaceholder: 'nome ou expressão, Enter',
       remove: 'tirar do gráfico',
       color: 'Cor',
       label: 'Rótulo na legenda',
@@ -1367,9 +1370,13 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
       dashes: { solid: 'contínua', dash: 'tracejada', dot: 'pontilhada' },
       width: 'Espessura',
       cancel: 'Cancelar',
+      fill: 'Preencher a área sob a curva',
+      expr: 'Variável ou expressão',
+      exprHelp: 'Ex.: Primario_V/127 (pu), Primario_I*1000 (mA), Primario_I*Primario_V (potência).',
+      dup: (n) => `"${n}" já está no gráfico.`,
       matHint: 'MATLAB .mat: t e uma variável por curva (scipy.io.loadmat no Python, MAT.jl no Julia, load no Octave)',
-      unknown: (n) => `Variável de resultado "${n}" não existe nesta física.`,
-      help: 'Qualquer variável de resultado da física: circuitos (_I, _lambda, _L, _V, _P), integrais (ex.: Fx) e fórmulas.',
+      unknown: (n, why) => `"${n}" não é uma variável de resultado nem uma expressão válida${why ? ` (${why})` : ''}.`,
+      help: 'Uma variável de resultado da física (circuitos: _I, _lambda, _L, _V, _P; integrais, ex.: Fx; fórmulas) ou uma expressão com elas, t e as variáveis do projeto (ex.: Primario_I*Primario_V).',
     },
     varName: 'Nome (variáveis)',
     show: 'Mostrar',
@@ -1568,6 +1575,7 @@ const EN: Translations = {
   theme: { title: 'Theme', auto: 'automatic (follows the system)', light: 'light', dark: 'dark' },
   phase: (n) => `phase ${n}`,
   console: { title: 'Console', show: 'Show console', hide: 'Hide console', popout: 'Open in a separate window', dock: 'Dock below the drawing', resize: 'Drag to change the height', windowTitle: 'MagFEM — console' },
+  matNames: { air: 'Air', cu: 'Copper', al: 'Aluminum', m400: 'M400-50A steel', s1010: '1010 steel' },
   docs: { link: 'Docs', hint: 'Guide, tutorial, API reference and theory (opens in a new tab)' },
   cite: {
     button: 'Cite',
@@ -2140,7 +2148,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
       solveFirst: 'Solve the (transient) physics to list the result variables.',
       exportHint: 'Export this plot',
       add: 'Add variable',
-      addPlaceholder: 'name (Tab/↓ lists), Enter',
+      addPlaceholder: 'name or expression, Enter',
       remove: 'remove from plot',
       color: 'Color',
       label: 'Legend label',
@@ -2150,9 +2158,13 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
       dashes: { solid: 'solid', dash: 'dashed', dot: 'dotted' },
       width: 'Width',
       cancel: 'Cancel',
+      fill: 'Fill the area under the curve',
+      expr: 'Variable or expression',
+      exprHelp: 'E.g. Primary_V/127 (pu), Primary_I*1000 (mA), Primary_I*Primary_V (power).',
+      dup: (n) => `"${n}" is already in the plot.`,
       matHint: 'MATLAB .mat: t and one variable per curve (scipy.io.loadmat in Python, MAT.jl in Julia, load in Octave)',
-      unknown: (n) => `Result variable "${n}" does not exist in this physics.`,
-      help: 'Any result variable of the physics: circuits (_I, _lambda, _L, _V, _P), integrals (e.g. Fx) and formulas.',
+      unknown: (n, why) => `"${n}" is neither a result variable nor a valid expression${why ? ` (${why})` : ''}.`,
+      help: 'A result variable of the physics (circuits: _I, _lambda, _L, _V, _P; integrals, e.g. Fx; formulas) or an expression of them, t and the project variables (e.g. Primary_I*Primary_V).',
     },
     varName: 'Name (variables)',
     show: 'Show',

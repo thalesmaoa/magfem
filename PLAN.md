@@ -182,8 +182,6 @@ Limitações conhecidas / ideias para depois:
 - Quando a interface mudar visivelmente: `./scripts/docs-shots` (com o app em :3002) e conferir as imagens.
 - Próximas páginas: exemplos de problemas planos (indutor EE, atuador com ímã), máquinas rotativas quando houver
   entreferro móvel, e uma página de perguntas frequentes a partir das issues.
-- Pendência de i18n no app notada nas capturas: nomes de materiais padrão ("Aço 1010", "Cobre") não são traduzidos
-  na interface em inglês.
 
 ### Próximo possível
 - Elementos de 2ª ordem; malha: tamanho por curva, gradação e mapa de qualidade.

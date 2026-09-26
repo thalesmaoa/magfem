@@ -31,7 +31,7 @@ Uma **Tabela** reúne itens, e cada item gera **variáveis de resultado** com no
 | Integral de superfície | nas regiões escolhidas: área, volume, ∫A, corrente, energia, B médio, perdas (Joule e ferro), **força Fx, Fy e torque** |
 | Integral sobre linha | sobre uma curva: comprimento, fluxo Φ, força magnetomotriz ∫H·dl, ∫B, B médio, **força e torque** (contorno fechado) |
 | Fórmula | uma expressão sobre as outras variáveis (por exemplo `0.5*Bobina_L*Bobina_I^2`) |
-| Gráfico no tempo | transitório: as variáveis que você escolher (pelo nome, com autocompletar), cada uma no eixo esquerdo ou direito; o botão de estilo de cada curva define rótulo, cor, tipo de linha e espessura; o mouse mostra os valores; redimensionável pelo canto; exporta CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG e PNG |
+| Gráfico no tempo | transitório: as variáveis que você escolher, pelo nome (com autocompletar) ou por uma expressão com elas, `t` e as variáveis do projeto (ex.: `Primario_I*Primario_V`, `Primario_V/127` em pu), cada uma no eixo esquerdo ou direito; o botão de estilo de cada curva edita a expressão e define rótulo, cor, tipo de linha, espessura e área preenchida; o mouse mostra os valores; redimensionável pelo canto; exporta CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG e PNG |
 
 Cada saída tem um nome editável (o padrão é o prefixo do item mais a grandeza, como `S1_fx`). As variáveis de
 circuito se chamam `<circuito>_I`, `<circuito>_lambda`, `<circuito>_L` e `<circuito>_R`.

@@ -70,7 +70,7 @@ export function MaterialPicker({ ed, value, onPick, label }: { ed: SketchEditor;
     <div className="mat-picker" ref={ref} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
       <button className={`mat-chip${cur ? '' : ' none'}`} aria-label={label ?? t.mesh.pickMaterial} title={t.mesh.pickMaterial} aria-expanded={open} onClick={() => setOpen(!open)}>
         <Swatch color={cur?.color} />
-        <span>{cur?.name ?? t.mesh.noMaterial}</span>
+        <span>{cur ? displayName(cur.name) : t.mesh.noMaterial}</span>
         <span className="caret">▾</span>
       </button>
       {open && (
@@ -84,17 +84,17 @@ export function MaterialPicker({ ed, value, onPick, label }: { ed: SketchEditor;
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
-              const first = sk.materials.find((m) => matches(m.name));
+              const first = sk.materials.find((m) => matches(m.name, displayName(m.name)));
               if (first) pick(first.id);
               else if (femmHits[0]) importFemm(femmHits[0]);
             }}
           />
-          {groupedMaterials(sk.materials.filter((m) => matches(m.name, t.mesh.groups[m.group ?? 'custom']))).map(([g, list]) => (
+          {groupedMaterials(sk.materials.filter((m) => matches(m.name, `${displayName(m.name)} ${t.mesh.groups[m.group ?? 'custom']}`))).map(([g, list]) => (
             <div key={g} role="group" aria-label={t.mesh.groups[g]}>
               <div className="menu-label">{t.mesh.groups[g]}</div>
               {list.map((m) => (
                 <button key={m.id} role="menuitemradio" aria-checked={m.id === value} className={m.id === value ? 'on' : ''} onClick={() => pick(m.id)}>
-                  <Swatch color={m.color} /> {m.name}
+                  <Swatch color={m.color} /> {displayName(m.name)}
                   <span className="crefs">{materialSummary(m)}</span>
                 </button>
               ))}
@@ -251,7 +251,7 @@ export function MaterialLibrary({ ed, focus, onFocus }: { ed: SketchEditor; focu
               {list.map((m) => (
                 <li key={m.id}>
                   <button role="option" aria-selected={focus === m.id} className={`lib-item${focus === m.id ? ' on' : ''}`} onClick={() => onFocus(focus === m.id ? null : m.id)}>
-                    <Swatch color={m.color} /> <span className="tname">{m.name}</span>
+                    <Swatch color={m.color} /> <span className="tname">{displayName(m.name)}</span>
                     <span className="crefs">{materialSummary(m)}</span>
                   </button>
                   {focus === m.id && <MaterialEditor ed={ed} id={m.id} onRemoved={() => onFocus(null)} />}

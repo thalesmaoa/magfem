@@ -77,6 +77,24 @@ test('gráfico no tempo: variáveis nos eixos esquerdo e direito, exportação, 
   await dlg.getByLabel('Espessura').selectOption('2.5');
   await dlg.getByRole('button', { name: 'OK' }).click();
   expect((await sketch(page)).nodes.find((n: any) => n.id === 'tp').curves[0]).toMatchObject({ name: 'Bobina_V', label: 'Tensão induzida', dash: 'dot', width: 2.5, color: '#00aa00' });
+  // Expressão com variáveis (potência instantânea) e edição de uma curva já incluída (escala) pela janela.
+  await add.fill('Bobina_I*Bobina_V');
+  await add.press('Enter');
+  await page.getByRole('button', { name: 'Estilo da curva (rótulo, cor, linha): Bobina_I', exact: true }).click();
+  const dlg2 = page.locator('dialog.tp-style[open]');
+  await dlg2.getByLabel('Variável ou expressão').fill('Bobina_I*1000');
+  await dlg2.getByRole('button', { name: 'OK' }).click();
+  const names = (await sketch(page)).nodes.find((n: any) => n.id === 'tp').curves.map((c: any) => c.name);
+  expect(names).toEqual(['Bobina_V', 'Bobina_lambda', 'Bobina_I*1000', 'Bobina_I*Bobina_V']);
+  const ser = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { curveSeries } = await import('/tools/magfem-web/src/ui/CanvasTabs.tsx');
+    const a = curveSeries(ed, 'n7', 'Bobina_I').series.y, b = curveSeries(ed, 'n7', 'Bobina_I*1000').series.y;
+    const v = curveSeries(ed, 'n7', 'Bobina_V').series.y, p = curveSeries(ed, 'n7', 'Bobina_I*Bobina_V').series.y;
+    return { a: a[5], b: b[5], pv: p[5], iv: a[5] * v[5] };
+  });
+  expect(ser.b).toBeCloseTo(ser.a * 1000, 6);
+  expect(ser.pv).toBeCloseTo(ser.iv, 9);
   // Recarregar a página: os itens de Resultados continuam (sem virar "Mapa 2D"/"Linhas de fluxo") e a solução volta.
   await page.waitForTimeout(1000);
   await page.reload();
@@ -85,4 +103,15 @@ test('gráfico no tempo: variáveis nos eixos esquerdo e direito, exportação, 
   expect(nodes.find((n: any) => n.id === 'tp')).toMatchObject({ item: 'timeplot', view: 'tb2' });
   expect(nodes.filter((n: any) => n.kind === 'post' && n.plot)).toHaveLength(0);
   await expect.poll(() => page.evaluate(() => (window as any).__magfem.solutions.has('n7')), { timeout: 10000 }).toBe(true);
+});
+
+test('materiais padrão aparecem traduzidos na interface em inglês (e a busca acha pelo nome traduzido)', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  for (const c of ['g.rectangle((0, 0), (40, 20))', 'm.region((20, 10), material="mat_cu")']) {
+    await box.fill(c);
+    await box.press('Enter');
+  }
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.locator('.tree')).toContainText('Copper');
+  await expect(page.locator('.tree')).not.toContainText('Cobre');
 });

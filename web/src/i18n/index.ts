@@ -59,7 +59,7 @@ function buildIndex() {
   const idx = new Map<string, string>();
   const walk = (o: unknown, path: string) => {
     if (typeof o === 'string') {
-      if (o.length >= 3 && o.length <= 48 && /\p{L}{2}/u.test(o) && !idx.has(o)) idx.set(o, path);
+      if (o.length >= 2 && o.length <= 48 && /\p{L}{2}/u.test(o) && !idx.has(o)) idx.set(o, path);
     } else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) walk(v, path ? `${path}.${k}` : k);
   };
   walk(TRANSLATIONS.pt, '');

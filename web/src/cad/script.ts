@@ -197,7 +197,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
 export function curvesCode(list: NonNullable<PostNode['curves']>): string {
   return `[${list
     .map((c) => {
-      const extra = [c.color ? q(c.color) : 'None', c.label ? q(c.label) : 'None', c.dash ? q(c.dash) : 'None', c.width ? String(c.width) : 'None'];
+      const extra = [c.color ? q(c.color) : 'None', c.label ? q(c.label) : 'None', c.dash ? q(c.dash) : 'None', c.width ? String(c.width) : 'None', c.fill ? 'True' : 'None'];
       while (extra.length && extra[extra.length - 1] === 'None') extra.pop();
       return `(${[q(c.name), q(c.axis), ...extra].join(', ')})`;
     })

@@ -10,7 +10,7 @@ import { LazyInput } from './common';
 import { Icons } from './icons';
 import { useEditor } from './useStore';
 import { openTab } from './tabsStore';
-import { CircuitTable, physicsTimeSeries, qLabel, tableItemRows } from './CanvasTabs';
+import { CircuitTable, curveSeries, physicsTimeSeries, qLabel, tableItemRows } from './CanvasTabs';
 import { findRegion as findRegionP } from '../cad/regions';
 import { pointCode } from '../cad/mesh';
 import { defaultVarName, LINE_Q, outputsOf, resultVars, safeName, SURF_Q, varNameOf } from '../cad/results';
@@ -38,13 +38,15 @@ function LineSwatch({ color, dash, width }: { color: string; dash: 'solid' | 'da
 }
 
 /** Botão com a amostra da linha; abre uma janela com rótulo, cor, tipo de linha e espessura. */
-function CurveStyleButton({ curve, fallback, onApply }: { curve: Curve; fallback: string; onApply: (st: Partial<Curve>) => void }) {
+function CurveStyleButton({ curve, fallback, onApply, check }: { curve: Curve; fallback: string; onApply: (st: Partial<Curve>) => void; check: (expr: string) => string | null }) {
   const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
-  const cur = { label: curve.label ?? '', color: curve.color ?? fallback, dash: curve.dash ?? (curve.axis === 'right' ? 'dash' : 'solid'), width: curve.width ?? 1.8 };
+  const [err, setErr] = useState<string | null>(null);
+  const cur = { expr: curve.name, label: curve.label ?? '', color: curve.color ?? fallback, dash: curve.dash ?? (curve.axis === 'right' ? 'dash' : 'solid'), width: curve.width ?? 1.8, fill: !!curve.fill };
   const [draft, setDraft] = useState(cur);
   const open = () => {
     setDraft(cur);
+    setErr(null);
     ref.current?.showModal();
   };
   return (
@@ -53,7 +55,12 @@ function CurveStyleButton({ curve, fallback, onApply }: { curve: Curve; fallback
         <LineSwatch color={cur.color} dash={cur.dash} width={cur.width} />
       </button>
       <dialog ref={ref} className="cite tp-style" onClick={(e) => e.target === ref.current && ref.current?.close()}>
-        <h2>{curve.name}</h2>
+        <h2>{curve.label || curve.name}</h2>
+        <label className="field">
+          <span>{t.table.tp.expr}</span>
+          <input value={draft.expr} aria-label={t.table.tp.expr} className={err ? 'bad' : ''} onChange={(e) => (setDraft({ ...draft, expr: e.target.value }), setErr(null))} />
+        </label>
+        <p className="help-line">{err ?? t.table.tp.exprHelp}</p>
         <label className="field">
           <span>{t.table.tp.label}</span>
           <input value={draft.label} placeholder={curve.name} aria-label={t.table.tp.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} />
@@ -80,6 +87,10 @@ function CurveStyleButton({ curve, fallback, onApply }: { curve: Curve; fallback
             ))}
           </select>
         </label>
+        <label className="check">
+          <input type="checkbox" checked={draft.fill} onChange={(e) => setDraft({ ...draft, fill: e.target.checked })} />
+          {t.table.tp.fill}
+        </label>
         <div className="tp-style-preview">
           <LineSwatch color={draft.color} dash={draft.dash} width={draft.width} />
           <span style={{ color: draft.color }}>{draft.label || curve.name}</span>
@@ -91,7 +102,10 @@ function CurveStyleButton({ curve, fallback, onApply }: { curve: Curve; fallback
           <button
             className="btn"
             onClick={() => {
-              onApply({ label: draft.label.trim() || undefined, color: draft.color, dash: draft.dash, width: draft.width });
+              const expr = draft.expr.trim();
+              const bad = expr !== curve.name ? check(expr) : null;
+              if (bad) return setErr(bad);
+              onApply({ name: expr, label: draft.label.trim() || undefined, color: draft.color, dash: draft.dash, width: draft.width, fill: draft.fill || undefined });
               ref.current?.close();
             }}
           >
@@ -1066,7 +1080,9 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
                     if (e.key !== 'Enter') return;
                     const v = e.currentTarget.value.trim();
                     if (!v) return;
-                    if (!all.series.some((s) => s.label === v)) return ed.flash(t.table.tp.unknown(v));
+                    // Nome de variável ou expressão com elas (e t): precisa dar número em algum instante.
+                    const r = curveSeries(ed, node.physics!, v);
+                    if (!r.series) return ed.flash(t.table.tp.unknown(v, r.error ?? ''));
                     if (!curves.some((c) => c.name === v)) setAxis(v, 'left');
                     e.currentTarget.value = '';
                   }}
@@ -1080,7 +1096,7 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
                 </datalist>
               </label>
               {curves.map((c) => {
-                const s = all.series.find((x) => x.label === c.name);
+                const s = curveSeries(ed, node.physics!, c.name).series;
                 return (
                   <label className="field tp-curve" key={c.name}>
                     <span>
@@ -1092,7 +1108,14 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
                       <option value="right">{t.table.tp.right}</option>
                       <option value="">{t.table.tp.remove}</option>
                     </select>
-                    <CurveStyleButton curve={c} fallback={TP_COLORS[curves.indexOf(c) % TP_COLORS.length]} onApply={(st) => setStyle(c.name, st)} />
+                    <CurveStyleButton
+                      curve={c}
+                      fallback={TP_COLORS[curves.indexOf(c) % TP_COLORS.length]}
+                      onApply={(st) => setStyle(c.name, st)}
+                      check={(expr) =>
+                        !expr ? t.table.tp.unknown(expr, '') : curves.some((x) => x.name === expr) ? t.table.tp.dup(expr) : curveSeries(ed, node.physics!, expr).series ? null : t.table.tp.unknown(expr, curveSeries(ed, node.physics!, expr).error ?? '')
+                      }
+                    />
                   </label>
                 );
               })}

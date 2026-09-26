@@ -590,7 +590,7 @@ function niceScale(vals: number[]) {
  */
 export function DualAxisChart(props: {
   x: number[];
-  series: { label: string; unit: string; y: number[]; axis: 'left' | 'right'; color?: string; dash?: 'solid' | 'dash' | 'dot'; width?: number }[];
+  series: { label: string; unit: string; y: number[]; axis: 'left' | 'right'; color?: string; dash?: 'solid' | 'dash' | 'dot'; width?: number; fill?: boolean }[];
   xLabel: string;
   leftTag: string;
   rightTag: string;
@@ -651,6 +651,14 @@ export function DualAxisChart(props: {
       ))}
       {series.map((s2, i) => (
         <g key={s2.label}>
+          {s2.fill &&
+            segs(s2.y, s2.axis === 'left' ? sl : sr).map((pts, j) => {
+              // Área entre a curva e o zero do eixo dela (ou a borda, se o zero estiver fora da escala).
+              const sc = s2.axis === 'left' ? sl : sr;
+              const y0 = Y(Math.min(Math.max(0, sc.lo), sc.hi), sc).toFixed(1);
+              const p = pts.split(' ');
+              return <polygon key={`f${j}`} points={`${p[0].split(',')[0]},${y0} ${pts} ${p[p.length - 1].split(',')[0]},${y0}`} fill={colorOf(i)} fillOpacity={0.18} stroke="none" />;
+            })}
           {segs(s2.y, s2.axis === 'left' ? sl : sr).map((pts, j) => (
             <polyline key={j} points={pts} fill="none" stroke={colorOf(i)} strokeWidth={s2.width ?? 1.8} strokeDasharray={{ solid: undefined, dash: '6 3', dot: '1.5 3' }[s2.dash ?? (s2.axis === 'right' ? 'dash' : 'solid')]} strokeLinecap={(s2.dash ?? '') === 'dot' ? 'round' : undefined} />
           ))}

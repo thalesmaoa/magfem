@@ -6,6 +6,7 @@ import { updateMaterial } from '../cad/mesh';
 import { circuitResults, lineProfile, quantityLabel, frameOf } from '../cad/solve';
 import { findRegion } from '../cad/regions';
 import { outputsOf, resultVars, safeName, varNameOf } from '../cad/results';
+import { evaluate, evaluateVariables, type Q } from '../cad/expr';
 import { physicsSketch, type TreeSel } from '../cad/tree';
 import { PLOT_QUANTITIES, type Material, type PlotQuantity, type PostNode, type ViewNode } from '../cad/types';
 import { T, useT, displayName } from '../i18n';
@@ -330,7 +331,7 @@ function BHPane({ ed, m, lx, ly }: { ed: SketchEditor; m: Material; lx: boolean;
     <div className="chart-pane">
       <div className="chart-head">
         <strong>
-          {t.post.bhTab}: {m.name}
+          {t.post.bhTab}: {displayName(m.name)}
         </strong>
         <button
           className="btn secondary"
@@ -612,12 +613,44 @@ export function physicsTimeSeries(ed: SketchEditor, physics: string): TimeSeries
   return res;
 }
 
+/**
+ * Curva do gráfico no tempo: uma variável de resultado pelo nome ou uma expressão com elas, com t (s) e as variáveis
+ * do projeto (ex.: "Primario_I*Primario_V"). Instantes em que a expressão não dá um número ficam de fora (NaN).
+ */
+export function curveSeries(ed: SketchEditor, physics: string, name: string): { series?: TimeSeries['series'][number]; error?: string } {
+  const all = physicsTimeSeries(ed, physics);
+  if (!all) return {};
+  const hit = all.series.find((s) => s.label === name);
+  if (hit) return { series: hit };
+  const sk = ed.sketch;
+  let base: Map<string, Q>;
+  try {
+    base = new Map(evaluateVariables(sk.variables, sk.settings.unit).values);
+  } catch {
+    base = new Map();
+  }
+  let error: string | undefined;
+  const y = all.t.map((tk, k) => {
+    const env = new Map(base);
+    for (const s of all.series) env.set(s.label, { v: s.y[k], L: 0, A: 0 });
+    env.set('t', { v: tk, L: 0, A: 0 });
+    try {
+      return evaluate(name, { env, unit: sk.settings.unit }).v;
+    } catch (e) {
+      error ??= (e as Error).message;
+      return NaN;
+    }
+  });
+  if (!y.some((v) => Number.isFinite(v))) return { error: error ?? name };
+  return { series: { label: name, unit: '', y } };
+}
+
 /** Transitório: cada variável do item em todos os instantes (null se a solução não é transitória). */
 export function itemTimeSeries(ed: SketchEditor, it: PostNode): TimeSeries | null {
   const all = it.physics ? physicsTimeSeries(ed, it.physics) : null;
   if (!all) return null;
   const names = itemVarNames(ed, it);
-  return { t: all.t, series: names.map((nm) => all.series.find((s) => s.label === nm)).filter((s): s is TimeSeries['series'][number] => !!s) };
+  return { t: all.t, series: names.map((nm) => curveSeries(ed, it.physics!, nm).series).filter((s): s is TimeSeries['series'][number] => !!s) };
 }
 
 /** Curvas no tempo de um item (uma por variável, com o cursor no instante da animação). */
@@ -712,8 +745,8 @@ function TimePlot({ ed, it }: { ed: SketchEditor; it: PostNode }) {
   if (!all) return <p className="muted">{t.table.tp.needTransient}</p>;
   const series = (it.curves ?? [])
     .map((c) => {
-      const s = all.series.find((x) => x.label === c.name);
-      return s ? { ...s, label: c.label || s.label, axis: c.axis, color: c.color, dash: c.dash, width: c.width } : null;
+      const s = curveSeries(ed, it.physics!, c.name).series;
+      return s ? { ...s, label: c.label || s.label, axis: c.axis, color: c.color, dash: c.dash, width: c.width, fill: c.fill } : null;
     })
     .filter((s): s is NonNullable<typeof s> => !!s);
   if (!series.length) return <p className="muted">{t.table.tp.empty}</p>;
