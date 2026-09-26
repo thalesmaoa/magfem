@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- MagFEM: ímã em ferradura com o corpo malhado (elementos finitos) e linhas de fluxo entre os polos -->
+  <g fill="none" stroke="#F5B800" stroke-width="2.6" stroke-linecap="round">
+    <path d="M15 17 C15 1 49 1 49 17"/>
+    <path d="M20.5 17 C20.5 8 43.5 8 43.5 17"/>
+  </g>
+  <path d="M10 17 H22 V40 A10 10 0 0 0 32 50 V62 A22 22 0 0 1 10 40 Z" fill="#E5484D"/>
+  <path d="M54 17 H42 V40 A10 10 0 0 1 32 50 V62 A22 22 0 0 0 54 40 Z" fill="#2F7FE0"/>
+  <rect x="10" y="17" width="12" height="7" fill="#E6ECF2"/>
+  <rect x="42" y="17" width="12" height="7" fill="#E6ECF2"/>
+  <g fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.2" stroke-linejoin="round">
+    <path d="M10 32 H22 M10 24 L22 32 M10 32 L22 40 M22 40 L16.4 55.6 M24.9 47.1 L16.4 55.6 M24.9 47.1 L32 62"/>
+    <path d="M54 32 H42 M54 24 L42 32 M54 32 L42 40 M42 40 L47.6 55.6 M39.1 47.1 L47.6 55.6 M39.1 47.1 L32 62"/>
+  </g>
+</svg>
