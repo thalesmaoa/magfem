@@ -314,7 +314,7 @@ describe('console', () => {
     expect(c.run('l = s.line((0, 0), (10, 0))').ok).toBe(true);
     expect(c.run('s.rename(l, "kru1")').ok).toBe(true);
     const id = Object.values(doc.sketch.entities).find((e) => e.type === 'line')!.id;
-    for (const cmd of ['getid("kru1")', 'getID(kru1)', 'getId("kru1")', 's.getid(kru1)']) expect(c.run(cmd)).toEqual({ ok: true, out: `"${id}"` });
+    for (const cmd of ['getid("kru1")', 'getID(kru1)', 'getId("kru1")', 's.getid(kru1)']) expect(c.run(cmd)).toEqual({ ok: true, out: `"${id}"`, value: id });
     expect(c.run('foo()').ok).toBe(false);
   });
   test('autocompletar: métodos, nomes entre aspas e funções', async () => {
