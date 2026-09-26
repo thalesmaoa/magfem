@@ -1014,6 +1014,19 @@ export class CommandConsole {
         const { type: _ty, name: _nm, ...rest } = patch;
         return this.commitWithIdOf(Object.keys(rest).length ? updateBoundaryDef(r.sketch, r.boundary.id, rest) : r.sketch, r.boundary.id, kw.id);
       }
+      case 'curve_size': {
+        // m.curve_size([curvas], "1 mm") — tamanho do elemento ao longo das curvas; None tira.
+        need(1);
+        const ids = (seq(a[0]) ?? [a[0]]).map((v) => this.id(v));
+        const v = a.length > 1 ? a[1] : kw.size;
+        const next = { ...(sk.curveSizes ?? {}) };
+        for (const id of ids) {
+          if (v === null || v === undefined || v === 'auto') delete next[id];
+          else next[id] = String(v);
+        }
+        this.commit({ ...sk, curveSizes: Object.keys(next).length ? next : undefined });
+        return null;
+      }
       case 'mesh_size': {
         need(1);
         const arr = computeArrangement(sk);

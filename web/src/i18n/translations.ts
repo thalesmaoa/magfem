@@ -427,6 +427,9 @@ export interface Translations {
     elements: (n: number) => string;
     elementsNode: string;
     qualityMap: string;
+    curveSize: string;
+    curveSizeAuto: string;
+    curveSizeHelp: string;
     qualityBand: (from: number, to: number | null) => string;
     regionName: string;
     outerHelp: string;
@@ -1160,6 +1163,9 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     elements: (n) => `${n} el.`,
     elementsNode: 'Elementos',
     qualityMap: 'Colorir pela qualidade (menor ângulo)',
+    curveSize: 'Tamanho na curva',
+    curveSizeAuto: 'o das regiões',
+    curveSizeHelp: 'Elementos menores ao longo das curvas selecionadas (ex.: entreferro); o interior faz a transição.',
     qualityBand: (a, b) => (b === null ? `≥ ${a}°` : `${a}°–${b}°`),
     regionName: 'Nome da região',
     bhAdd: 'Incluir curva B-H (não linear)',
@@ -1907,6 +1913,9 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     elements: (n) => `${n} el.`,
     elementsNode: 'Elements',
     qualityMap: 'Color by quality (smallest angle)',
+    curveSize: 'Size along the curve',
+    curveSizeAuto: 'from the regions',
+    curveSizeHelp: 'Smaller elements along the selected curves (e.g. an air gap); the interior grades from them.',
     qualityBand: (a, b) => (b === null ? `≥ ${a}°` : `${a}°–${b}°`),
     regionName: 'Region name',
     bhAdd: 'Add B-H curve (nonlinear)',

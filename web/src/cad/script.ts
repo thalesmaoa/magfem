@@ -77,6 +77,10 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
 
   add('\n# Materiais');
   for (const m of sk.materials) add(materialLine(m));
+  // Tamanho do elemento por curva, agrupado por valor.
+  const bySize = new Map<string, string[]>();
+  for (const [id, v] of Object.entries(sk.curveSizes ?? {})) bySize.set(v, [...(bySize.get(v) ?? []), id]);
+  for (const [v, ids] of bySize) add(`m.curve_size([${ids.map(q).join(', ')}], ${q(v)})`);
   if (sk.circuits.length) add('\n# Circuitos');
   for (const c of sk.circuits) add(`m.circuit(${q(c.name)}, id=${q(c.id)}, current=${q(c.current)}, kind=${q(c.kind)})`);
   if (sk.boundaries.length) add('\n# Contornos');

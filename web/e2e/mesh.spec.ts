@@ -218,3 +218,24 @@ test('mapa de qualidade da malha: faixas do menor ângulo somam todos os triâng
   expect(total).toBe(elements);
   expect(Number(counts[0])).toBe(0); // nenhum triângulo abaixo de 20° (qualidade 30°)
 });
+
+test('tamanho do elemento por curva: a aresta com 1 mm ganha muito mais nós', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  for (const c of ['a = g.point((0, 0))', 'b = g.point((40, 0))', 'c = g.point((40, 20))', 'd = g.point((0, 20))', 'l1 = g.line(a, b)', 'g.line(b, c)', 'g.line(c, d)', 'g.line(d, a)', 'm.region((20, 10), material="Ar")', 'm.settings("n1", size="8 mm")', 'm.curve_size([l1], "1 mm")']) {
+    await box.fill(c);
+    await box.press('Enter');
+  }
+  await page.getByRole('treeitem', { name: 'Malha', exact: true }).click();
+  await page.getByRole('treeitem', { name: 'Elementos', exact: true }).getByRole('button', { name: 'Gerar malha' }).click();
+  await expect(page.locator('.props')).toContainText('triângulos');
+  const n = await page.evaluate(() => {
+    const ed = (window as any).__magfem;
+    const m = [...ed.meshes.values()][0];
+    const lines = Object.values(ed.sketch.entities).filter((e: any) => e.type === 'line') as any[];
+    const bottom = lines.find((l) => ed.sketch.entities[l.p1].y === 0 && ed.sketch.entities[l.p2].y === 0);
+    const top = lines.find((l) => ed.sketch.entities[l.p1].y === 20 && ed.sketch.entities[l.p2].y === 20);
+    return { bottom: m.curveNodes[bottom.id].length, top: m.curveNodes[top.id].length };
+  });
+  expect(n.bottom).toBeGreaterThanOrEqual(41); // 40 mm / 1 mm
+  expect(n.top).toBeLessThan(10); // 40 mm / 8 mm
+});

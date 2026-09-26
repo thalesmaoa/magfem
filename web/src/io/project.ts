@@ -43,6 +43,7 @@ export function normalizeSketch(raw: Partial<Sketch>): Sketch {
     regionAssigns: raw.regionAssigns ?? [],
     boundaries: withDefaultBoundaries(raw.boundaries ?? []),
     circuits: raw.circuits ?? [],
+    ...(raw.curveSizes ? { curveSizes: raw.curveSizes } : {}),
     nextId: typeof raw.nextId === 'number' ? raw.nextId : 1,
   };
   // Versões anteriores guardavam a análise nas configurações: vira um nó de física.

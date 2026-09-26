@@ -85,7 +85,9 @@ export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { 
 
   const count = (e: Edge) => {
     const { len, curved, angle } = arr.edgeLen(e);
-    const he = edgeH.get(e.id) ?? Infinity;
+    // Menor entre o tamanho das regiões vizinhas e o da curva (se definido).
+    const hc = sizeOf(sk, sk.curveSizes?.[e.curve]) ?? Infinity;
+    const he = Math.min(edgeH.get(e.id) ?? Infinity, hc > 0 ? hc : Infinity);
     let n = isFinite(he) ? Math.ceil(len / he - 1e-9) : 1;
     if (curved) n = Math.max(n, Math.ceil(angle / ARC_STEP - 1e-9));
     return Math.max(1, n);

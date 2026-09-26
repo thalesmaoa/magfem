@@ -576,6 +576,28 @@ function CurvesProps({ ed, ids, onNew }: { ed: SketchEditor; ids: Id[]; onNew: (
           <option value="__new">{t.mesh.newBoundaryFor}</option>
         </select>
       </label>
+      <label className="field">
+        <span>{t.mesh.curveSize}</span>
+        <LazyInput
+          value={(() => {
+            const vals = new Set(ids.map((c) => sk.curveSizes?.[c] ?? ''));
+            return vals.size === 1 ? [...vals][0] : '';
+          })()}
+          placeholder={t.mesh.curveSizeAuto}
+          ariaLabel={t.mesh.curveSize}
+          onCommit={(v) => {
+            const val = v.trim();
+            if (val && sizeOf(sk, val) === null) return ed.flash(t.msg.positive);
+            const next = { ...(sk.curveSizes ?? {}) };
+            for (const c of ids) {
+              if (val) next[c] = val;
+              else delete next[c];
+            }
+            ed.commit({ ...sk, curveSizes: Object.keys(next).length ? next : undefined }, [`m.curve_size([${ids.map(q).join(', ')}], ${val ? q(val) : 'None'})`]);
+          }}
+        />
+      </label>
+      <p className="help-line">{t.mesh.curveSizeHelp}</p>
     </section>
   );
 }

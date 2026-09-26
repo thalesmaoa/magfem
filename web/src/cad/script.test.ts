@@ -42,7 +42,7 @@ function model(): Sketch {
   sk = assignRegion(sk, arr, regionKey(hole), { material: 'mat_cu', circuit: circ.circuit.id, turns: -50, meshSize: '1 mm' });
   const b = addBoundaryDef(sk, 'neumann', 'Lado');
   sk = assignBoundary(b.sketch, [c], b.boundary.id);
-  sk = { ...sk, materials: sk.materials.map((m) => (m.id === 'mat_cu' ? { ...m, color: '#aa5500' } : m)), settings: { ...sk.settings, unit: 'cm', depth: '50 mm' } };
+  sk = { ...sk, materials: sk.materials.map((m) => (m.id === 'mat_cu' ? { ...m, color: '#aa5500' } : m)), settings: { ...sk.settings, unit: 'cm', depth: '50 mm' }, curveSizes: { [c]: '0.5 mm' } };
   const ph = addNode(sk, 'physics-magnetic', 'Campo magnético');
   sk = ph.sketch;
   const phys = ph.node;

@@ -498,6 +498,8 @@ export interface Sketch {
   regionAssigns: RegionAssign[];
   boundaries: Boundary[];
   circuits: Circuit[];
+  /** Tamanho do elemento ao longo de curvas (id da curva → expressão de comprimento), ex. no entreferro. */
+  curveSizes?: Record<Id, string>;
   nextId: number;
 }
 
