@@ -1,7 +1,7 @@
 // "Script local": conecta a página à ponte Python (python -m magfem) com a porta e a chave de pareamento.
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { connectBridge, disconnectBridge, useBridge } from '../bridge/client';
+import { connectBridge, disconnectBridge, loadKey, useBridge } from '../bridge/client';
 import type { SketchEditor } from '../cad/editor';
 import { useT } from '../i18n';
 import { Icons } from './icons';
@@ -36,7 +36,7 @@ export function BridgeButton({ ed }: { ed: SketchEditor }) {
   const b = useBridge();
   const [open, setOpen] = useState(false);
   const [port, setPort] = useState(String(b.port));
-  const [key, setKey] = useState('');
+  const [key, setKey] = useState(loadKey);
   const ref = useRef<HTMLDivElement>(null);
   const pop = useRef<HTMLDivElement>(null);
   useEffect(() => {

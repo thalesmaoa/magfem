@@ -30,6 +30,15 @@ function loadPort(): number {
   }
 }
 
+/** Última chave usada (com `python -m magfem --key ...` fixa, não precisa colar de novo). */
+export function loadKey(): string {
+  try {
+    return localStorage.getItem('magfem-bridge-key') ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export function useBridge(): BridgeState {
   return useSyncExternalStore(
     (f) => {
@@ -50,6 +59,7 @@ export function connectBridge(ed: SketchEditor, port: number, key: string) {
   disconnectBridge();
   try {
     localStorage.setItem('magfem-bridge-port', String(port));
+    localStorage.setItem('magfem-bridge-key', key);
   } catch {
     // ignora
   }

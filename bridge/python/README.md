@@ -20,6 +20,8 @@ t, i = mf.series("Primario_I")   # transitório: curva no tempo
 mf.run('g.circle((0, 0), r=5)')  # qualquer linha do console do MagFEM
 ```
 
+Para não colar a chave toda vez, fixe-a: `python -m magfem --key minha-chave` (o app lembra a última porta e chave).
+
 ## Console no terminal
 
 `python -m magfem` sobe a ponte e abre um console `magfem>` ligado à página, como o console da web: cada linha
