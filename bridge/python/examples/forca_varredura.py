@@ -14,7 +14,7 @@ B0 = 0.1  # T: campo uniforme em y, imposto pelo A prescrito na borda (A = −B0
 mf = magfem.connect()
 mf.run(
     """
-new()
+reset()
 s.add_physics(id="n2")
 g.problem("planar", depth="1000 mm")
 g.var("I", "100")

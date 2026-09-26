@@ -62,7 +62,8 @@ such as **contactors**. The final step is **rotating machines**, with a moving a
   for automation and optimization.
 - **Local scripting bridge** ([`bridge/python`](bridge/python)): `python -m magfem` connects scripts
   (Python, or any language over HTTP/JSON) to the model open in the browser — set variables, solve and
-  read results (`r.result`, `r.series`) while the drawing updates live.
+  read results (`r.result`, `r.series`) while the drawing updates live. Clients for Python, Matlab/Octave
+  and Julia; the contactor example couples circuit, field and armature motion from a script.
 - The interface is in **English and Portuguese**, with light and dark themes and "Cite this work".
 
 See [`doc/`](doc/) for the user guide, the API reference and the numerical formulation and

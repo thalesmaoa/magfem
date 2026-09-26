@@ -64,7 +64,8 @@ entreferro móvel.
   automação e otimização.
 - **Ponte para scripts locais** ([`bridge/python`](bridge/python)): `python -m magfem` liga scripts
   (Python, ou qualquer linguagem por HTTP/JSON) ao modelo aberto no navegador — muda variáveis, resolve
-  e lê resultados (`r.result`, `r.series`) com o desenho atualizando ao vivo.
+  e lê resultados (`r.result`, `r.series`) com o desenho atualizando ao vivo. Clientes para Python,
+  Matlab/Octave e Julia; o exemplo do contator acopla circuito, campo e movimento do êmbolo pelo script.
 - Interface em **português e inglês**, com tema claro e escuro e "Cite este trabalho".
 
 Veja [`doc/`](doc/) para o guia de uso, a referência da API e a formulação e validação numérica. Veja

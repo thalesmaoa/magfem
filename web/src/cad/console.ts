@@ -1264,6 +1264,10 @@ export class CommandConsole {
         this.commit({ ...e, nodes: [], materials: [], regionAssigns: [], boundaries: [], circuits: [], nextId: 1 });
         return null;
       }
+      case 'reset':
+        // Projeto novo com as bibliotecas padrão (materiais, contornos, malha), para scripts; o arquivo aberto não muda.
+        this.commit(emptySketch());
+        return null;
       case 'new':
       case 'open':
         throw new ConsoleError(t.useMenu);

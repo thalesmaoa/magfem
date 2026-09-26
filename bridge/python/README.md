@@ -23,7 +23,14 @@ No app, clique em **Script local** (barra de status), informe a porta e cole a c
 script aparecem no histórico e o desenho muda ao vivo. O "exportar código" do app gera um script que
 recria o modelo — dá para colá-lo inteiro em `mf.run(...)`.
 
-Exemplo completo: [`examples/forca_varredura.py`](examples/forca_varredura.py).
+Exemplos:
+- [`examples/forca_varredura.py`](examples/forca_varredura.py): varre a corrente de um condutor e compara a
+  força com F = I×B.
+- [`examples/contator.py`](examples/contator.py): fechamento de um atuador de êmbolo (contator CC) com
+  circuito, campo e mecânica acoplados por código — λ ← λ + Δt·(V − R·i), m·g″ = F_mola − F_mag, e a
+  geometria remontada a cada passo. Mostra o afundamento de corrente típico do fechamento.
+
+`reset()` começa um projeto novo (com as bibliotecas padrão) pelo script, sem mexer no arquivo aberto.
 
 ## Outras linguagens (HTTP/JSON)
 

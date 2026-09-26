@@ -8,3 +8,6 @@ web/src/wasm/core.wasm
 *.log
 test-results
 playwright-report
+
+# Saída dos exemplos da ponte
+bridge/python/*.csv
