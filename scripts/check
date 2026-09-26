@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Roda todas as baterias de teste; sai com erro se qualquer uma falhar (use antes de commitar).
+cd "$(dirname "$0")/.."
+fail=0
+echo "== unitários (vitest)";   ./scripts/npm test 2>&1 | grep -E "Tests |FAIL" ; [ "${PIPESTATUS[0]}" -eq 0 ] || fail=1
+echo "== núcleo nativo (C++)";  ./scripts/build-core native 2>&1 | grep -E "tests passed|Failed|error" ; [ "${PIPESTATUS[0]}" -eq 0 ] || fail=1
+echo "== ponte Python";         (cd bridge/python && python3 -m unittest discover -s tests 2>&1 | tail -1) ; [ "${PIPESTATUS[0]}" -eq 0 ] || fail=1
+echo "== E2E (Playwright)";     ./scripts/e2e 2>&1 | grep -E "passed|failed|skipped|✘" ; [ "${PIPESTATUS[0]}" -eq 0 ] || fail=1
+[ $fail -eq 0 ] && echo "TUDO OK" || echo "FALHOU"
+exit $fail
