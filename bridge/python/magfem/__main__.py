@@ -51,6 +51,8 @@ def main() -> None:
         sys.exit(f"magfem: {e} (já há uma ponte nessa porta? use --port)")
     print(f"MagFEM bridge {VERSION} em http://127.0.0.1:{a.port}")
     print(f"  No app: clique em 'Script local', porta {a.port}, chave: {b.key}")
+    if not a.key:
+        print("  (chave nova a cada execução; para usar sempre a mesma: python -m magfem --key sua-chave)")
     print(f"  Scripts: POST /run {{\"code\": \"...\"}} com o cabeçalho X-MagFEM-Key: {b.key}")
     print("  Esperando a página conectar… (Ctrl+C encerra)", flush=True)
     try:
