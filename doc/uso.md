@@ -20,8 +20,9 @@ o **console**, onde cada ação aparece como comando da API.
    material na lista agrupada; a biblioteca (e a curva B-H) fica na gaveta da direita.
 2. **Circuitos:** crie um circuito (corrente em A) e ligue regiões a ele com um número de espiras
    (negativo = sentido de volta).
-3. **Contornos:** a borda externa é A = 0 por padrão. Clique nas bordas no desenho (Shift para várias)
-   e escolha o contorno (A prescrito, Neumann, periódico, antiperiódico).
+3. **Contornos:** a borda externa entra automaticamente no "Dirichlet (A = 0)". Clique nas bordas no desenho
+   (Shift para várias) e escolha o contorno; os tipos são os do FEMM (A prescrito, misto, periódico,
+   antiperiódico…), com cor editável, na gaveta da direita.
 4. **Regiões:** tamanho do elemento por região (vazio = automático).
 5. **Elementos:** ▶ gera a malha (Tangle, o gerador do FEMM). O ângulo mínimo controla a qualidade.
 
@@ -47,11 +48,16 @@ movidas entre vistas (arrastar na árvore) e ocultadas. Clique na legenda para o
 para mover e use a alça do canto para redimensionar. **Exportar** gera PNG/JPG da vista, ou
 SVG/PNG/CSV das abas de gráfico e tabela.
 
-## Transitório e circuito externo
+## Transitório, AC e circuito externo
 
-- Em **Método de resolução**, mude a análise para **Transitória** e informe frequência, passo e tempo final. As fontes
-  são senoidais; o aço com curva B-H é resolvido como não linear (Newton-Raphson) a cada passo; condutores sem fonte
-  (σ > 0) têm correntes parasitas.
+- Em **Método de resolução**, a análise pode ser **Magnetostática**, **Harmônica (AC)** ou **Transitória**.
+  - Transitória: passo e tempo final; as correntes podem ser funções de t (ex.: `2*sin(2*pi*60*t)`); condutores sem
+    fonte (σ > 0) têm correntes parasitas; aço com curva B-H é não linear a cada passo.
+  - Harmônica: frequência; correntes são amplitudes de pico; resultados em um período; perdas por correntes
+    parasitas e no ferro (coeficientes de Steinmetz no material) na integral de superfície.
+- Nos resultados do transitório e do AC, os itens de **Resultados** viram curvas no tempo (ou tabela num instante,
+  nas propriedades do item). A barra da vista tem a barra de tempo, ▶, quadros por segundo e **Exportar animação**.
+- **Força e torque:** saídas Fx, Fy e Torque na integral de superfície (corpo) ou de linha (contorno fechado).
 - Nos resultados, a barra superior da vista tem a barra de tempo, ▶ para animar e **Exportar animação (WebM)**.
 - **Circuito externo:** o **+** ao lado de **Modelo** cria um circuito (aba com esquemático). Ele já traz um bloco por
   circuito da Malha (bobinas); a barra superior tem fonte de tensão/corrente senoidal, R, L, C e Terra. Clique num terminal
@@ -59,7 +65,15 @@ SVG/PNG/CSV das abas de gráfico e tabela.
   forte campo–circuito): por exemplo, fonte de tensão no primário e carga no secundário de um transformador. Clique num
   componente para ver i(t) e v(t).
 
+## Importar
+
+**Importar** (barra superior) aceita DXF e SVG (curvas entram no desenho, pontos coincidentes são unidos) e
+problemas do FEMM (`.fem`, com materiais, contornos, circuitos e rótulos). Materiais do FEMM também estão na
+gaveta **Materiais → Importar do FEMM…** e na busca da lista de materiais.
+
 ## Automação
 
 O botão `</>` ao lado de **Modelo** mostra o script que recria o projeto exatamente. Ele roda no
-console e é a base da API para scripts externos (Python etc.) — veja [api.md](api.md).
+console e é a base da API para scripts externos — veja [api.md](api.md). **Script local** (barra de status)
+conecta a página à ponte `python -m magfem` ([bridge/](../bridge/)): Python, Matlab/Octave e Julia mudam
+variáveis, resolvem e leem resultados; o exemplo do contator acopla circuito, campo e movimento.

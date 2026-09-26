@@ -9,7 +9,7 @@
 - [x] `web/`: Vite + React + TS, Worker do solver com protocolo tipado e cliente com promessas.
 - [x] Workflow de CI (`.github/workflows/build.yml`) publicando `web/dist` na branch `dist`.
 - [x] Validar build WASM + app no browser (confirmado pelo usuário).
-- [ ] Criar repo no GitHub (quando decidido) e adicionar ao workflow do portal: checkout da branch `dist` de `magfem-web` → `cp` para `docs/tools/magfem-web`.
+- [x] Repo no GitHub (`thalesmaoa/magfem`, MIT) e workflow do portal: checkout da branch `dist` → `cp` para `docs/tools/magfem-web`.
 
 ### [✅ CONCLUÍDA] Fase 2: Sketcher
 - [x] Modelo do sketch (`web/src/cad/types.ts`): pontos, linhas, círculos, arcos (anti-horários), restrições e cotas; origem fixa `O`.
@@ -130,19 +130,41 @@ Limitações conhecidas / ideias para depois:
   B máx. 1,42 T (não linear), 134 passos em ~16 s.
 - Pendências: indicador de progresso no transitório longo; paralelo nos circuitos do FEM; harmônico (fasores).
 
-### Próximo possível
-- Força/torque (tensor de Maxwell, Arkkio), harmônico (fasores), movimento (EDO mecânica: contatora).
-- Solver magnetostático linear sobre a malha (Fase 6): montagem P1 em C++/Eigen, fontes de corrente, ímãs, Dirichlet/Neumann/(anti)periódico; mapa de |B| e linhas de fluxo.
-- Refinos da malha: tamanho por curva, gradação, visualização da qualidade.
-- Importar DXF/SVG no menu Arquivo; aparar (trim) para fechar regiões.
+### [✅ CONCLUÍDA] Rodada 18: v1.0 aberta, ponte, AC, importações, contator
+- **Licença MIT, uso comercial livre:** Triangle trocado pela **Tangle** (David Meeker, MIT; o gerador do FEMM),
+  compilada como biblioteca (`core/src/mesh_tangle.cpp`); periódicos divididos em sincronia; o núcleo devolve os nós
+  de cada segmento após as divisões e o TS refaz os nós das curvas (contornos corretos com a borda dividida).
+  Biblioteca de materiais do FEMM embutida (Aladdin FPL: aviso no LICENSE/README).
+- **Contornos como no FEMM:** A prescrito (A0 + A1x + A2y), misto (c0, c1) no plano e no axissimétrico (ψ = rA,
+  termo ν n_r/r²), periódico/antiperiódico, Neumann; cor editável; "Dirichlet (A = 0)" padrão na borda externa.
+- **AC (harmônico):** fasores complexos (jωσ, ν efetiva para B-H), resultados em um período (animação e curvas),
+  perdas por correntes parasitas e no ferro (Steinmetz). Validado: efeito pelicular (1e-4), regime f².
+- **Força e torque:** tensor de Maxwell ponderado (superfície) e em contorno fechado (linha); F = I×B (0,3% / 1,4%).
+- **Resultados no tempo:** itens de resultados viram curvas no transitório/AC (ou tabela num instante).
+- **Ponte com scripts** (`bridge/`): pacote Python `magfem` só com a biblioteca padrão (WebSocket para a página,
+  HTTP/JSON para scripts, chave de pareamento, origens permitidas); clientes Matlab/Octave e Julia; console
+  `r.result`, `r.results`, `r.series`, `reset()`; espera malha/solução antes da próxima linha.
+- **Importar:** DXF (LINE, ARC, CIRCLE, LWPOLYLINE com bulge), SVG (path com arcos/Bézier, transformações) e
+  **.fem do FEMM** (geometria, materiais, contornos, circuitos, rótulos; regiões sem rótulo = sem malha).
+- **Contator (movimento por código):** `bridge/python/examples/contator.py` acopla circuito RL, campo e mecânica
+  (m·g″ = F_mola − F_mag) com a geometria remontada a cada passo; mostra o afundamento de corrente no fechamento.
+- **Correções no núcleo** achadas com os exemplos do FEMM: ímã no axissimétrico (fator 1/r a mais) e AC com
+  espiras negativas (NaN no WASM por `std::polar`).
+- **CAD:** resolvedor só nos componentes com restrições (modelos grandes importados), seleção por caixa como nos
+  CADs (janela/cruzamento), busca de material com a biblioteca do FEMM; painéis redimensionáveis; Sobre; OG image.
+- Qualidade: `scripts/check` (unitários, núcleo nativo, ponte Python, E2E) e `scripts/commit-if-green`.
 
-### [⏳ PENDENTE] Fases 3–9
-Ver seção "Fases" abaixo.
+### Próximo possível
+- Elementos de 2ª ordem; malha: tamanho por curva, gradação e mapa de qualidade.
+- Circuitos em paralelo no FEM (corrente dividida pela impedância) e fontes de tensão no magnetostático.
+- Máquinas rotativas: entreferro móvel (Tangle já tem AGE/airgap elements), torque de Arkkio.
+- Temperatura (térmica acoplada às perdas) — parte do roteiro para contatores.
+- Modo headless (sem navegador) para varreduras longas.
 
 ---
 
 ## Decisões adicionais
-- Nome: `magfem-web`. Repositório só local por enquanto.
+- Nome: `magfem-web` (repositório `thalesmaoa/magfem`, MIT).
 - Local-first estilo draw.io/Excalidraw (sem backend).
 
 ---
