@@ -15,7 +15,7 @@ export interface Imported {
 const DXF_UNITS: Record<number, number> = { 1: 25.4, 2: 304.8, 4: 1, 5: 10, 6: 1000, 8: 25.4e-6, 9: 25.4e-3, 10: 914.4, 13: 1e-3, 14: 1e-3 };
 
 /** Trecho de polilinha com "bulge" (tan(θ/4)): linha ou arco entre p e q. */
-function bulgeSeg(p: P, q: P, bulge: number): Shape {
+export function bulgeSeg(p: P, q: P, bulge: number): Shape {
   if (Math.abs(bulge) < 1e-12) return { kind: 'line', a: p, b: q };
   const th = 4 * Math.atan(bulge);
   const d = Math.hypot(q.x - p.x, q.y - p.y);
@@ -313,7 +313,7 @@ function addPath(d: string, m: M, out: Shape[]) {
 
 // ---------- para o desenho ----------
 /** Acrescenta as formas ao desenho, unindo pontos coincidentes (tolerância relativa ao tamanho). */
-export function addShapes(sk: Sketch, shapes: Shape[]): { sketch: Sketch; counts: { lines: number; arcs: number; circles: number } } {
+export function addShapes(sk: Sketch, shapes: Shape[]): { sketch: Sketch; counts: { lines: number; arcs: number; circles: number }; ids: (Id | null)[] } {
   const d = new Draft(sk);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const grow = (p: P) => ((x0 = Math.min(x0, p.x)), (x1 = Math.max(x1, p.x)), (y0 = Math.min(y0, p.y)), (y1 = Math.max(y1, p.y)));
@@ -337,24 +337,28 @@ export function addShapes(sk: Sketch, shapes: Shape[]): { sketch: Sketch; counts
     return id;
   };
   const counts = { lines: 0, arcs: 0, circles: 0 };
+  // Id da curva criada para cada forma (null se ficou de fora: degenerada).
+  const ids: (Id | null)[] = [];
   for (const s of shapes) {
+    ids.push(null);
+    const set = (id: Id) => (ids[ids.length - 1] = id);
     if (s.kind === 'line') {
       if (Math.hypot(s.b.x - s.a.x, s.b.y - s.a.y) <= tol) continue;
       const a = pointAt(s.a), b = pointAt(s.b);
-      if (a !== b) d.addLine(a, b), counts.lines++;
+      if (a !== b) set(d.addLine(a, b)), counts.lines++;
     } else if (s.kind === 'circle') {
-      if (s.r > tol) d.addCircle(d.addPoint(s.c.x, s.c.y), s.r), counts.circles++;
+      if (s.r > tol) set(d.addCircle(d.addPoint(s.c.x, s.c.y), s.r)), counts.circles++;
     } else if (s.r > tol) {
       const [pa, pb] = endsOf(s);
       // Arco de volta inteira (ex.: ARC 0°–360° no DXF): vira círculo.
       if (Math.hypot(pa.x - pb.x, pa.y - pb.y) <= tol) {
-        d.addCircle(d.addPoint(s.c.x, s.c.y), s.r);
+        set(d.addCircle(d.addPoint(s.c.x, s.c.y), s.r));
         counts.circles++;
         continue;
       }
-      d.addArc(d.addPoint(s.c.x, s.c.y), pointAt(pa), pointAt(pb), s.r);
+      set(d.addArc(d.addPoint(s.c.x, s.c.y), pointAt(pa), pointAt(pb), s.r));
       counts.arcs++;
     }
   }
-  return { sketch: d.sk, counts };
+  return { sketch: d.sk, counts, ids };
 }

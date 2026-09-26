@@ -217,20 +217,73 @@ export function circularStep(angleDeg: number, n: number) {
   return (angleDeg * Math.PI) / 180 / (full ? n : n - 1);
 }
 
+/** Componentes conectados: curvas ligam seus pontos; restrições ligam suas referências. Devolve o representante de cada id. */
+function componentsOf(sk: Sketch): (id: Id) => Id {
+  const parent = new Map<Id, Id>();
+  const find = (x: Id): Id => {
+    let r = x;
+    while (parent.get(r) !== r) r = parent.get(r)!;
+    parent.set(x, r);
+    return r;
+  };
+  const union = (a: Id, b: Id) => parent.set(find(a), find(b));
+  const ents = Object.values(sk.entities);
+  for (const e of ents) parent.set(e.id, e.id);
+  for (const e of ents) {
+    if (e.type === 'line') [e.p1, e.p2].forEach((p) => union(e.id, p));
+    else if (e.type === 'circle') union(e.id, e.c);
+    else if (e.type === 'arc') [e.c, e.s, e.e].forEach((p) => union(e.id, p));
+  }
+  for (const c of sk.constraints) {
+    const refs = c.refs.filter((r) => sk.entities[r]);
+    for (const r of refs.slice(1)) union(refs[0], r);
+  }
+  return find;
+}
+
+/** Sketch só com as entidades de um conjunto de componentes (e as restrições delas). */
+function subSketch(sk: Sketch, keep: (id: Id) => boolean): Sketch {
+  const entities: Sketch['entities'] = {};
+  for (const e of Object.values(sk.entities)) if (keep(e.id)) entities[e.id] = e;
+  return { ...sk, entities, constraints: sk.constraints.filter((c) => c.refs.some((r) => entities[r])) };
+}
+
+/** Graus de liberdade de entidades sem restrições: 2 por ponto livre, 1 por círculo (raio), −1 por arco. */
+function looseDof(ents: Sketch['entities'][string][]): number {
+  let d = 0;
+  for (const e of ents) {
+    if (e.type === 'point') d += e.fixed ? 0 : 2;
+    else if (e.type === 'circle') d += 1;
+    else if (e.type === 'arc') d -= 1;
+  }
+  return d;
+}
+
 /**
  * Resolve o sketch. Não altera a entrada; devolve um sketch novo com as posições resolvidas.
  * `free`: parâmetros de offset liberados (arrastar o offset muda a distância).
  */
 export function solve(sk: Sketch, drag: DragTarget[] = [], free: Set<string> = new Set()): SolveResult {
   if (!gcs) throw new Error('solver não inicializado (initSolver)');
+  // Só os componentes com restrições (ou arrastados) vão ao PlaneGCS: geometria solta (ex.: importada)
+  // já está consistente, e o custo do solver cresce rápido com o número de incógnitas.
+  const find = componentsOf(sk);
+  const active = new Set<Id>();
+  for (const c of sk.constraints) for (const r of c.refs) if (sk.entities[r]) active.add(find(r));
+  for (const d of drag) {
+    const id = 'pointId' in d ? d.pointId : d.radiusOf;
+    if (sk.entities[id]) active.add(find(id));
+  }
+  const loose = Object.values(sk.entities).filter((e) => !active.has(find(e.id)));
+  const solved = loose.length ? subSketch(sk, (id) => active.has(find(id))) : sk;
   gcs.clear_data();
   for (const g of sk.groups) for (const p of groupParams(g)) gcs.push_sketch_param(p.name, p.value, !free.has(p.name));
-  gcs.push_primitives_and_params(toPrimitives(sk, drag) as unknown as SketchPrimitive[]);
+  gcs.push_primitives_and_params(toPrimitives(solved, drag) as unknown as SketchPrimitive[]);
   const status = gcs.solve();
   const ok = status === SolveStatus.Success || status === SolveStatus.Converged;
   const conflicting = [...new Set(gcs.get_gcs_conflicting_constraints().map(ownerId))];
   const redundant = [...new Set(gcs.get_gcs_redundant_constraints().map(ownerId))];
-  const dof = gcs.gcs.dof();
+  const dof = gcs.gcs.dof() + looseDof(loose);
 
   const entities = { ...sk.entities };
   if (ok) {
@@ -304,23 +357,7 @@ export function definedEntities(sk: Sketch, dof: number): Set<Id> {
   const ents = Object.values(sk.entities);
   const all = new Set(ents.map((e) => e.id));
   if (dof === 0) return all;
-
-  // Componentes conectados (curvas ligam seus pontos; restrições ligam suas referências).
-  const parent = new Map<Id, Id>();
-  const find = (x: Id): Id => {
-    let r = x;
-    while (parent.get(r) !== r) r = parent.get(r)!;
-    parent.set(x, r);
-    return r;
-  };
-  const union = (a: Id, b: Id) => parent.set(find(a), find(b));
-  for (const e of ents) parent.set(e.id, e.id);
-  for (const e of ents) {
-    if (e.type === 'line') [e.p1, e.p2].forEach((p) => union(e.id, p));
-    else if (e.type === 'circle') union(e.id, e.c);
-    else if (e.type === 'arc') [e.c, e.s, e.e].forEach((p) => union(e.id, p));
-  }
-  for (const c of sk.constraints) for (const r of c.refs.slice(1)) if (sk.entities[r] && sk.entities[c.refs[0]]) union(c.refs[0], r);
+  const find = componentsOf(sk);
 
   // Sondas: ponto (x e y presos) ou raio preso.
   type Probe = { id: Id; prims: Prim[] };
@@ -346,10 +383,20 @@ export function definedEntities(sk: Sketch, dof: number): Set<Id> {
     const k = find(e.id);
     comps.set(k, [...(comps.get(k) ?? []), pr]);
   }
+  const constrained = new Set<Id>();
+  for (const c of sk.constraints) for (const r of c.refs) if (sk.entities[r]) constrained.add(find(r));
   const free = new Set<Id>();
-  for (const probes of comps.values()) {
-    if (dofWith(sk, probes.flatMap((p) => p.prims)) === dof) continue; // componente todo definido
-    for (const p of probes) if (dofWith(sk, p.prims) !== dof) free.add(p.id);
+  for (const [k, probes] of comps) {
+    // Componente sem restrições: tudo que não é fixo é livre (sem chamar o solver).
+    if (!constrained.has(k)) {
+      probes.forEach((p) => free.add(p.id));
+      continue;
+    }
+    // Sondagem só no sistema do componente (pequeno), não no desenho inteiro.
+    const comp = subSketch(sk, (id) => find(id) === k);
+    const d0 = dofWith(comp, []);
+    if (dofWith(comp, probes.flatMap((p) => p.prims)) === d0) continue; // componente todo definido
+    for (const p of probes) if (dofWith(comp, p.prims) !== d0) free.add(p.id);
   }
   const defined = new Set<Id>();
   for (const e of ents) {

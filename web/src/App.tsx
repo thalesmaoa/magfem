@@ -10,6 +10,7 @@ import { isMeshSel, type TreeSel } from './cad/tree';
 import type { PostNode } from './cad/types';
 import { emptySketch } from './cad/types';
 import { setLang, T, useLang, useT, type Lang } from './i18n';
+import { parseFem } from './io/femmFile';
 import { addShapes, parseDXF, parseSVG } from './io/importCad';
 import { hasFsAccess, loadDraft, loadFileHandle, openProject, parse, saveDraft, saveFileHandle, saveProject, serialize } from './io/project';
 import { download, toDXF, toSVG } from './io/export';
@@ -277,7 +278,7 @@ export default function App() {
           <input
             ref={importRef}
             type="file"
-            accept=".dxf,.svg"
+            accept=".dxf,.svg,.fem"
             hidden
             aria-label={t.file.importCad}
             onChange={async (e) => {
@@ -286,6 +287,16 @@ export default function App() {
               if (!f || !ed) return;
               try {
                 const text = await f.text();
+                if (/\.fem$/i.test(f.name)) {
+                  // Problema do FEMM: vira o projeto inteiro (desfazer volta ao anterior).
+                  const r = parseFem(text);
+                  ed.commit(r.sketch, [`# importado do FEMM: ${f.name}`]);
+                  setName(f.name.replace(/\.fem$/i, ''));
+                  ed.fit();
+                  const c = r.counts;
+                  ed.flash(t.file.femImported(f.name, c.curves, c.materials, c.labels, r.lostLabels));
+                  return;
+                }
                 const imp = /\.svg$/i.test(f.name) ? parseSVG(text) : parseDXF(text);
                 const r = addShapes(ed.sketch, imp.shapes);
                 const c = r.counts;

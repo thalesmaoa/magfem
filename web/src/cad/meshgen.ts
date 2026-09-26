@@ -135,12 +135,19 @@ export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { 
     }
   }
   const regions: number[] = [];
-  for (const r of arr.regions) regions.push(r.label.x, r.label.y, r.index + 1, (Math.sqrt(3) / 4) * h[r.index] * h[r.index]);
+  const noMesh = new Set(sk.regionAssigns.filter((a) => a.noMesh).map((a) => findRegion(arr, a)?.index));
+  for (const r of arr.regions) if (!noMesh.has(r.index)) regions.push(r.label.x, r.label.y, r.index + 1, (Math.sqrt(3) / 4) * h[r.index] * h[r.index]);
   // Nós por curva: pedaços em ordem de parâmetro, sem repetir o nó da emenda.
   const curveNodes: Record<Id, number[]> = {};
   for (const c of [...chains].sort((a, b) => a.t0 - b.t0)) {
     const list = (curveNodes[c.curve] ??= []);
     for (const n of c.nodes) if (list[list.length - 1] !== n) list.push(n);
+  }
+  // Regiões "sem malha" viram furos (ponto interno de cada uma).
+  const holes: number[] = [];
+  for (const a of sk.regionAssigns) if (a.noMesh) {
+    const r = findRegion(arr, a);
+    if (r) holes.push(r.label.x, r.label.y);
   }
   // Periódicos: as duas curvas são divididas em sincronia pela Tangle (nós casados).
   const pbc: number[] = [];
@@ -150,7 +157,7 @@ export function buildMeshInput(sk: Sketch, arr: Arrangement, node: MeshNode): { 
     if (ma && mb && ma !== mb) pbc.push(ma, mb, b.type === 'periodic' ? 0 : 1);
   }
   return {
-    input: { xy, segments, segMarkers, holes: [], regions, minAngle: node.minAngle ?? 30, maxArea: 0, pbc },
+    input: { xy, segments, segMarkers, holes, regions, minAngle: node.minAngle ?? 30, maxArea: 0, pbc },
     curveIds,
     curveNodes,
   };

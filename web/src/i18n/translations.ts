@@ -18,6 +18,7 @@ export interface Translations {
     importCad: string;
     importHint: string;
     importEmpty: (n: string) => string;
+    femImported: (n: string, curves: number, mats: number, labels: number, lost: number) => string;
     imported: (n: string, count: number, skipped: string) => string;
     newDone: string;
     invalidFile: string;
@@ -438,7 +439,6 @@ export interface Translations {
     negativeR: string;
     noDirichlet: string;
     boundaryUnsupported: (name: string, type: string) => string;
-    mixedAxi: (name: string) => string;
     badFreq: string;
     badTime: string;
     noSchematic: string;
@@ -670,7 +670,8 @@ const PT: Translations = {
     saveError: (e) => `Erro ao salvar: ${e}`,
     openError: (e) => `Erro ao abrir: ${e}`,
     importCad: 'Importar',
-    importHint: 'Importar desenho DXF ou SVG (linhas, arcos e círculos; pontos coincidentes são unidos)',
+    importHint: 'Importar desenho DXF ou SVG, ou um problema do FEMM (.fem) com materiais, contornos e circuitos',
+    femImported: (n, c, m, l, lost) => `${n}: ${c} curvas, ${m} materiais, ${l} regiões atribuídas${lost ? ` (${lost} rótulos fora de regiões fechadas)` : ''}.`,
     importEmpty: (n) => `Nada para importar em ${n}.`,
     imported: (n, c, s) => `${n}: ${c} curvas importadas${s ? ` (ignorados: ${s})` : ''}.`,
     newDone: 'Novo projeto. Ctrl+Z recupera o anterior.',
@@ -1157,7 +1158,6 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     negativeR: 'Axissimétrico: há geometria com r < 0 (o eixo é x = 0).',
     noDirichlet: 'Falta um contorno com A prescrito (sem ele o potencial fica indefinido).',
     boundaryUnsupported: (n, ty) => `${n}: contorno "${ty}" ainda não é resolvido pelo solver.`,
-    mixedAxi: (n) => `${n}: contorno misto ainda só no problema planar.`,
     badFreq: 'Harmônica: a frequência precisa ser positiva.',
     badTime: 'Transitório: passo e tempo final precisam ser positivos (t final > passo).',
     noSchematic: 'O circuito desta física está vazio: abra o circuito e ligue as bobinas às fontes.',
@@ -1404,7 +1404,8 @@ const EN: Translations = {
     saveError: (e) => `Save error: ${e}`,
     openError: (e) => `Open error: ${e}`,
     importCad: 'Import',
-    importHint: 'Import a DXF or SVG drawing (lines, arcs and circles; coincident points are merged)',
+    importHint: 'Import a DXF or SVG drawing, or a FEMM problem (.fem) with materials, boundaries and circuits',
+    femImported: (n, c, m, l, lost) => `${n}: ${c} curves, ${m} materials, ${l} regions assigned${lost ? ` (${lost} labels outside closed regions)` : ''}.`,
     importEmpty: (n) => `Nothing to import in ${n}.`,
     imported: (n, c, s) => `${n}: ${c} curves imported${s ? ` (skipped: ${s})` : ''}.`,
     newDone: 'New project. Ctrl+Z restores the previous one.',
@@ -1891,7 +1892,6 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     negativeR: 'Axisymmetric: some geometry has r < 0 (the axis is x = 0).',
     noDirichlet: 'A boundary with prescribed A is missing (without it the potential is undefined).',
     boundaryUnsupported: (n, ty) => `${n}: "${ty}" boundary is not solved yet.`,
-    mixedAxi: (n) => `${n}: mixed boundary is planar-only for now.`,
     badFreq: 'Harmonic: the frequency must be positive.',
     badTime: 'Transient: step and end time must be positive (end > step).',
     noSchematic: 'This physics circuit is empty: open the circuit and connect the coils to sources.',

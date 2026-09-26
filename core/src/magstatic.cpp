@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cmath>
 #include <complex>
+#include <unordered_map>
 
 namespace magfem {
 
@@ -182,6 +183,60 @@ MagOutput solve_magnetostatic(const MagInput& in) {
     e.w = in.axisymmetric ? 1.0 / std::max(e.rc, 1e-12) : 1.0;
     e.r = t < static_cast<int>(in.triRegion.size()) ? in.triRegion[t] : -1;
   }
+  // Contorno misto (ν ∂A/∂n + c0 A + c1 = 0) pré-integrado por aresta: matriz 2×2 e vetor (Gauss de 2 pontos).
+  //   Plano: ∮ c0 A N_i N_j + c1 N_i.  Axissimétrico (ψ = rA): ∮ (c0/r − ν n_r/r²) ψ N_i N_j + c1 N_i, com n_r
+  //   a componente radial da normal para fora do domínio (tirada do triângulo vizinho).
+  struct RobinEdge {
+    int v[2];
+    double k[2][2];
+    double f[2];
+  };
+  std::vector<RobinEdge> robin;
+  if (!in.robinA.empty()) {
+    std::unordered_map<long long, int> triOf;  // aresta → um triângulo que a contém
+    auto key = [](int a, int b) { return a < b ? (static_cast<long long>(a) << 32) | b : (static_cast<long long>(b) << 32) | a; };
+    for (size_t k = 0; k < in.robinA.size() && k < in.robinB.size(); ++k) triOf[key(in.robinA[k], in.robinB[k])] = -1;
+    for (int t = 0; t < nt; ++t)
+      for (int q = 0; q < 3; ++q) {
+        auto it = triOf.find(key(el[t].v[q], el[t].v[(q + 1) % 3]));
+        if (it != triOf.end()) it->second = t;
+      }
+    for (size_t k = 0; k < in.robinA.size() && k < in.robinB.size(); ++k) {
+      RobinEdge re{{in.robinA[k], in.robinB[k]}, {{0, 0}, {0, 0}}, {0, 0}};
+      if (re.v[0] < 0 || re.v[0] >= nn || re.v[1] < 0 || re.v[1] >= nn || re.v[0] == re.v[1]) continue;
+      const double c0 = k < in.robinC0.size() ? in.robinC0[k] : 0, c1 = k < in.robinC1.size() ? in.robinC1[k] : 0;
+      const double x0 = in.xy[2 * re.v[0]], y0 = in.xy[2 * re.v[0] + 1], x1 = in.xy[2 * re.v[1]], y1 = in.xy[2 * re.v[1] + 1];
+      const double L = std::hypot(x1 - x0, y1 - y0);
+      if (!(L > 0)) continue;
+      re.f[0] = re.f[1] = c1 * L / 2;
+      if (!in.axisymmetric) {
+        for (int i = 0; i < 2; ++i)
+          for (int j = 0; j < 2; ++j) re.k[i][j] = c0 * L * (i == j ? 2 : 1) / 6;
+      } else {
+        // Normal para fora: oposta ao terceiro vértice do triângulo vizinho.
+        double nr = 0, nuv = nu0;
+        const int t = triOf[key(re.v[0], re.v[1])];
+        if (t >= 0) {
+          int w = el[t].v[0];
+          for (int q = 0; q < 3; ++q)
+            if (el[t].v[q] != re.v[0] && el[t].v[q] != re.v[1]) w = el[t].v[q];
+          double nx = (y1 - y0) / L, ny = -(x1 - x0) / L;
+          if ((in.xy[2 * w] - x0) * nx + (in.xy[2 * w + 1] - y0) * ny > 0) nx = -nx, ny = -ny;
+          nr = nx;
+          nuv = regv(el[t].r, in.nu, nu0);
+        }
+        const double g[2] = {0.5 - 0.5 / std::sqrt(3.0), 0.5 + 0.5 / std::sqrt(3.0)};
+        for (double xi : g) {
+          const double N[2] = {1 - xi, xi};
+          const double r = std::max(N[0] * x0 + N[1] * x1, 1e-12);
+          const double wgt = (c0 / r - nuv * nr / (r * r)) * L / 2;
+          for (int i = 0; i < 2; ++i)
+            for (int j = 0; j < 2; ++j) re.k[i][j] += wgt * N[i] * N[j];
+        }
+      }
+      robin.push_back(re);
+    }
+  }
   const bool transient = in.steps > 0 && in.dt > 0;
   const double invDt = transient ? 1.0 / in.dt : 0.0;
 
@@ -232,7 +287,8 @@ MagOutput solve_magnetostatic(const MagInput& in) {
         const double gNi_x = e.b[i] / (2 * e.area), gNi_y = e.c[i] / (2 * e.area);
         // ∫ ν w ∇A·∇N_i − J N_i − (ímã) + σ w/dt (A − A_prev) N_i
         re[i] = nuv * e.w * (gx * gNi_x + gy * gNi_y) * e.area - J * e.area / 3;
-        if (in.axisymmetric) re[i] -= nuv * e.w * (-brx * e.c[i] + bry * e.b[i]) / 2;
+        // Axissimétrico: ∂B/∂ψ_i traz w = 1/r, que cancela com o r da medida (sem fator w aqui).
+        if (in.axisymmetric) re[i] -= nuv * (-brx * e.c[i] + bry * e.b[i]) / 2;
         else re[i] -= nuv * (brx * e.c[i] - bry * e.b[i]) / 2;
         if (sg > 0)
           for (int j = 0; j < 3; ++j) re[i] += sg * e.w * invDt * (A[e.v[j]] - Aprev[e.v[j]]) * e.area * (i == j ? 2 : 1) / 12;
@@ -256,23 +312,18 @@ MagOutput solve_magnetostatic(const MagInput& in) {
         }
       }
     }
-    // Contorno misto: ∮ (c0 A + c1) N_i ds em cada aresta (massa 1D: L/3, L/6).
-    for (size_t k = 0; k < in.robinA.size() && k < in.robinB.size(); ++k) {
-      const int v[2] = {in.robinA[k], in.robinB[k]};
-      if (v[0] < 0 || v[0] >= nn || v[1] < 0 || v[1] >= nn || v[0] == v[1]) continue;
-      const double c0 = k < in.robinC0.size() ? in.robinC0[k] : 0, c1 = k < in.robinC1.size() ? in.robinC1[k] : 0;
-      const double L = std::hypot(in.xy[2 * v[1]] - in.xy[2 * v[0]], in.xy[2 * v[1] + 1] - in.xy[2 * v[0] + 1]);
+    // Contorno misto (pré-integrado): R += K ψ + f; tangente += K.
+    for (const RobinEdge& re : robin)
       for (int i = 0; i < 2; ++i) {
-        const Dof& di = dof[v[i]];
+        const Dof& di = dof[re.v[i]];
         if (di.free < 0) continue;
-        R[di.free] += di.sign * (c0 * L * (2 * A[v[i]] + A[v[1 - i]]) / 6 + c1 * L / 2);
+        R[di.free] += di.sign * (re.k[i][0] * A[re.v[0]] + re.k[i][1] * A[re.v[1]] + re.f[i]);
         if (!withJac) continue;
         for (int j = 0; j < 2; ++j) {
-          const Dof& dj = dof[v[j]];
-          if (dj.free >= 0) trip.emplace_back(di.free, dj.free, di.sign * c0 * L * (i == j ? 2 : 1) / 6 * dj.sign);
+          const Dof& dj = dof[re.v[j]];
+          if (dj.free >= 0) trip.emplace_back(di.free, dj.free, di.sign * re.k[i][j] * dj.sign);
         }
       }
-    }
     if (withJac) {
       Kt->resize(nfree, nfree);
       Kt->setFromTriplets(trip.begin(), trip.end());
@@ -370,12 +421,14 @@ MagOutput solve_magnetostatic(const MagInput& in) {
         const Elem& e = el[t];
         if (e.area <= 0) continue;
         const double sg = regv(e.r, in.sigma, 0);
-        const C J = std::polar(regv(e.r, in.J, 0), regv(e.r, in.jPhase, 0));
+        // J·e^{jφ} montado à mão: std::polar exige módulo ≥ 0 (a libc++ do WASM dá NaN com J < 0).
+        const double Jr = regv(e.r, in.J, 0), ph = regv(e.r, in.jPhase, 0);
+        const C J(Jr * std::cos(ph), Jr * std::sin(ph));
         const double brx = regv(e.r, in.brx, 0), bry = regv(e.r, in.bry, 0);
         for (int i = 0; i < 3; ++i) {
           const double gix = e.b[i] / (2 * e.area), giy = e.c[i] / (2 * e.area);
           C f = J * (e.area / 3);
-          if (in.axisymmetric) f += nuE[t] * e.w * (-brx * e.c[i] + bry * e.b[i]) / 2;
+          if (in.axisymmetric) f += nuE[t] * (-brx * e.c[i] + bry * e.b[i]) / 2;
           else f += nuE[t] * (brx * e.c[i] - bry * e.b[i]) / 2;
           addF(e.v[i], f);
           for (int j = 0; j < 3; ++j) {
@@ -386,17 +439,12 @@ MagOutput solve_magnetostatic(const MagInput& in) {
           }
         }
       }
-      // Contorno misto: c0 na matriz, c1 no lado direito.
-      for (size_t k = 0; k < in.robinA.size() && k < in.robinB.size(); ++k) {
-        const int v[2] = {in.robinA[k], in.robinB[k]};
-        if (v[0] < 0 || v[0] >= nn || v[1] < 0 || v[1] >= nn || v[0] == v[1]) continue;
-        const double c0 = k < in.robinC0.size() ? in.robinC0[k] : 0, c1 = k < in.robinC1.size() ? in.robinC1[k] : 0;
-        const double L = std::hypot(in.xy[2 * v[1]] - in.xy[2 * v[0]], in.xy[2 * v[1] + 1] - in.xy[2 * v[0] + 1]);
+      // Contorno misto (pré-integrado): matriz e lado direito.
+      for (const RobinEdge& re : robin)
         for (int i = 0; i < 2; ++i) {
-          addF(v[i], -c1 * L / 2);
-          for (int j = 0; j < 2; ++j) addK(v[i], v[j], c0 * L * (i == j ? 2 : 1) / 6);
+          addF(re.v[i], -re.f[i]);
+          for (int j = 0; j < 2; ++j) addK(re.v[i], re.v[j], re.k[i][j]);
         }
-      }
       Eigen::SparseMatrix<C> K(nfree, nfree);
       K.setFromTriplets(trip.begin(), trip.end());
       lu.compute(K);

@@ -204,6 +204,11 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
       problems.push(`${a.name ?? t.mesh.region(r.index + 1)}: ${(e as Error).message}`);
     }
   }
+  // Regiões marcadas "sem malha" ficam fora do domínio (não precisam de material).
+  for (const a of sk.regionAssigns) if (a.noMesh) {
+    const r = findRegion(arr, a);
+    if (r) assigned.add(r.index);
+  }
   for (const r of arr.regions) if (!assigned.has(r.index)) problems.push(t.solve.noMaterial(r.index + 1));
 
   const xy = mesh.xy;
@@ -241,10 +246,6 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
     }
     if (b.type === 'dirichlet') prescribed(b, b.curves);
     else if (b.type === 'mixed') {
-      if (axisymmetric) {
-        problems.push(t.solve.mixedAxi(b.name));
-        continue;
-      }
       let c0 = 0, c1 = 0;
       try {
         c0 = num(sk, b.c0, 0);

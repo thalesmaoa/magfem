@@ -95,6 +95,36 @@ int main() {
     for (size_t i = 0; i < m.xy.size() / 2; ++i) err = std::max(err, std::fabs(o.A[i] - (1 - m.xy[2 * i] / (2 * L))));
     check(o.error.empty() && err < 1e-6, "contorno misto: erro máx. de A (A(L) = 1/2)", err, 0);
   }
+  // 1d) Contorno misto no axissimétrico: anel r0 ≤ r ≤ r1 sem corrente, A(r) = C1 r/2 + C2/r (ψ = rA),
+  //     A(r0) = A0 (ψ = r0 A0) e ν dA/dr + c0 A = 0 em r1 (normal +r).
+  {
+    const double r0 = 0.1, r1 = 0.2, H = 0.02, nu = 1 / MU0, c0 = 2 * nu / r1, A0 = 1e-3;
+    MeshOutput m = rectMesh(r0, 0, r1, H, 40, 4, 1e-6);
+    MagInput in;
+    in.axisymmetric = true;
+    in.xy = m.xy;
+    in.triangles = m.triangles;
+    in.triRegion.assign(m.triangles.size() / 3, 0);
+    in.nu = {nu};
+    in.J = {0};
+    std::vector<int> outerR;
+    for (size_t i = 0; i < m.xy.size() / 2; ++i) {
+      if (m.xy[2 * i] < r0 + 1e-12) in.dirichletNodes.push_back(static_cast<int>(i)), in.dirichletValues.push_back(r0 * A0);
+      if (m.xy[2 * i] > r1 - 1e-12) outerR.push_back(static_cast<int>(i));
+    }
+    std::sort(outerR.begin(), outerR.end(), [&](int a, int b) { return m.xy[2 * a + 1] < m.xy[2 * b + 1]; });
+    for (size_t k = 0; k + 1 < outerR.size(); ++k) in.robinA.push_back(outerR[k]), in.robinB.push_back(outerR[k + 1]), in.robinC0.push_back(c0), in.robinC1.push_back(0);
+    // C1 r0/2 + C2/r0 = A0;  ν (C1/2 − C2/r1²) + c0 (C1 r1/2 + C2/r1) = 0.
+    const double a11 = r0 / 2, a12 = 1 / r0, a21 = nu / 2 + c0 * r1 / 2, a22 = -nu / (r1 * r1) + c0 / r1;
+    const double det = a11 * a22 - a12 * a21, C1 = (A0 * a22) / det, C2 = (-A0 * a21) / det;
+    MagOutput o = solve_magnetostatic(in);
+    double err = 0;
+    for (size_t i = 0; i < m.xy.size() / 2; ++i) {
+      const double r = m.xy[2 * i];
+      err = std::max(err, std::fabs(o.A[i] - r * (C1 * r / 2 + C2 / r)) / (r0 * A0));
+    }
+    check(o.error.empty() && err < 2e-3, "contorno misto axissimétrico: erro máx. de ψ", err, 0);
+  }
   // 1c) Harmônico: efeito pelicular numa placa de cobre (50 Hz, δ ≈ 9,3 mm). A = A0 em x = 0, Neumann em x = L:
   //     A(x) = A0 cosh(k(L − x))/cosh(kL), k = (1 + j)/δ.
   {
@@ -120,6 +150,19 @@ int main() {
       err = std::max(err, std::abs(std::complex<double>(o.A[i], o.Aim[i]) - want) / A0);
     }
     check(o.error.empty() && err < 0.01 && o.times.size() == 24, "harmônico: efeito pelicular, erro máx. |Â − exato|/A0", err, 0);
+    // J negativo (bobina com espiras negativas): Â troca de sinal com J, sem NaN.
+    MagInput in2 = in;
+    in2.dirichletValues.assign(in2.dirichletValues.size(), 0);
+    in2.J = {1e6};
+    MagOutput p1 = solve_magnetostatic(in2);
+    in2.J = {-1e6};
+    MagOutput p2 = solve_magnetostatic(in2);
+    double sym = 0, mag = 0;
+    for (size_t i = 0; i < p1.A.size(); ++i) {
+      sym = std::max(sym, std::fabs(p1.A[i] + p2.A[i]) + std::fabs(p1.Aim[i] + p2.Aim[i]));
+      mag = std::max(mag, std::fabs(p1.A[i]));
+    }
+    check(std::isfinite(sym) && mag > 0 && sym < 1e-12 * mag + 1e-300, "harmônico: J negativo inverte Â (sem NaN)", sym, 0);
   }
   // 2) Ímã preenchendo o domínio, Neumann em tudo e um nó fixo: B = Br exatamente.
   {
@@ -138,6 +181,31 @@ int main() {
     double err = 0;
     for (size_t t = 0; t < o.bx.size(); ++t) err = std::max(err, std::hypot(o.bx[t] - 0.3, o.by[t] - 1.2));
     check(o.error.empty() && err < 1e-9, "ímã uniforme: |B − Br| máx. (T)", err, 0);
+  }
+  // 2b) Ímã axial uniforme ocupando um cilindro (axissimétrico), Neumann fora do eixo: B = Br (ψ = Br r²/2).
+  {
+    const double R = 0.02, Hz = 0.01, Br = 1.2;
+    MeshOutput m = rectMesh(0, 0, R, Hz, 32, 16, 5e-8);
+    MagInput in;
+    in.axisymmetric = true;
+    in.xy = m.xy;
+    in.triangles = m.triangles;
+    in.triRegion.assign(m.triangles.size() / 3, 0);
+    in.nu = {1 / (MU0 * 1.05)};
+    in.J = {0};
+    in.brx = {0};
+    in.bry = {Br};
+    for (size_t i = 0; i < m.xy.size() / 2; ++i)
+      if (m.xy[2 * i] < 1e-12) in.dirichletNodes.push_back(static_cast<int>(i)), in.dirichletValues.push_back(0);
+    MagOutput o = solve_magnetostatic(in);
+    double err = 0;
+    // Longe do eixo (ψ linear por elemento não representa bem r² nos elementos que tocam r = 0).
+    for (size_t t = 0; t < o.bx.size(); ++t) {
+      const int* v = &m.triangles[3 * t];
+      const double rc = (m.xy[2 * v[0]] + m.xy[2 * v[1]] + m.xy[2 * v[2]]) / 3;
+      if (rc > R / 4) err = std::max(err, std::hypot(o.bx[t], o.by[t] - Br) / Br);
+    }
+    check(o.error.empty() && err < 0.03, "ímã axissimétrico uniforme: |B − Br|/Br máx. (r > R/4)", err, 0);
   }
   // 3) Solenoide infinito (axissimétrico): camada R1 ≤ r ≤ R2 com J; B_z interno = μ0 J (R2 − R1).
   {

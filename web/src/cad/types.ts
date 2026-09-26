@@ -349,6 +349,8 @@ export interface RegionAssign {
   labelOffset?: { x: number; y: number };
   /** Material da região (sem material: não pode resolver). */
   material?: Id;
+  /** Região fora do domínio (não é malhada), como uma região sem rótulo no FEMM. */
+  noMesh?: boolean;
   /** Circuito da região (a corrente vem dele; as espiras continuam na região). */
   circuit?: Id;
   /** Tamanho do elemento na região (expressão de comprimento); ausente = o da malha (automático). */

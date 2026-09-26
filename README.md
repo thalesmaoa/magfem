@@ -30,7 +30,9 @@ such as **contactors**. The final step is **rotating machines**, with a moving a
   - constraints (coincident, horizontal/vertical, parallel, tangent, symmetric…);
   - dimensions with units and expressions bound to variables;
   - associative offset, mirror and linear/circular patterns;
-  - DXF/SVG import (coincident points merged so regions close) and SVG/DXF/PNG export.
+  - DXF/SVG import (coincident points merged so regions close) and SVG/DXF/PNG export;
+  - **FEMM `.fem` import**: geometry, materials, boundaries, circuits and block labels become a MagFEM
+    project (unlabeled regions stay unmeshed; boundaries without a property stay Neumann, as in FEMM).
 - **Pre-processing:**
   - regions detected automatically;
   - materials: grouped library, B-H curves, and a built-in **FEMM 4.2 material library**
