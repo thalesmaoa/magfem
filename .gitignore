@@ -11,3 +11,9 @@ playwright-report
 
 # Saída dos exemplos da ponte
 bridge/python/*.csv
+
+# Python (artefatos de build/instalação local)
+__pycache__/
+*.egg-info/
+bridge/python/build/
+bridge/python/dist/

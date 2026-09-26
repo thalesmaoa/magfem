@@ -1,2 +1,0 @@
-[console_scripts]
-magfem-bridge = magfem.__main__:main
