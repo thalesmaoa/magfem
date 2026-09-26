@@ -39,7 +39,8 @@ Typical examples:
 - **Transformer**: voltage source on the primary and a resistive load on the secondary. With perfect coupling,
   V2 = (N2/N1)·V1.
 
-::: tip Circuit from code
-To also couple **motion** (a plunger moving under the magnetic force), use the [local bridge](../scripting/bridge):
-the [contactor](../scripting/examples#contactor) example integrates circuit, field and mechanics in a Python loop.
+:::{admonition} Circuit from code
+:class: tip
+To also couple **motion** (a plunger moving under the magnetic force), use the [local bridge](../scripting/bridge.md):
+the [contactor](../scripting/examples.md#contactor) example integrates circuit, field and mechanics in a Python loop.
 :::

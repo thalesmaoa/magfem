@@ -37,10 +37,10 @@ passo. Nos resultados, a vista ganha uma **barra de tempo** e os itens das tabel
 ## Circuito externo
 
 Com a física **Circuito**, bobinas do modelo entram num esquemático com fontes, resistores, indutores e
-capacitores, resolvidos **junto com o campo** (acoplamento forte). Veja [Circuito externo](./circuit).
+capacitores, resolvidos **junto com o campo** (acoplamento forte). Veja [Circuito externo](./circuit.md).
 
 ## Desempenho
 
 O solver roda num Web Worker, em WebAssembly, sem travar a interface. Problemas com dezenas de milhares de
 elementos resolvem em segundos na magnetostática linear. A matriz é esparsa, resolvida por LDLᵀ (estático) ou LU
-(AC e circuito). Veja a [formulação](../theory/formulation) para os detalhes.
+(AC e circuito). Veja a [formulação](../theory/formulation.md) para os detalhes.

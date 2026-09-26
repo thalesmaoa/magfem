@@ -17,7 +17,7 @@ Além disso, a cada minuto de edição a versão anterior vira uma **cópia auto
 vazio, uma faixa oferece recuperar a última cópia; a lista completa fica em **Cópias automáticas**. Recuperar pode
 ser desfeito.
 
-::: warning
+:::{warning}
 O rascunho vive no armazenamento do navegador. Limpar os dados do site apaga o rascunho e as cópias. Salve os
 projetos importantes em arquivo.
 :::
@@ -54,4 +54,4 @@ Além disso:
 | Modelo como código | botão `</>` ao lado de **Modelo**: script do console que recria o projeto |
 
 O script exportado recria o modelo exatamente, com os mesmos ids. Ele é a base para
-[automação](../scripting/console).
+[automação](../scripting/console.md).

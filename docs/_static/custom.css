@@ -1,0 +1,3 @@
+/* Ajustes mínimos ao tema do Read the Docs. */
+.rst-content img { border: 1px solid #e1e4e5; }
+.wy-side-nav-search > a img.logo { max-width: 96px; }

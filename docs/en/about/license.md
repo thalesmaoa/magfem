@@ -13,9 +13,10 @@ MagFEM code is **MIT**: use, modify and redistribute it freely, including in com
 | [PlaneGCS](https://github.com/FreeCAD/FreeCAD) (FreeCAD), via `@salusoft89/planegcs` | CAD constraint solver | LGPL-2.1 |
 | [Tangle](https://github.com/dcm3c/tangle), by David Meeker | mesh generator (the same as FEMM) | MIT |
 | [FEMM 4.2](https://www.femm.info) material library, by David Meeker | 245 materials (converted from `matlib.dat`) | Aladdin Free Public License |
-| [VitePress](https://vitepress.dev) | this documentation | MIT |
+| [Sphinx](https://www.sphinx-doc.org), [Read the Docs theme](https://github.com/readthedocs/sphinx_rtd_theme) and [MyST](https://myst-parser.readthedocs.io) | this documentation | BSD, MIT, MIT |
 
-::: warning FEMM material library
+:::{admonition} FEMM material library
+:class: warning
 The material library comes from the FEMM 4.2 `matlib.dat`, distributed under the **Aladdin Free Public License**
 (free redistribution, no commercial use). Credit belongs to FEMM. The rest of MagFEM does not depend on it: you can
 use your own materials, or import the `matlib.dat` of your FEMM installation.

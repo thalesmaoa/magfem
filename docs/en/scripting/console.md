@@ -2,7 +2,7 @@
 
 Everything you do in the interface shows up in the **console** (below the canvas) as the equivalent command. The
 reverse also holds: typing a command performs the action, and the drawing follows. It is the same language used by
-[local bridge](./bridge) scripts and by the exported script.
+[local bridge](./bridge.md) scripts and by the exported script.
 
 ## The language
 
@@ -52,4 +52,4 @@ same ids: entities, constraints, groups, variables, materials, regions, boundari
 automated test guarantees the round trip (the rebuilt model is identical). You can paste the script into the
 console or send it from an external script, for example to sweep parameters.
 
-See the [full API reference](./api).
+See the [full API reference](./api.md).

@@ -154,13 +154,17 @@ Limitações conhecidas / ideias para depois:
   CADs (janela/cruzamento), busca de material com a biblioteca do FEMM; painéis redimensionáveis; Sobre; OG image.
 - Qualidade: `scripts/check` (unitários, núcleo nativo, ponte Python, E2E) e `scripts/commit-if-green`.
 
-### [✅ CONCLUÍDA] Rodada 19 — Documentação (VitePress)
-- **Plataforma:** VitePress (MIT), em `docs/`: roda no Node que o projeto já usa (`scripts/docs`, container
-  `node:22-alpine --rm`), tem PT/EN nativo (PT na raiz, EN em `docs/en/` com os mesmos caminhos), busca local e
-  fórmulas (MathJax). Alternativas descartadas: MkDocs Material (em modo de manutenção), Sphinx (toolchain Python à
-  parte, pior para guia visual), Docusaurus (mais pesado).
-- **Publicação:** o CI gera `docs/.vitepress/dist` e copia para `web/dist/docs`, então a documentação vai na branch
-  `dist` e o portal a publica em `/tools/magfem-web/docs/` sem mudar o workflow dele (o sitemap já pega as páginas).
+### [✅ CONCLUÍDA] Rodada 19 — Documentação (Sphinx, tema do Read the Docs)
+- **Plataforma:** Sphinx + `sphinx_rtd_theme` (o tema azul padrão, como docs.micropython.org) + páginas em Markdown
+  (MyST). A primeira versão em VitePress foi descartada: o visual de landing page não segue um framework de
+  documentação reconhecível, e usava o símbolo antigo (ferradura) em vez do logo do app.
+- **Idiomas:** duas árvores com os mesmos nomes de arquivo, `docs/pt/` (publicada na raiz) e `docs/en/` (em `en/`),
+  com configuração comum em `docs/conf_common.py`. O seletor do rodapé do menu (`_templates/versions.html`, o mesmo
+  componente do "Versions and Downloads" da MicroPython) troca de idioma na mesma página e tem links para o app, o
+  GitHub e as issues. As capturas ficam em `docs/img/` (link simbólico `img` em cada árvore).
+- **Build:** `./scripts/docs` (venv em `docs/.venv`, `sphinx-build -W`), `./scripts/docs serve` para ver em :3003. O CI
+  gera `docs/_build/html` e copia para `web/dist/docs`, que vai na branch `dist`; o portal publica em
+  `/tools/magfem-web/docs/` sem mudar o workflow dele.
 - **Estrutura:** Guia (introdução, primeiro modelo, geometria, malha, resolução, resultados, circuito externo,
   arquivos, atalhos), Scripts e API (console, referência da API, ponte Python, Matlab/Julia/HTTP, exemplos),
   Teoria (formulação, validação) e Sobre (citar, licença e créditos, contribuir).
@@ -170,7 +174,8 @@ Limitações conhecidas / ideias para depois:
   as capturas em PT e EN (`./scripts/docs-shots`, só com `DOCS_SHOTS=1`; fora disso o teste é pulado).
 - **App:** link **Documentação/Docs** no topo (ao lado de Citar), no idioma da interface; no servidor de dev aponta
   para o site publicado.
-- `doc/uso.md`, `doc/api.md` e `doc/formulacao.md` foram absorvidos pela documentação; `doc/` fica só com o logo.
+- `doc/uso.md`, `doc/api.md` e `doc/formulacao.md` foram absorvidos pela documentação; `doc/` fica só com os estudos
+  de logo.
 
 ### Plano da documentação (manutenção)
 - A cada funcionalidade nova: atualizar a página do guia correspondente e a referência da API, nos dois idiomas.

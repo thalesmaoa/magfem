@@ -1,6 +1,6 @@
 # Referência da API
 
-Os comandos do [console](./console), agrupados por objeto. Argumentos entre colchetes são opcionais. Ids são
+Os comandos do [console](./console.md), agrupados por objeto. Argumentos entre colchetes são opcionais. Ids são
 strings (`"l3"`, `"p5"`, `"n2"`); onde se espera um id, também vale o **nome** dado à entidade ou ao nó, e
 `getid("nome")` devolve o id. Muitos comandos que criam algo aceitam `id=` (para fixar o id) e `name=`.
 

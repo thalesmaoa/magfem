@@ -2,7 +2,7 @@
 
 Tudo o que você faz na interface aparece no **console** (embaixo do canvas) como o comando equivalente. O
 contrário também vale: digitar um comando faz a ação, e o desenho acompanha. É a mesma linguagem usada pelos
-scripts da [ponte local](./bridge) e pelo script exportado.
+scripts da [ponte local](./bridge.md) e pelo script exportado.
 
 ## A linguagem
 
@@ -52,4 +52,4 @@ mesmos ids: entidades, restrições, grupos, variáveis, materiais, regiões, co
 Um teste automático garante a ida e volta (o modelo recriado é idêntico). Dá para colar esse script no console ou
 enviá-lo por um script externo, por exemplo para varrer parâmetros.
 
-Veja a [referência completa da API](./api).
+Veja a [referência completa da API](./api.md).

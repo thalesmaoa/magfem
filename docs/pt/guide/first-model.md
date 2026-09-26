@@ -12,9 +12,10 @@ O modelo (medidas em mm, r na horizontal e z na vertical):
 | Bobina | 11 a 19 | −15 a 15 | Cobre, 500 espiras, 2 A |
 | Ar (domínio) | 0 a 60 | −60 a 60 | Ar |
 
-::: tip Atalho: rode o script
+:::{admonition} Atalho: rode o script
+:class: tip
 Todo o tutorial cabe num script. Cole as linhas do final da página no console (embaixo do canvas), uma de
-cada vez ou todas pela [ponte local](../scripting/bridge), e acompanhe o modelo sendo montado.
+cada vez ou todas pela [ponte local](../scripting/bridge.md), e acompanhe o modelo sendo montado.
 :::
 
 ## 1. Problema axissimétrico
@@ -32,12 +33,13 @@ algum ponto for desenhado ali.
 3. Com **Retângulo** (`R`), desenhe a bobina de (11, −15) a (19, 15).
 4. Para fixar as medidas, use **Cota** (`D`) e digite os valores (aceitam unidades e expressões com variáveis).
 
-::: info Por que dividir o eixo?
+:::{admonition} Por que dividir o eixo?
+:class: note
 O eixo foi desenhado em três segmentos (abaixo, ao lado e acima do núcleo). Linhas sobrepostas no mesmo lugar
 não formam regiões; dividindo o eixo nos pontos onde as peças o tocam, cada região fecha certinho.
 :::
 
-![Geometria do tutorial](/img/geometry-pt.png){.shot}
+![Geometria do tutorial](../img/geometry-pt.png)
 
 ## 3. Materiais, circuito e malha
 
@@ -51,7 +53,7 @@ Em **Malha › Materiais**, cada região fechada aparece como "Região N".
 5. Em **Malha › Regiões**, dê 0,8 mm ao núcleo e à bobina. Em **Elementos**, use 2,5 mm como tamanho padrão e
    clique em ▶ para gerar a malha.
 
-![Malha gerada](/img/mesh-pt.png){.shot}
+![Malha gerada](../img/mesh-pt.png)
 
 ## 4. Resolver
 
@@ -65,12 +67,12 @@ B-H, o problema é não linear e resolvido por Newton-Raphson; leva menos de um 
 2. Crie uma **Tabela** e adicione o item **Circuitos**: ela mostra corrente, espiras, fluxo concatenado λ,
    indutância L = λ/I, resistência CC e perdas.
 
-![Mapa de |B| e linhas de fluxo](/img/field-pt.png){.shot}
+![Mapa de |B| e linhas de fluxo](../img/field-pt.png)
 
 Com a malha acima, o resultado é λ ≈ 29,7 mWb e **L ≈ 14,9 mH**, com |B| máximo de uns 0,51 T no núcleo.
 Os valores mudam um pouco com a malha; refine e veja a convergência.
 
-![Tabela de circuitos](/img/table-pt.png){.shot}
+![Tabela de circuitos](../img/table-pt.png)
 
 ## 6. Experimente
 

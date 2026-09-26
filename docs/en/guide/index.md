@@ -22,7 +22,7 @@ The tree on the left follows the order of the work, as in COMSOL:
 3. **Solver** — the physics (magnetic field or circuit) and the analysis type.
 4. **Results** — field views, plots and tables, each one in a canvas tab.
 
-![MagFEM with a solved field](/img/field-en.png){.shot}
+![MagFEM with a solved field](../img/field-en.png)
 
 ## The interface
 
@@ -39,6 +39,6 @@ The tree on the left follows the order of the work, as in COMSOL:
 
 ## Next steps
 
-- Build the [first model](./first-model): an axisymmetric coil with a steel core, from the drawing to the inductance.
-- Learn how to draw and constrain the [geometry](./geometry).
-- Automate with the [console](../scripting/console) and the [local bridge](../scripting/bridge).
+- Build the [first model](./first-model.md): an axisymmetric coil with a steel core, from the drawing to the inductance.
+- Learn how to draw and constrain the [geometry](./geometry.md).
+- Automate with the [console](../scripting/console.md) and the [local bridge](../scripting/bridge.md).

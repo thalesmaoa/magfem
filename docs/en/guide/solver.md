@@ -37,10 +37,10 @@ step. In the results, the view gets a **time bar** and table items become **curv
 ## External circuit
 
 With the **Circuit** physics, coils of the model join a schematic with sources, resistors, inductors and capacitors,
-solved **together with the field** (strong coupling). See [External circuit](./circuit).
+solved **together with the field** (strong coupling). See [External circuit](./circuit.md).
 
 ## Performance
 
 The solver runs in a Web Worker, in WebAssembly, without freezing the interface. Problems with tens of thousands of
 elements solve in seconds in linear magnetostatics. The matrix is sparse, solved by LDLᵀ (static) or LU (AC and
-circuit). See the [formulation](../theory/formulation) for details.
+circuit). See the [formulation](../theory/formulation.md) for details.

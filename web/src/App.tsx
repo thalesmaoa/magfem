@@ -508,7 +508,7 @@ function ThemeSwitch() {
   );
 }
 
-/** Documentação (VitePress, publicada junto com o app em ./docs/; no servidor de dev, a do site). */
+/** Documentação (Sphinx, publicada junto com o app em ./docs/; no servidor de dev, a do site). */
 export function docsUrl(lang: Lang): string {
   const base = import.meta.env.DEV ? 'https://thalesmaia.com/tools/magfem-web/' : import.meta.env.BASE_URL;
   return `${base}docs/${lang === 'en' ? 'en/' : ''}`;

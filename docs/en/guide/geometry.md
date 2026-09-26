@@ -36,7 +36,8 @@ For lines, the second point also infers **horizontal or vertical** when it is ne
 that direction crosses the nearest curve. All these constraints show up in the tree (**Geometry › Constraints**) and
 can be deleted.
 
-::: tip The Origin
+:::{admonition} The Origin
+:class: tip
 Clicking the origin creates a point of its own with a **Coincident** constraint to the Origin. To free the part,
 delete that constraint. Older drawings where a curve uses the Origin itself show **Detach from origin** in the
 properties panel.
@@ -109,4 +110,4 @@ In the **Problem and libraries** drawer, choose the problem type and the length 
 ## Importing geometry
 
 **Import** accepts DXF and SVG: curves are added to the drawing and coincident points are merged so regions close.
-See also [Files, import and export](./files).
+See also [Files, import and export](./files.md).

@@ -1,0 +1,31 @@
+{#- Seletor no rodapé do menu, como o "Versions and Downloads" da documentação da MicroPython:
+    troca entre português (raiz) e inglês (en/) na mesma página, e links úteis. -#}
+{%- set depth = pagename.count('/') %}
+{%- if lang_code == 'pt' %}
+  {%- set pt_url = pathto(pagename) %}
+  {%- set en_url = ('../' * depth) ~ 'en/' ~ pagename ~ '.html' %}
+{%- else %}
+  {%- set pt_url = ('../' * (depth + 1)) ~ pagename ~ '.html' %}
+  {%- set en_url = pathto(pagename) %}
+{%- endif %}
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="{{ 'Idioma' if lang_code == 'pt' else 'Language' }}">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> {{ 'Idioma e links' if lang_code == 'pt' else 'Language and links' }}</span>
+    {{ 'pt' if lang_code == 'pt' else 'en' }}
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>{{ 'Idioma' if lang_code == 'pt' else 'Language' }}</dt>
+      {%- if lang_code == 'pt' %}<dd><strong>português</strong></dd>{% else %}<dd><a href="{{ pt_url }}">português</a></dd>{% endif %}
+      {%- if lang_code == 'en' %}<dd><strong>English</strong></dd>{% else %}<dd><a href="{{ en_url }}">English</a></dd>{% endif %}
+    </dl>
+    <hr/>
+    <dl>
+      <dt>Links</dt>
+      <dd><a href="{{ app_url }}">{{ 'Abrir o MagFEM' if lang_code == 'pt' else 'Open MagFEM' }}</a></dd>
+      <dd><a href="{{ repo_url }}">GitHub</a></dd>
+      <dd><a href="{{ repo_url }}/issues">{{ 'Relatar um problema' if lang_code == 'pt' else 'Report a bug' }}</a></dd>
+    </dl>
+  </div>
+</div>

@@ -18,7 +18,6 @@ __pycache__/
 bridge/python/build/
 bridge/python/dist/
 
-# Documentação (VitePress)
-docs/node_modules
-docs/.vitepress/dist
-docs/.vitepress/cache
+# Documentação (Sphinx)
+docs/.venv
+docs/_build

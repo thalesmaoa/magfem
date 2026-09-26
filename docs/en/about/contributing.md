@@ -23,18 +23,18 @@ git clone https://github.com/thalesmaoa/magfem.git && cd magfem
 core/      C++17 numerical core + Eigen + Tangle → WebAssembly (Emscripten) and native (tests)
 web/       Vite + React + TypeScript interface; mesher and solver in a Web Worker
 bridge/    bridge for scripts (Python package magfem; Matlab and Julia clients)
-docs/      this documentation (VitePress)
+docs/      this documentation (Sphinx)
 ```
 
 ## This documentation
 
-The documentation lives in `docs/`, in Markdown, with the Portuguese pages at the root and the English ones in
-`docs/en/`.
+The documentation uses **Sphinx** with the **Read the Docs** theme and Markdown pages (**MyST**). It lives in `docs/`:
+the Portuguese pages in `docs/pt/` and the English ones in `docs/en/`, with the same file names (the language
+selector swaps one for the other), and the screenshots in `docs/img/`.
 
 ```bash
-./scripts/docs install        # once
-./scripts/docs run dev        # http://localhost:3003/tools/magfem-web/docs/
-./scripts/docs run build      # writes docs/.vitepress/dist
+./scripts/docs                # builds docs/_build/html (creates docs/.venv the first time)
+./scripts/docs serve          # builds and serves at http://localhost:3003/
 ./scripts/docs-shots          # regenerates the screenshots (with the app running on :3002)
 ```
 

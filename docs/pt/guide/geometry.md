@@ -36,7 +36,8 @@ Na linha, o segundo ponto também infere **horizontal ou vertical** quando está
 interseção dessa direção com a curva mais próxima. Todas essas restrições aparecem na árvore
 (**Geometria › Restrições**) e podem ser apagadas.
 
-::: tip A Origem
+:::{admonition} A Origem
+:class: tip
 Clicar na origem cria um ponto próprio com a restrição **Coincidente** com a Origem. Para soltar a peça, apague
 essa restrição. Desenhos antigos em que a curva usa a própria Origem mostram **Soltar da origem** no painel de
 propriedades.
@@ -109,4 +110,4 @@ Na gaveta **Problema e bibliotecas** escolha o tipo de problema e a **unidade** 
 ## Importar geometria
 
 **Importar** aceita DXF e SVG: as curvas entram no desenho e pontos coincidentes são unidos, para as regiões
-fecharem. Veja também [Arquivos, importar e exportar](./files).
+fecharem. Veja também [Arquivos, importar e exportar](./files.md).

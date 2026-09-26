@@ -91,7 +91,7 @@ CI publishes `dist` to the `dist` branch.
 core/      C++17 numerical core + Eigen + Tangle → WebAssembly (Emscripten) and native (tests)
 web/       Vite + React + TypeScript interface; mesher and solver run in a Web Worker
 bridge/    local bridge for scripts (Python package `magfem`, standard library only)
-docs/      documentation (VitePress, PT/EN), published at /tools/magfem-web/docs/
+docs/      documentation (Sphinx, PT/EN), published at /tools/magfem-web/docs/
 doc/       logo
 ```
 

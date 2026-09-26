@@ -32,7 +32,7 @@ To update: `pip install -U "git+https://github.com/thalesmaoa/magfem#subdirector
 2. In the app, click **Local script** (status bar, bottom right), check the port (8765) and paste the key. The app
    remembers the last port and key.
 
-   ![Local script window](/img/bridge-en.png){.shot}
+   ![Local script window](../img/bridge-en.png)
 
 3. The terminal reports that the page connected and opens the `magfem>` console.
 
@@ -117,4 +117,4 @@ hand.
 
 ## Plain HTTP
 
-Any language that speaks HTTP can use the bridge. See [Matlab, Julia and HTTP](./other-languages).
+Any language that speaks HTTP can use the bridge. See [Matlab, Julia and HTTP](./other-languages.md).

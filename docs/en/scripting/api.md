@@ -1,6 +1,6 @@
 # API reference
 
-The [console](./console) commands, grouped by object. Arguments in brackets are optional. Ids are strings
+The [console](./console.md) commands, grouped by object. Arguments in brackets are optional. Ids are strings
 (`"l3"`, `"p5"`, `"n2"`); wherever an id is expected, the **name** given to the entity or node also works, and
 `getid("name")` returns the id. Many commands that create something accept `id=` (to set the id) and `name=`.
 

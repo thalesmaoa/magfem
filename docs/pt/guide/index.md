@@ -23,7 +23,7 @@ A árvore à esquerda segue a ordem do trabalho, como no COMSOL:
 3. **Método de resolução** — a física (campo magnético ou circuito) e o tipo de análise.
 4. **Resultados** — vistas de campo, gráficos e tabelas, cada uma numa aba do canvas.
 
-![Interface do MagFEM com um campo resolvido](/img/field-pt.png){.shot}
+![Interface do MagFEM com um campo resolvido](../img/field-pt.png)
 
 ## A interface
 
@@ -40,6 +40,6 @@ A árvore à esquerda segue a ordem do trabalho, como no COMSOL:
 
 ## Próximos passos
 
-- Faça o [primeiro modelo](./first-model): uma bobina axissimétrica com núcleo de aço, do desenho à indutância.
-- Veja como desenhar e restringir a [geometria](./geometry).
-- Automatize com o [console](../scripting/console) e a [ponte local](../scripting/bridge).
+- Faça o [primeiro modelo](./first-model.md): uma bobina axissimétrica com núcleo de aço, do desenho à indutância.
+- Veja como desenhar e restringir a [geometria](./geometry.md).
+- Automatize com o [console](../scripting/console.md) e a [ponte local](../scripting/bridge.md).

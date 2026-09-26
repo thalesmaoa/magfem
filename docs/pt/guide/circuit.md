@@ -40,8 +40,9 @@ Exemplos típicos:
 - **Transformador**: fonte de tensão no primário e carga resistiva no secundário. Com acoplamento perfeito,
   V2 = (N2/N1)·V1.
 
-::: tip Circuito por código
+:::{admonition} Circuito por código
+:class: tip
 Para acoplar também o **movimento** (um êmbolo que se desloca com a força magnética), use a
-[ponte local](../scripting/bridge): o exemplo do [contator](../scripting/examples#contator) integra circuito,
+[ponte local](../scripting/bridge.md): o exemplo do [contator](../scripting/examples.md#contator) integra circuito,
 campo e mecânica num laço em Python.
 :::

@@ -93,7 +93,7 @@ estáticos serve; o CI publica o `dist` na branch `dist`.
 core/      núcleo numérico C++17 + Eigen + Tangle → WebAssembly (Emscripten) e nativo (testes)
 web/       interface Vite + React + TypeScript; malha e solver rodam num Web Worker
 bridge/    ponte para scripts locais (pacote Python `magfem`, só biblioteca padrão)
-docs/      documentação (VitePress, PT/EN), publicada em /tools/magfem-web/docs/
+docs/      documentação (Sphinx, PT/EN), publicada em /tools/magfem-web/docs/
 doc/       logo
 ```
 

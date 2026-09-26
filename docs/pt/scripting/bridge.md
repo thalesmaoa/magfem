@@ -32,7 +32,7 @@ Para atualizar: `pip install -U "git+https://github.com/thalesmaoa/magfem#subdir
 2. No app, clique em **Script local** (barra de status, embaixo à direita), confira a porta (8765) e cole a
    chave. O app lembra a última porta e chave.
 
-   ![Janela do Script local](/img/bridge-pt.png){.shot}
+   ![Janela do Script local](../img/bridge-pt.png)
 
 3. O terminal avisa que a página conectou e abre o console `magfem>`.
 
@@ -117,4 +117,4 @@ comandos sem esperar à mão.
 
 ## HTTP direto
 
-Qualquer linguagem que fale HTTP pode usar a ponte. Veja [Matlab, Julia e HTTP](./other-languages).
+Qualquer linguagem que fale HTTP pode usar a ponte. Veja [Matlab, Julia e HTTP](./other-languages.md).

@@ -1,8 +1,8 @@
-// Capturas de tela da documentação (docs/public/img). Só roda com DOCS_SHOTS=1: ./scripts/docs-shots
+// Capturas de tela da documentação (docs/img). Só roda com DOCS_SHOTS=1: ./scripts/docs-shots
 import { expect, test, type Page } from '@playwright/test';
 import { openApp } from './helpers';
 
-// O mesmo modelo do tutorial (docs/guide/first-model.md): bobina axissimétrica com núcleo de aço.
+// O mesmo modelo do tutorial (docs/pt/guide/first-model.md): bobina axissimétrica com núcleo de aço.
 export const TUTORIAL = {
   geometry: [
     'reset()',

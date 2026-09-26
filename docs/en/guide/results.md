@@ -17,7 +17,7 @@ view. In the layer properties: quantity, value range, number of lines, colormap,
 - Click the **legend** to change its limits; drag it to move it and use the corner handle to resize it.
 - **Export** (top bar) writes a PNG or JPG of the view.
 
-![|B| map with flux lines](/img/field-en.png){.shot}
+![|B| map with flux lines](../img/field-en.png)
 
 ## Tables and result variables
 
@@ -34,7 +34,7 @@ A **Table** collects items, and each item produces named **result variables** th
 Each output has an editable name (by default the item prefix plus the quantity, such as `S1_fx`). Circuit variables
 are named `<circuit>_I`, `<circuit>_lambda`, `<circuit>_L` and `<circuit>_R`.
 
-![Circuit table](/img/table-en.png){.shot}
+![Circuit table](../img/table-en.png)
 
 ## Force and torque
 
@@ -56,4 +56,4 @@ The signals of an external circuit show up when you click a component.
 
 The **Export** button on the top bar exports the active tab: a field view as PNG or JPG, a plot as SVG, PNG, JPG or
 CSV, and a table as CSV. The animation (WebM) comes from the view bar. See
-[Files, import and export](./files#export).
+[Files, import and export](./files.md#export).

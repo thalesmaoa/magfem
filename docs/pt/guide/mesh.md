@@ -14,9 +14,10 @@ ela é identificada por um ponto interno, como os *block labels* do FEMM.
 - O rótulo da região pode ser arrastado no desenho.
 - Uma região sem material não entra na malha (como no FEMM).
 
-::: warning Curvas sobrepostas
+:::{admonition} Curvas sobrepostas
+:class: warning
 Duas linhas uma sobre a outra no mesmo trecho não fecham regiões direito. Divida as linhas nos pontos de
-contato (a [tesoura](./geometry#editar) ajuda) em vez de sobrepor.
+contato (a [tesoura](./geometry.md#editar) ajuda) em vez de sobrepor.
 :::
 
 ## Materiais

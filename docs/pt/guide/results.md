@@ -18,7 +18,7 @@ cor e espaçamento das setas.
 - Clique na **legenda** para mudar os limites; arraste para mover e use a alça do canto para redimensionar.
 - **Exportar** (barra superior) gera PNG ou JPG da vista.
 
-![Mapa de |B| com linhas de fluxo](/img/field-pt.png){.shot}
+![Mapa de |B| com linhas de fluxo](../img/field-pt.png)
 
 ## Tabelas e variáveis de resultado
 
@@ -35,7 +35,7 @@ Uma **Tabela** reúne itens, e cada item gera **variáveis de resultado** com no
 Cada saída tem um nome editável (o padrão é o prefixo do item mais a grandeza, como `S1_fx`). As variáveis de
 circuito se chamam `<circuito>_I`, `<circuito>_lambda`, `<circuito>_L` e `<circuito>_R`.
 
-![Tabela de circuitos](/img/table-pt.png){.shot}
+![Tabela de circuitos](../img/table-pt.png)
 
 ## Força e torque
 
@@ -57,4 +57,4 @@ tabela num instante escolhido. Os sinais de um circuito externo aparecem ao clic
 
 O botão **Exportar** da barra superior exporta a aba ativa: vista de campo em PNG ou JPG, gráfico em SVG, PNG, JPG
 ou CSV, e tabela em CSV. A animação (WebM) sai pela barra da vista. Veja
-[Arquivos, importar e exportar](./files#exportar).
+[Arquivos, importar e exportar](./files.md#exportar).

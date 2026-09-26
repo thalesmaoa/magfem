@@ -1,41 +1,55 @@
----
-layout: home
-title: MagFEM
-titleTemplate: Documentation
+# MagFEM documentation
 
-hero:
-  name: MagFEM
-  text: 2D magnetic finite elements in the browser
-  tagline: Parametric CAD, meshing, a nonlinear solver, transient and AC analysis with circuits, results and scripting. All local, nothing to install.
-  image:
-    src: /logo.svg
-    alt: MagFEM
-  actions:
-    - theme: brand
-      text: First model
-      link: /en/guide/first-model
-    - theme: alt
-      text: Guide
-      link: /en/guide/
-    - theme: alt
-      text: Open MagFEM ↗
-      link: https://thalesmaia.com/tools/magfem-web/
+**MagFEM** solves two-dimensional magnetic field problems with the finite element method, right in the browser:
+parametric CAD, meshing, a nonlinear magnetostatic solver, transient and harmonic (AC) analysis with an external
+circuit, results and scripting. Everything runs locally, with nothing to install.
 
-features:
-  - icon: 📐
-    title: Parametric CAD
-    details: Lines, arcs and circles with constraints, dimensions bound to variables, trim, offset, mirror and patterns. Imports DXF, SVG and FEMM .fem files.
-    link: /en/guide/geometry
-  - icon: 🧲
-    title: Magnetostatic, AC and transient
-    details: Planar or axisymmetric, nonlinear materials (B-H curves), magnets, eddy currents and strong coupling with an external circuit.
-    link: /en/guide/solver
-  - icon: 📊
-    title: Results
-    details: Field maps, flux lines, plots along lines, inductance, force and torque (Maxwell stress tensor), losses and animations.
-    link: /en/guide/results
-  - icon: 🐍
-    title: Scripting
-    details: Every action becomes a console command. The local bridge connects Python, Matlab, Julia or any HTTP-capable language to the model open in the browser.
-    link: /en/scripting/bridge
----
+- Open the app: <https://thalesmaia.com/tools/magfem-web/>
+- Source code and bug reports: <https://github.com/thalesmaoa/magfem>
+- *Versão em português*: use the selector at the bottom of the menu, or [click here](https://thalesmaia.com/tools/magfem-web/docs/).
+
+To get started, build the [first model](guide/first-model.md): a coil with a steel core, from the drawing to the
+inductance.
+
+```{toctree}
+:maxdepth: 1
+:caption: Guide
+
+guide/index
+guide/first-model
+guide/geometry
+guide/mesh
+guide/solver
+guide/results
+guide/circuit
+guide/files
+guide/shortcuts
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Scripting and API
+
+scripting/console
+scripting/api
+scripting/bridge
+scripting/other-languages
+scripting/examples
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Theory
+
+theory/formulation
+theory/validation
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: About
+
+about/cite
+about/license
+about/contributing
+```

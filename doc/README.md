@@ -1,4 +1,4 @@
 # doc/
 
-A documentação do MagFEM mudou para [`docs/`](../docs) (VitePress) e é publicada em
-<https://thalesmaia.com/tools/magfem-web/docs/>. Aqui ficam só o logo e os estudos ([`logo/`](logo/)).
+A documentação do MagFEM mudou para [`docs/`](../docs) (Sphinx) e é publicada em
+<https://thalesmaia.com/tools/magfem-web/docs/>. Aqui ficam só estudos antigos de logo ([`logo/`](logo/)); o logo atual é o do app (`web/public/magfem-192.png`).

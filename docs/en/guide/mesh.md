@@ -14,9 +14,10 @@ identified by an interior point, like FEMM *block labels*.
 - The region label can be dragged in the drawing.
 - A region without a material is left out of the mesh (as in FEMM).
 
-::: warning Overlapping curves
+:::{admonition} Overlapping curves
+:class: warning
 Two lines lying on top of each other along the same stretch do not close regions properly. Split the lines where
-they meet (the [trim tool](./geometry#editing) helps) instead of overlapping them.
+they meet (the [trim tool](./geometry.md#editing) helps) instead of overlapping them.
 :::
 
 ## Materials

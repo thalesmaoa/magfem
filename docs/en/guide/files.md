@@ -17,7 +17,7 @@ work. Also, after every minute of editing the previous version becomes an **auto
 project opens empty, a banner offers to recover the latest copy; the full list is under **Automatic copies**.
 Recovering can be undone.
 
-::: warning
+:::{warning}
 The draft lives in the browser storage. Clearing the site data deletes the draft and the copies. Save important
 projects to a file.
 :::
@@ -54,4 +54,4 @@ Also:
 | Model as code | `</>` button next to **Model**: console script that rebuilds the project |
 
 The exported script rebuilds the model exactly, with the same ids. It is the basis for
-[automation](../scripting/console).
+[automation](../scripting/console.md).

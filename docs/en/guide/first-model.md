@@ -12,9 +12,10 @@ The model (dimensions in mm, r horizontal and z vertical):
 | Coil | 11 to 19 | −15 to 15 | Copper, 500 turns, 2 A |
 | Air (domain) | 0 to 60 | −60 to 60 | Air |
 
-::: tip Shortcut: run the script
+:::{admonition} Shortcut: run the script
+:class: tip
 The whole tutorial fits in a script. Paste the lines at the end of this page into the console (below the canvas),
-one at a time or all at once through the [local bridge](../scripting/bridge), and watch the model being built.
+one at a time or all at once through the [local bridge](../scripting/bridge.md), and watch the model being built.
 :::
 
 ## 1. Axisymmetric problem
@@ -33,12 +34,13 @@ point is drawn there.
 4. To lock the dimensions, use **Dimension** (`D`) and type the values (they accept units and expressions with
    variables).
 
-::: info Why split the axis?
+:::{admonition} Why split the axis?
+:class: note
 The axis was drawn as three segments (below, beside and above the core). Overlapping lines in the same place do not
 form regions; splitting the axis where the parts touch it lets each region close cleanly.
 :::
 
-![Tutorial geometry](/img/geometry-en.png){.shot}
+![Tutorial geometry](../img/geometry-en.png)
 
 ## 3. Materials, circuit and mesh
 
@@ -53,7 +55,7 @@ Under **Mesh › Materials**, each closed region shows up as "Region N".
 5. Under **Mesh › Regions**, give the core and the coil 0.8 mm. Under **Elements**, use 2.5 mm as the default size
    and click ▶ to generate the mesh.
 
-![Generated mesh](/img/mesh-en.png){.shot}
+![Generated mesh](../img/mesh-en.png)
 
 ## 4. Solve
 
@@ -67,12 +69,12 @@ problem is nonlinear and solved with Newton-Raphson; it takes less than a second
 2. Create a **Table** and add the **Circuits** item: it shows current, turns, flux linkage λ, inductance L = λ/I,
    DC resistance and losses.
 
-![|B| map and flux lines](/img/field-en.png){.shot}
+![|B| map and flux lines](../img/field-en.png)
 
 With the mesh above, the result is λ ≈ 29.7 mWb and **L ≈ 14.9 mH**, with a peak |B| of about 0.51 T in the core.
 The values change slightly with the mesh; refine it and watch them converge.
 
-![Circuit table](/img/table-en.png){.shot}
+![Circuit table](../img/table-en.png)
 
 ## 6. Try it
 
