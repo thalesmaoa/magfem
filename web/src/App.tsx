@@ -17,6 +17,7 @@ import { download, toDXF, toSVG } from './io/export';
 import { Icons } from './ui/icons';
 import { setThemePref, useThemePref, type ThemePref } from './theme';
 import { BridgeButton } from './ui/BridgeButton';
+import { RecoverBanner } from './ui/DraftBackups';
 import { PanelResizer, useSavedPanelWidths } from './ui/PanelResizer';
 import { CiteDialog } from './ui/CiteDialog';
 import { DimInput } from './ui/DimInput';
@@ -341,6 +342,7 @@ export default function App() {
             {ed && <DimInput ed={ed} />}
             {ready !== 'ok' && <div className="overlay">{ready === 'loading' ? t.app.loading : ready}</div>}
             {ed && <StageOverlay ed={ed} sel={treeSel} />}
+            {ed && <RecoverBanner ed={ed} />}
           </div>
           {ed && !consolePopped && (
             <HistoryConsole

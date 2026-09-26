@@ -87,6 +87,15 @@ export interface Translations {
     on: (n: number) => string;
     connected: (port: number) => string;
   };
+  backups: {
+    title: string;
+    help: string;
+    none: string;
+    curves: (n: number) => string;
+    recover: string;
+    dismiss: string;
+    banner: (when: string, n: number) => string;
+  };
   drawer: { open: string; close: string };
   theme: { title: string; auto: string; light: string; dark: string };
   phase: (n: number) => string;
@@ -747,6 +756,15 @@ const PT: Translations = {
     connecting: 'Conectando…',
     on: (n) => `Script local ● ${n}`,
     connected: (p) => `Conectado à ponte em 127.0.0.1:${p}. Os comandos do script aparecem no histórico.`,
+  },
+  backups: {
+    title: 'Cópias automáticas',
+    help: 'O rascunho é guardado no navegador e, a cada minuto de edição, a versão anterior vira uma cópia (até 10). Recuperar pode ser desfeito.',
+    none: 'Nenhuma cópia ainda.',
+    curves: (n) => `${n} curva${n === 1 ? '' : 's'}`,
+    recover: 'Recuperar',
+    dismiss: 'Dispensar',
+    banner: (w, n) => `O projeto abriu vazio. Há uma cópia automática de ${w} com ${n} curva${n === 1 ? '' : 's'}.`,
   },
   drawer: { open: 'Problema e bibliotecas', close: 'Fechar painel' },
   theme: { title: 'Tema', auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' },
@@ -1483,6 +1501,15 @@ const EN: Translations = {
     connecting: 'Connecting…',
     on: (n) => `Local script ● ${n}`,
     connected: (p) => `Connected to the bridge at 127.0.0.1:${p}. Script commands show up in the history.`,
+  },
+  backups: {
+    title: 'Automatic copies',
+    help: 'The draft is kept in the browser and, every minute of editing, the previous version becomes a copy (up to 10). Recovering can be undone.',
+    none: 'No copies yet.',
+    curves: (n) => `${n} curve${n === 1 ? '' : 's'}`,
+    recover: 'Recover',
+    dismiss: 'Dismiss',
+    banner: (w, n) => `The project opened empty. There is an automatic copy from ${w} with ${n} curve${n === 1 ? '' : 's'}.`,
   },
   drawer: { open: 'Problem and libraries', close: 'Close panel' },
   theme: { title: 'Theme', auto: 'automatic (follows the system)', light: 'light', dark: 'dark' },

@@ -4,6 +4,7 @@ import type { SketchEditor } from '../cad/editor';
 import { asLength, DISPLAY_UNITS, evaluate, evaluateVariables, type LengthUnit } from '../cad/expr';
 import type { ProblemType, Settings } from '../cad/types';
 import { AboutPanel } from './AboutPanel';
+import { DraftBackups } from './DraftBackups';
 import { PanelResizer } from './PanelResizer';
 import { useT } from '../i18n';
 import { useDocVersion, useEditor } from './useStore';
@@ -104,7 +105,12 @@ export function RightDrawer({ ed, open, onToggle }: { ed: SketchEditor; open: bo
               ))}
             </div>
           )}
-          {d.tab === 'problem' && <ProblemPanel ed={ed} />}
+          {d.tab === 'problem' && (
+            <>
+              <ProblemPanel ed={ed} />
+              <DraftBackups ed={ed} />
+            </>
+          )}
           {d.tab === 'materials' && <MaterialLibrary ed={ed} focus={d.focus} onFocus={(id) => setDrawer({ focus: id })} />}
           {d.tab === 'about' && <AboutPanel />}
           {d.tab === 'boundaries' && <BoundaryLibrary ed={ed} focus={d.focus} onFocus={(id) => setDrawer({ focus: id })} />}
