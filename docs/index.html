@@ -1,27 +1,344 @@
+
+
 <!DOCTYPE html>
-<html lang="pt-BR" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>MagFEM | Documentação</title>
-    <meta name="description" content="Documentação do MagFEM: elementos finitos magnéticos 2D no navegador.">
-    <meta name="generator" content="VitePress v1.6.4">
-    <link rel="preload stylesheet" href="/tools/magfem-web/docs/assets/style.CfAPtJnz.css" as="style">
-    <link rel="preload stylesheet" href="/tools/magfem-web/docs/vp-icons.css" as="style">
-    
-    <script type="module" src="/tools/magfem-web/docs/assets/app.WeQbVgkt.js"></script>
-    <link rel="preload" href="/tools/magfem-web/docs/assets/inter-roman-latin.Di8DUHzh.woff2" as="font" type="font/woff2" crossorigin="">
-    <link rel="modulepreload" href="/tools/magfem-web/docs/assets/chunks/theme.B-9vxXvP.js">
-    <link rel="modulepreload" href="/tools/magfem-web/docs/assets/chunks/framework.DHtetOlu.js">
-    <link rel="modulepreload" href="/tools/magfem-web/docs/assets/index.md._hm8ofm1.lean.js">
-    <link rel="icon" type="image/svg+xml" href="/tools/magfem-web/docs/logo.svg">
-    <meta property="og:image" content="https://thalesmaia.com/tools/magfem-web/docs/logo.png">
-    <script id="check-dark-mode">(()=>{const e=localStorage.getItem("vitepress-theme-appearance")||"auto",a=window.matchMedia("(prefers-color-scheme: dark)").matches;(!e||e==="auto"?a:e==="dark")&&document.documentElement.classList.add("dark")})();</script>
-    <script id="check-mac-os">document.documentElement.classList.toggle("mac",/Mac|iPhone|iPod|iPad/i.test(navigator.platform));</script>
-  </head>
-  <body>
-    <div id="app"><div class="Layout" data-v-d8b57b2d><!--[--><!--]--><!--[--><span tabindex="-1" data-v-fcbfc0e0></span><a href="#VPContent" class="VPSkipLink visually-hidden" data-v-fcbfc0e0>Skip to content</a><!--]--><!----><header class="VPNav" data-v-d8b57b2d data-v-7ad780c2><div class="VPNavBar" data-v-7ad780c2 data-v-9fd4d1dd><div class="wrapper" data-v-9fd4d1dd><div class="container" data-v-9fd4d1dd><div class="title" data-v-9fd4d1dd><div class="VPNavBarTitle" data-v-9fd4d1dd data-v-9f43907a><a class="title" href="/tools/magfem-web/docs/" data-v-9f43907a><!--[--><!--]--><!--[--><img class="VPImage logo" src="/tools/magfem-web/docs/logo.svg" alt data-v-ab19afbb><!--]--><span data-v-9f43907a>MagFEM</span><!--[--><!--]--></a></div></div><div class="content" data-v-9fd4d1dd><div class="content-body" data-v-9fd4d1dd><!--[--><!--]--><div class="VPNavBarSearch search" data-v-9fd4d1dd><!--[--><!----><div id="local-search"><button type="button" class="DocSearch DocSearch-Button" aria-label="Buscar"><span class="DocSearch-Button-Container"><span class="vp-icon DocSearch-Search-Icon"></span><span class="DocSearch-Button-Placeholder">Buscar</span></span><span class="DocSearch-Button-Keys"><kbd class="DocSearch-Button-Key"></kbd><kbd class="DocSearch-Button-Key">K</kbd></span></button></div><!--]--></div><nav aria-labelledby="main-nav-aria-label" class="VPNavBarMenu menu" data-v-9fd4d1dd data-v-afb2845e><span id="main-nav-aria-label" class="visually-hidden" data-v-afb2845e> Main Navigation </span><!--[--><!--[--><a class="VPLink link VPNavBarMenuLink" href="/tools/magfem-web/docs/guide/" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>Guia</span><!--]--></a><!--]--><!--[--><a class="VPLink link VPNavBarMenuLink" href="/tools/magfem-web/docs/scripting/api.html" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>API</span><!--]--></a><!--]--><!--[--><a class="VPLink link VPNavBarMenuLink" href="/tools/magfem-web/docs/theory/formulation.html" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>Teoria</span><!--]--></a><!--]--><!--[--><a class="VPLink link vp-external-link-icon VPNavBarMenuLink" href="https://thalesmaia.com/tools/magfem-web/" target="_blank" rel="noreferrer" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>Abrir o MagFEM</span><!--]--></a><!--]--><!--]--></nav><div class="VPFlyout VPNavBarTranslations translations" data-v-9fd4d1dd data-v-acee064b data-v-bfe7971f><button type="button" class="button" aria-haspopup="true" aria-expanded="false" aria-label="Idioma" data-v-bfe7971f><span class="text" data-v-bfe7971f><span class="vpi-languages option-icon" data-v-bfe7971f></span><!----><span class="vpi-chevron-down text-icon" data-v-bfe7971f></span></span></button><div class="menu" data-v-bfe7971f><div class="VPMenu" data-v-bfe7971f data-v-20ed86d6><!----><!--[--><!--[--><div class="items" data-v-acee064b><p class="title" data-v-acee064b>Português</p><!--[--><div class="VPMenuLink" data-v-acee064b data-v-7eeeb2dc><a class="VPLink link" href="/tools/magfem-web/docs/en/" data-v-7eeeb2dc><!--[--><span data-v-7eeeb2dc>English</span><!--]--></a></div><!--]--></div><!--]--><!--]--></div></div></div><div class="VPNavBarAppearance appearance" data-v-9fd4d1dd data-v-3f90c1a5><button class="VPSwitch VPSwitchAppearance" type="button" role="switch" title aria-checked="false" data-v-3f90c1a5 data-v-be9742d9 data-v-b4ccac88><span class="check" data-v-b4ccac88><span class="icon" data-v-b4ccac88><!--[--><span class="vpi-sun sun" data-v-be9742d9></span><span class="vpi-moon moon" data-v-be9742d9></span><!--]--></span></span></button></div><div class="VPSocialLinks VPNavBarSocialLinks social-links" data-v-9fd4d1dd data-v-ef6192dc data-v-e71e869c><!--[--><a class="VPSocialLink no-icon" href="https://github.com/thalesmaoa/magfem" aria-label="github" target="_blank" rel="noopener" data-v-e71e869c data-v-60a9a2d3><span class="vpi-social-github"></span></a><!--]--></div><div class="VPFlyout VPNavBarExtra extra" data-v-9fd4d1dd data-v-f953d92f data-v-bfe7971f><button type="button" class="button" aria-haspopup="true" aria-expanded="false" aria-label="extra navigation" data-v-bfe7971f><span class="vpi-more-horizontal icon" data-v-bfe7971f></span></button><div class="menu" data-v-bfe7971f><div class="VPMenu" data-v-bfe7971f data-v-20ed86d6><!----><!--[--><!--[--><div class="group translations" data-v-f953d92f><p class="trans-title" data-v-f953d92f>Português</p><!--[--><div class="VPMenuLink" data-v-f953d92f data-v-7eeeb2dc><a class="VPLink link" href="/tools/magfem-web/docs/en/" data-v-7eeeb2dc><!--[--><span data-v-7eeeb2dc>English</span><!--]--></a></div><!--]--></div><div class="group" data-v-f953d92f><div class="item appearance" data-v-f953d92f><p class="label" data-v-f953d92f>Tema</p><div class="appearance-action" data-v-f953d92f><button class="VPSwitch VPSwitchAppearance" type="button" role="switch" title aria-checked="false" data-v-f953d92f data-v-be9742d9 data-v-b4ccac88><span class="check" data-v-b4ccac88><span class="icon" data-v-b4ccac88><!--[--><span class="vpi-sun sun" data-v-be9742d9></span><span class="vpi-moon moon" data-v-be9742d9></span><!--]--></span></span></button></div></div></div><div class="group" data-v-f953d92f><div class="item social-links" data-v-f953d92f><div class="VPSocialLinks social-links-list" data-v-f953d92f data-v-e71e869c><!--[--><a class="VPSocialLink no-icon" href="https://github.com/thalesmaoa/magfem" aria-label="github" target="_blank" rel="noopener" data-v-e71e869c data-v-60a9a2d3><span class="vpi-social-github"></span></a><!--]--></div></div></div><!--]--><!--]--></div></div></div><!--[--><!--]--><button type="button" class="VPNavBarHamburger hamburger" aria-label="mobile navigation" aria-expanded="false" aria-controls="VPNavScreen" data-v-9fd4d1dd data-v-6bee1efd><span class="container" data-v-6bee1efd><span class="top" data-v-6bee1efd></span><span class="middle" data-v-6bee1efd></span><span class="bottom" data-v-6bee1efd></span></span></button></div></div></div></div><div class="divider" data-v-9fd4d1dd><div class="divider-line" data-v-9fd4d1dd></div></div></div><!----></header><!----><!----><div class="VPContent is-home" id="VPContent" data-v-d8b57b2d data-v-9a6c75ad><div class="VPHome" data-v-9a6c75ad data-v-e07eaea7><!--[--><!--]--><div class="VPHero has-image VPHomeHero" data-v-e07eaea7 data-v-dd8814ff><div class="container" data-v-dd8814ff><div class="main" data-v-dd8814ff><!--[--><!--]--><!--[--><h1 class="heading" data-v-dd8814ff><span class="name clip" data-v-dd8814ff>MagFEM</span><span class="text" data-v-dd8814ff>Elementos finitos magnéticos 2D no navegador</span></h1><p class="tagline" data-v-dd8814ff>CAD paramétrico, malha, solver não linear, transitório e AC com circuito, resultados e scripts. Tudo local, sem instalar nada.</p><!--]--><!--[--><!--]--><div class="actions" data-v-dd8814ff><!--[--><div class="action" data-v-dd8814ff><a class="VPButton medium brand" href="/tools/magfem-web/docs/guide/first-model.html" data-v-dd8814ff data-v-93dc4167>Primeiro modelo</a></div><div class="action" data-v-dd8814ff><a class="VPButton medium alt" href="/tools/magfem-web/docs/guide/" data-v-dd8814ff data-v-93dc4167>Guia</a></div><div class="action" data-v-dd8814ff><a class="VPButton medium alt" href="https://thalesmaia.com/tools/magfem-web/" target="_blank" rel="noreferrer" data-v-dd8814ff data-v-93dc4167>Abrir o MagFEM ↗</a></div><!--]--></div><!--[--><!--]--></div><div class="image" data-v-dd8814ff><div class="image-container" data-v-dd8814ff><div class="image-bg" data-v-dd8814ff></div><!--[--><!--[--><img class="VPImage image-src" src="/tools/magfem-web/docs/logo.svg" alt="MagFEM" data-v-ab19afbb><!--]--><!--]--></div></div></div></div><!--[--><!--]--><!--[--><!--]--><div class="VPFeatures VPHomeFeatures" data-v-e07eaea7 data-v-b1eea84a><div class="container" data-v-b1eea84a><div class="items" data-v-b1eea84a><!--[--><div class="grid-4 item" data-v-b1eea84a><a class="VPLink link no-icon VPFeature" href="/tools/magfem-web/docs/guide/geometry.html" data-v-b1eea84a data-v-bd37d1a2><!--[--><article class="box" data-v-bd37d1a2><div class="icon" data-v-bd37d1a2>📐</div><h2 class="title" data-v-bd37d1a2>CAD paramétrico</h2><p class="details" data-v-bd37d1a2>Linhas, arcos e círculos com restrições, cotas ligadas a variáveis, tesoura, offset, espelho e padrões. Importa DXF, SVG e .fem do FEMM.</p><!----></article><!--]--></a></div><div class="grid-4 item" data-v-b1eea84a><a class="VPLink link no-icon VPFeature" href="/tools/magfem-web/docs/guide/solver.html" data-v-b1eea84a data-v-bd37d1a2><!--[--><article class="box" data-v-bd37d1a2><div class="icon" data-v-bd37d1a2>🧲</div><h2 class="title" data-v-bd37d1a2>Magnetostática, AC e transitório</h2><p class="details" data-v-bd37d1a2>Plano ou axissimétrico, materiais não lineares (curva B-H), ímãs, correntes parasitas e acoplamento forte com circuito externo.</p><!----></article><!--]--></a></div><div class="grid-4 item" data-v-b1eea84a><a class="VPLink link no-icon VPFeature" href="/tools/magfem-web/docs/guide/results.html" data-v-b1eea84a data-v-bd37d1a2><!--[--><article class="box" data-v-bd37d1a2><div class="icon" data-v-bd37d1a2>📊</div><h2 class="title" data-v-bd37d1a2>Resultados</h2><p class="details" data-v-bd37d1a2>Mapas de campo, linhas de fluxo, gráficos sobre linhas, indutância, força e torque (tensor de Maxwell), perdas e animações.</p><!----></article><!--]--></a></div><div class="grid-4 item" data-v-b1eea84a><a class="VPLink link no-icon VPFeature" href="/tools/magfem-web/docs/scripting/bridge.html" data-v-b1eea84a data-v-bd37d1a2><!--[--><article class="box" data-v-bd37d1a2><div class="icon" data-v-bd37d1a2>🐍</div><h2 class="title" data-v-bd37d1a2>Scripts</h2><p class="details" data-v-bd37d1a2>Cada ação vira um comando do console. A ponte local liga Python, Matlab, Julia ou qualquer linguagem HTTP ao modelo aberto no navegador.</p><!----></article><!--]--></a></div><!--]--></div></div></div><!--[--><!--]--><div class="vp-doc container" style="" data-v-e07eaea7 data-v-c141a4bd><!--[--><div style="position:relative;" data-v-e07eaea7><div></div></div><!--]--></div></div></div><footer class="VPFooter" data-v-d8b57b2d data-v-566314d4><div class="container" data-v-566314d4><p class="message" data-v-566314d4>Código MIT · Biblioteca de materiais do FEMM 4.2 (AFPL)</p><p class="copyright" data-v-566314d4>© 2026 Thales Maia</p></div></footer><!--[--><!--]--></div></div>
-    <script>window.__VP_HASH_MAP__=JSON.parse("{\"about_cite.md\":\"BbE-znL8\",\"about_contributing.md\":\"CnkrsLxD\",\"about_license.md\":\"BsePhTEP\",\"en_about_cite.md\":\"BYcqKCF7\",\"en_about_contributing.md\":\"zaliHo0M\",\"en_about_license.md\":\"D69Ny-FN\",\"en_guide_circuit.md\":\"BK1-AhTO\",\"en_guide_files.md\":\"Dg3ErihU\",\"en_guide_first-model.md\":\"C_otZgpR\",\"en_guide_geometry.md\":\"BLtuTLhR\",\"en_guide_index.md\":\"Zodvl4ly\",\"en_guide_mesh.md\":\"CN_txqJE\",\"en_guide_results.md\":\"DqQ8DJVs\",\"en_guide_shortcuts.md\":\"CXBubVig\",\"en_guide_solver.md\":\"BvEsc0r1\",\"en_index.md\":\"Cu_q-nrK\",\"en_scripting_api.md\":\"D2eartHr\",\"en_scripting_bridge.md\":\"DoZPJklX\",\"en_scripting_console.md\":\"EFD2nc0P\",\"en_scripting_examples.md\":\"CLS-ghZT\",\"en_scripting_other-languages.md\":\"BrDM6qgi\",\"en_theory_formulation.md\":\"Cwabbvgi\",\"en_theory_validation.md\":\"4kMa1vw2\",\"guide_circuit.md\":\"BGWN0ZmM\",\"guide_files.md\":\"D0BMkGsa\",\"guide_first-model.md\":\"Dw2iJ062\",\"guide_geometry.md\":\"DtbwNzOm\",\"guide_index.md\":\"BtUaSLwB\",\"guide_mesh.md\":\"Biokh_Ol\",\"guide_results.md\":\"DUfsXNsG\",\"guide_shortcuts.md\":\"AIASO3qG\",\"guide_solver.md\":\"CoVIiLGK\",\"index.md\":\"_hm8ofm1\",\"scripting_api.md\":\"CsIJ4v0w\",\"scripting_bridge.md\":\"CF6NH4Qu\",\"scripting_console.md\":\"Cwj2wy_P\",\"scripting_examples.md\":\"CNBvW1iQ\",\"scripting_other-languages.md\":\"Bfb6omiW\",\"theory_formulation.md\":\"DU_HcPt2\",\"theory_validation.md\":\"7RA07uK4\"}");window.__VP_SITE_DATA__=JSON.parse("{\"lang\":\"en-US\",\"dir\":\"ltr\",\"title\":\"MagFEM\",\"description\":\"A VitePress site\",\"base\":\"/tools/magfem-web/docs/\",\"head\":[],\"router\":{\"prefetchLinks\":true},\"appearance\":true,\"themeConfig\":{\"logo\":\"/logo.svg\",\"socialLinks\":[{\"icon\":\"github\",\"link\":\"https://github.com/thalesmaoa/magfem\"}],\"search\":{\"provider\":\"local\",\"options\":{\"locales\":{\"root\":{\"translations\":{\"button\":{\"buttonText\":\"Buscar\",\"buttonAriaLabel\":\"Buscar\"},\"modal\":{\"noResultsText\":\"Nenhum resultado para\",\"resetButtonTitle\":\"Limpar a busca\",\"footer\":{\"selectText\":\"selecionar\",\"navigateText\":\"navegar\",\"closeText\":\"fechar\"}}}}}}}},\"locales\":{\"root\":{\"label\":\"Português\",\"lang\":\"pt-BR\",\"description\":\"Documentação do MagFEM: elementos finitos magnéticos 2D no navegador.\",\"themeConfig\":{\"nav\":[{\"text\":\"Guia\",\"link\":\"/guide/\",\"activeMatch\":\"/guide/\"},{\"text\":\"API\",\"link\":\"/scripting/api\",\"activeMatch\":\"/scripting/\"},{\"text\":\"Teoria\",\"link\":\"/theory/formulation\",\"activeMatch\":\"/theory/\"},{\"text\":\"Abrir o MagFEM\",\"link\":\"https://thalesmaia.com/tools/magfem-web/\"}],\"sidebar\":[{\"text\":\"Guia\",\"items\":[{\"text\":\"Introdução\",\"link\":\"/guide/\"},{\"text\":\"Primeiro modelo\",\"link\":\"/guide/first-model\"},{\"text\":\"Geometria (CAD)\",\"link\":\"/guide/geometry\"},{\"text\":\"Malha e materiais\",\"link\":\"/guide/mesh\"},{\"text\":\"Resolução\",\"link\":\"/guide/solver\"},{\"text\":\"Resultados\",\"link\":\"/guide/results\"},{\"text\":\"Circuito externo\",\"link\":\"/guide/circuit\"},{\"text\":\"Arquivos, importar e exportar\",\"link\":\"/guide/files\"},{\"text\":\"Atalhos de teclado\",\"link\":\"/guide/shortcuts\"}]},{\"text\":\"Scripts e API\",\"items\":[{\"text\":\"Console\",\"link\":\"/scripting/console\"},{\"text\":\"Referência da API\",\"link\":\"/scripting/api\"},{\"text\":\"Ponte local (Python)\",\"link\":\"/scripting/bridge\"},{\"text\":\"Matlab, Julia e HTTP\",\"link\":\"/scripting/other-languages\"},{\"text\":\"Exemplos\",\"link\":\"/scripting/examples\"}]},{\"text\":\"Teoria\",\"items\":[{\"text\":\"Formulação\",\"link\":\"/theory/formulation\"},{\"text\":\"Validação\",\"link\":\"/theory/validation\"}]},{\"text\":\"Sobre\",\"items\":[{\"text\":\"Citar\",\"link\":\"/about/cite\"},{\"text\":\"Licença e créditos\",\"link\":\"/about/license\"},{\"text\":\"Contribuir\",\"link\":\"/about/contributing\"}]}],\"outline\":{\"level\":[2,3],\"label\":\"Nesta página\"},\"docFooter\":{\"prev\":\"Anterior\",\"next\":\"Próxima\"},\"editLink\":{\"pattern\":\"https://github.com/thalesmaoa/magfem/edit/main/docs/:path\",\"text\":\"Editar esta página no GitHub\"},\"darkModeSwitchLabel\":\"Tema\",\"sidebarMenuLabel\":\"Menu\",\"returnToTopLabel\":\"Voltar ao topo\",\"langMenuLabel\":\"Idioma\",\"footer\":{\"message\":\"Código MIT · Biblioteca de materiais do FEMM 4.2 (AFPL)\",\"copyright\":\"© 2026 Thales Maia\"}}},\"en\":{\"label\":\"English\",\"lang\":\"en\",\"link\":\"/en/\",\"description\":\"MagFEM documentation: 2D magnetic finite elements in the browser.\",\"themeConfig\":{\"nav\":[{\"text\":\"Guide\",\"link\":\"/en/guide/\",\"activeMatch\":\"/en/guide/\"},{\"text\":\"API\",\"link\":\"/en/scripting/api\",\"activeMatch\":\"/en/scripting/\"},{\"text\":\"Theory\",\"link\":\"/en/theory/formulation\",\"activeMatch\":\"/en/theory/\"},{\"text\":\"Open MagFEM\",\"link\":\"https://thalesmaia.com/tools/magfem-web/\"}],\"sidebar\":[{\"text\":\"Guide\",\"items\":[{\"text\":\"Introduction\",\"link\":\"/en/guide/\"},{\"text\":\"First model\",\"link\":\"/en/guide/first-model\"},{\"text\":\"Geometry (CAD)\",\"link\":\"/en/guide/geometry\"},{\"text\":\"Mesh and materials\",\"link\":\"/en/guide/mesh\"},{\"text\":\"Solving\",\"link\":\"/en/guide/solver\"},{\"text\":\"Results\",\"link\":\"/en/guide/results\"},{\"text\":\"External circuit\",\"link\":\"/en/guide/circuit\"},{\"text\":\"Files, import and export\",\"link\":\"/en/guide/files\"},{\"text\":\"Keyboard shortcuts\",\"link\":\"/en/guide/shortcuts\"}]},{\"text\":\"Scripting and API\",\"items\":[{\"text\":\"Console\",\"link\":\"/en/scripting/console\"},{\"text\":\"API reference\",\"link\":\"/en/scripting/api\"},{\"text\":\"Local bridge (Python)\",\"link\":\"/en/scripting/bridge\"},{\"text\":\"Matlab, Julia and HTTP\",\"link\":\"/en/scripting/other-languages\"},{\"text\":\"Examples\",\"link\":\"/en/scripting/examples\"}]},{\"text\":\"Theory\",\"items\":[{\"text\":\"Formulation\",\"link\":\"/en/theory/formulation\"},{\"text\":\"Validation\",\"link\":\"/en/theory/validation\"}]},{\"text\":\"About\",\"items\":[{\"text\":\"Cite\",\"link\":\"/en/about/cite\"},{\"text\":\"License and credits\",\"link\":\"/en/about/license\"},{\"text\":\"Contributing\",\"link\":\"/en/about/contributing\"}]}],\"outline\":{\"level\":[2,3]},\"editLink\":{\"pattern\":\"https://github.com/thalesmaoa/magfem/edit/main/docs/:path\",\"text\":\"Edit this page on GitHub\"},\"footer\":{\"message\":\"MIT code · FEMM 4.2 material library (AFPL)\",\"copyright\":\"© 2026 Thales Maia\"}}}},\"scrollOffset\":134,\"cleanUrls\":false}");</script>
-    
-  </body>
+<html class="writer-html5" lang="pt-BR" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentação do MagFEM &mdash; MagFEM</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=34306bf6" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=c0c8e3fa"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/translations.js?v=71a39b36"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="genindex.html" />
+    <link rel="search" title="Buscar" href="search.html" />
+    <link rel="next" title="Introdução" href="guide/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            MagFEM
+              <img src="_static/magfem-logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Pesquisar documentos" aria-label="Pesquisar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Menu de navegação">
+              <p class="caption" role="heading"><span class="caption-text">Guia</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">Introdução</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/index.html#o-fluxo-de-trabalho">O fluxo de trabalho</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/index.html#a-interface">A interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/index.html#proximos-passos">Próximos passos</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/first-model.html">Primeiro modelo: bobina com núcleo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#problema-axissimetrico">1. Problema axissimétrico</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#geometria">2. Geometria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#materiais-circuito-e-malha">3. Materiais, circuito e malha</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#resolver">4. Resolver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#resultados">5. Resultados</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#experimente">6. Experimente</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#o-script-completo">O script completo</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/geometry.html">Geometria (CAD)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#ferramentas-de-desenho">Ferramentas de desenho</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#encaixes-snap">Encaixes (snap)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#restricoes">Restrições</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#cotas-e-variaveis">Cotas e variáveis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#editar">Editar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#selecao-por-caixa">Seleção por caixa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#plano-e-axissimetrico">Plano e axissimétrico</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#importar-geometria">Importar geometria</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/mesh.html">Malha e materiais</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#regioes">Regiões</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#materiais">Materiais</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#circuitos-e-correntes">Circuitos e correntes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#contornos">Contornos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#gerar-a-malha">Gerar a malha</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/solver.html">Resolução</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/solver.html#tipos-de-analise">Tipos de análise</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide/solver.html#magnetostatica">Magnetostática</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/solver.html#harmonica-ac">Harmônica (AC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/solver.html#transitoria">Transitória</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide/solver.html#circuito-externo">Circuito externo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/solver.html#desempenho">Desempenho</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/results.html">Resultados</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#vistas-de-campo">Vistas de campo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#tabelas-e-variaveis-de-resultado">Tabelas e variáveis de resultado</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#forca-e-torque">Força e torque</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#transitorio-e-ac">Transitório e AC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#exportar">Exportar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/circuit.html">Circuito externo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/circuit.html#criar-o-circuito">Criar o circuito</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/circuit.html#fontes">Fontes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/circuit.html#resolver-e-ver-os-sinais">Resolver e ver os sinais</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/files.html">Arquivos, importar e exportar</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#projetos">Projetos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#rascunho-e-copias-automaticas">Rascunho e cópias automáticas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#importar">Importar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#exportar">Exportar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/shortcuts.html">Atalhos de teclado</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#desenho">Desenho</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#restricoes-com-a-selecao">Restrições (com a seleção)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#geral">Geral</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#console">Console</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#esquematico">Esquemático</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Scripts e API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripting/console.html">Console</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#a-linguagem">A linguagem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#objetos">Objetos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#funcoes-globais">Funções globais</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#recursos-do-console">Recursos do console</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#script-exportado">Script exportado</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/api.html">Referência da API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#geometria-g">Geometria — <code class="docutils literal notranslate"><span class="pre">g</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#entidades">Entidades</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#restricoes">Restrições</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#cotas-e-variaveis">Cotas e variáveis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#edicao">Edição</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#consulta-e-problema">Consulta e problema</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#malha-m">Malha — <code class="docutils literal notranslate"><span class="pre">m</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#metodo-de-resolucao-s">Método de resolução — <code class="docutils literal notranslate"><span class="pre">s</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#resultados-r">Resultados — <code class="docutils literal notranslate"><span class="pre">r</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#esquematico-c">Esquemático — <code class="docutils literal notranslate"><span class="pre">c</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#globais">Globais</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/bridge.html">Ponte local (Python)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#instalar">Instalar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#conectar">Conectar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#o-console-no-terminal">O console no terminal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#scripts-em-python">Scripts em Python</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting/bridge.html#erros">Erros</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#seguranca">Segurança</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#http-direto">HTTP direto</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/other-languages.html">Matlab, Julia e HTTP</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/other-languages.html#matlab-octave">Matlab / Octave</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/other-languages.html#julia">Julia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/other-languages.html#protocolo-http">Protocolo HTTP</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/examples.html">Exemplos</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/examples.html#varredura-de-forca">Varredura de força</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/examples.html#contator">Contator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/examples.html#ideias">Ideias</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Teoria</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="theory/formulation.html">Formulação</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#magnetostatica">Magnetostática</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#condicoes-de-contorno">Condições de contorno</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#solucao">Solução</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#transitorio">Transitório</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#harmonico-ac">Harmônico (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#pos-processamento">Pós-processamento</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory/formulation.html#forca-e-torque">Força e torque</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory/validation.html">Validação</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory/validation.html#comparacao-com-o-femm">Comparação com o FEMM</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Sobre</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about/cite.html">Citar</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about/cite.html#citacao-abnt">Citação (ABNT)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/cite.html#citation-apa">Citation (APA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/cite.html#bibtex">BibTeX</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="about/license.html">Licença e créditos</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about/license.html#magfem">MagFEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/license.html#componentes-de-terceiros">Componentes de terceiros</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="about/contributing.html">Contribuir</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#rodar-localmente">Rodar localmente</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#organizacao">Organização</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#esta-documentacao">Esta documentação</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#estilo">Estilo</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Menu de navegação móvel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">MagFEM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Navegação da página">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Documentação do MagFEM</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/thalesmaoa/magfem/blob/main/docs/pt/index.md" class="fa fa-github"> Editar no GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="documentacao-do-magfem">
+<h1>Documentação do MagFEM<a class="headerlink" href="#documentacao-do-magfem" title="Link para este cabeçalho"></a></h1>
+<p>O <strong>MagFEM</strong> resolve problemas de campo magnético em duas dimensões pelo método dos elementos finitos, direto no
+navegador: CAD paramétrico, malha, solver magnetostático não linear, análises transitória e harmônica (AC) com
+circuito externo, resultados e scripts. Tudo roda localmente, sem instalar nada.</p>
+<ul class="simple">
+<li><p>Abra o app: <a class="reference external" href="https://thalesmaia.com/tools/magfem-web/">https://thalesmaia.com/tools/magfem-web/</a></p></li>
+<li><p>Código-fonte e relatos de erro: <a class="reference external" href="https://github.com/thalesmaoa/magfem">https://github.com/thalesmaoa/magfem</a></p></li>
+<li><p><em>English version</em>: use o seletor no rodapé do menu, ou <a class="reference external" href="https://thalesmaia.com/tools/magfem-web/docs/en/">clique aqui</a>.</p></li>
+</ul>
+<p>Para começar, faça o <a class="reference internal" href="guide/first-model.html"><span class="std std-doc">primeiro modelo</span></a>: uma bobina com núcleo de aço, do desenho à
+indutância.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Guia</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">Introdução</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/first-model.html">Primeiro modelo: bobina com núcleo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/geometry.html">Geometria (CAD)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/mesh.html">Malha e materiais</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/solver.html">Resolução</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/results.html">Resultados</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/circuit.html">Circuito externo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/files.html">Arquivos, importar e exportar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/shortcuts.html">Atalhos de teclado</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Scripts e API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripting/console.html">Console</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/api.html">Referência da API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/bridge.html">Ponte local (Python)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/other-languages.html">Matlab, Julia e HTTP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/examples.html">Exemplos</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Teoria</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="theory/formulation.html">Formulação</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory/validation.html">Validação</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Sobre</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about/cite.html">Citar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about/license.html">Licença e créditos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about/contributing.html">Contribuir</a></li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Rodapé">
+        <a href="guide/index.html" class="btn btn-neutral float-right" title="Introdução" accesskey="n" rel="next">Próximo <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Direitos autorais 2026, Thales Maia.</p>
+  </div>
+
+  Compilado com <a href="https://www.sphinx-doc.org/">Sphinx</a> usando um
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    fornecido por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="Idioma">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> Idioma e links</span>
+    pt
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Idioma</dt><dd><strong>português</strong></dd><dd><a href="en/index.html">English</a></dd>
+    </dl>
+    <hr/>
+    <dl>
+      <dt>Links</dt>
+      <dd><a href="https://thalesmaia.com/tools/magfem-web/">Abrir o MagFEM</a></dd>
+      <dd><a href="https://github.com/thalesmaoa/magfem">GitHub</a></dd>
+      <dd><a href="https://github.com/thalesmaoa/magfem/issues">Relatar um problema</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>

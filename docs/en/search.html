@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search &mdash; MagFEM</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=34306bf6" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.png"/>
+    
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="#" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            MagFEM
+              <img src="_static/magfem-logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/index.html#the-workflow">The workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/index.html#the-interface">The interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/index.html#next-steps">Next steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/first-model.html">First model: coil with a core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#axisymmetric-problem">1. Axisymmetric problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#geometry">2. Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#materials-circuit-and-mesh">3. Materials, circuit and mesh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#solve">4. Solve</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#results">5. Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#try-it">6. Try it</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/first-model.html#the-complete-script">The complete script</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/geometry.html">Geometry (CAD)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#drawing-tools">Drawing tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#snapping">Snapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#constraints">Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#dimensions-and-variables">Dimensions and variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#editing">Editing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#box-selection">Box selection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#planar-and-axisymmetric">Planar and axisymmetric</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/geometry.html#importing-geometry">Importing geometry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/mesh.html">Mesh and materials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#regions">Regions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#materials">Materials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#circuits-and-currents">Circuits and currents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#boundaries">Boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/mesh.html#generating-the-mesh">Generating the mesh</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/solver.html">Solving</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/solver.html#analysis-types">Analysis types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="guide/solver.html#magnetostatic">Magnetostatic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/solver.html#harmonic-ac">Harmonic (AC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="guide/solver.html#transient">Transient</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide/solver.html#external-circuit">External circuit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/solver.html#performance">Performance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/results.html">Results</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#field-views">Field views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#tables-and-result-variables">Tables and result variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#force-and-torque">Force and torque</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#transient-and-ac">Transient and AC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/results.html#export">Export</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/circuit.html">External circuit</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/circuit.html#creating-the-circuit">Creating the circuit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/circuit.html#sources">Sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/circuit.html#solving-and-viewing-signals">Solving and viewing signals</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/files.html">Files, import and export</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#projects">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#draft-and-automatic-copies">Draft and automatic copies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#import">Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/files.html#export">Export</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guide/shortcuts.html">Keyboard shortcuts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#drawing">Drawing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#constraints-with-a-selection">Constraints (with a selection)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#general">General</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#console">Console</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/shortcuts.html#schematic">Schematic</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Scripting and API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripting/console.html">Console</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#the-language">The language</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#objects">Objects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#global-functions">Global functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#console-features">Console features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/console.html#exported-script">Exported script</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/api.html">API reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#geometry-g">Geometry — <code class="docutils literal notranslate"><span class="pre">g</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#entities">Entities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#constraints">Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#dimensions-and-variables">Dimensions and variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#editing">Editing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scripting/api.html#queries-and-problem">Queries and problem</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#mesh-m">Mesh — <code class="docutils literal notranslate"><span class="pre">m</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#solver-s">Solver — <code class="docutils literal notranslate"><span class="pre">s</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#results-r">Results — <code class="docutils literal notranslate"><span class="pre">r</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#schematic-c">Schematic — <code class="docutils literal notranslate"><span class="pre">c</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/api.html#globals">Globals</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/bridge.html">Local bridge (Python)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#install">Install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#connect">Connect</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#the-terminal-console">The terminal console</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#python-scripts">Python scripts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="scripting/bridge.html#errors">Errors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#security">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/bridge.html#plain-http">Plain HTTP</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/other-languages.html">Matlab, Julia and HTTP</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/other-languages.html#matlab-octave">Matlab / Octave</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/other-languages.html#julia">Julia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/other-languages.html#http-protocol">HTTP protocol</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scripting/examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scripting/examples.html#force-sweep">Force sweep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/examples.html#contactor">Contactor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scripting/examples.html#ideas">Ideas</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Theory</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="theory/formulation.html">Formulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#magnetostatics">Magnetostatics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#boundary-conditions">Boundary conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#solution">Solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#transient">Transient</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#harmonic-ac">Harmonic (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/formulation.html#post-processing">Post-processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory/formulation.html#force-and-torque">Force and torque</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory/validation.html">Validation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory/validation.html#comparison-with-femm">Comparison with FEMM</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about/cite.html">Cite</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about/cite.html#citation-apa">Citation (APA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/cite.html#citacao-abnt">Citação (ABNT)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/cite.html#bibtex">BibTeX</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="about/license.html">License and credits</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about/license.html#magfem">MagFEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/license.html#third-party-components">Third-party components</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="about/contributing.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#run-locally">Run locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#layout">Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#this-documentation">This documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about/contributing.html#style">Style</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MagFEM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Search</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <noscript>
+  <div id="fallback" class="admonition warning">
+    <p class="last">
+      Please activate JavaScript to enable the search functionality.
+    </p>
+  </div>
+  </noscript>
+
+  
+  <div id="search-results">
+  
+  </div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Thales Maia.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="Language">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> Language and links</span>
+    en
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Language</dt><dd><a href="../search.html">português</a></dd><dd><strong>English</strong></dd>
+    </dl>
+    <hr/>
+    <dl>
+      <dt>Links</dt>
+      <dd><a href="https://thalesmaia.com/tools/magfem-web/">Open MagFEM</a></dd>
+      <dd><a href="https://github.com/thalesmaoa/magfem">GitHub</a></dd>
+      <dd><a href="https://github.com/thalesmaoa/magfem/issues">Report a bug</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+  <script>
+    jQuery(function() { Search.loadIndex("searchindex.js"); });
+  </script>
+  
+  <script id="searchindexloader"></script>
+   
+
+
+</body>
+</html>

@@ -1,27 +1,658 @@
+
+
 <!DOCTYPE html>
-<html lang="pt-BR" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Referência da API | MagFEM</title>
-    <meta name="description" content="Documentação do MagFEM: elementos finitos magnéticos 2D no navegador.">
-    <meta name="generator" content="VitePress v1.6.4">
-    <link rel="preload stylesheet" href="/tools/magfem-web/docs/assets/style.CfAPtJnz.css" as="style">
-    <link rel="preload stylesheet" href="/tools/magfem-web/docs/vp-icons.css" as="style">
-    
-    <script type="module" src="/tools/magfem-web/docs/assets/app.WeQbVgkt.js"></script>
-    <link rel="preload" href="/tools/magfem-web/docs/assets/inter-roman-latin.Di8DUHzh.woff2" as="font" type="font/woff2" crossorigin="">
-    <link rel="modulepreload" href="/tools/magfem-web/docs/assets/chunks/theme.B-9vxXvP.js">
-    <link rel="modulepreload" href="/tools/magfem-web/docs/assets/chunks/framework.DHtetOlu.js">
-    <link rel="modulepreload" href="/tools/magfem-web/docs/assets/scripting_api.md.CsIJ4v0w.lean.js">
-    <link rel="icon" type="image/svg+xml" href="/tools/magfem-web/docs/logo.svg">
-    <meta property="og:image" content="https://thalesmaia.com/tools/magfem-web/docs/logo.png">
-    <script id="check-dark-mode">(()=>{const e=localStorage.getItem("vitepress-theme-appearance")||"auto",a=window.matchMedia("(prefers-color-scheme: dark)").matches;(!e||e==="auto"?a:e==="dark")&&document.documentElement.classList.add("dark")})();</script>
-    <script id="check-mac-os">document.documentElement.classList.toggle("mac",/Mac|iPhone|iPod|iPad/i.test(navigator.platform));</script>
-  </head>
-  <body>
-    <div id="app"><div class="Layout" data-v-d8b57b2d><!--[--><!--]--><!--[--><span tabindex="-1" data-v-fcbfc0e0></span><a href="#VPContent" class="VPSkipLink visually-hidden" data-v-fcbfc0e0>Skip to content</a><!--]--><!----><header class="VPNav" data-v-d8b57b2d data-v-7ad780c2><div class="VPNavBar" data-v-7ad780c2 data-v-9fd4d1dd><div class="wrapper" data-v-9fd4d1dd><div class="container" data-v-9fd4d1dd><div class="title" data-v-9fd4d1dd><div class="VPNavBarTitle has-sidebar" data-v-9fd4d1dd data-v-9f43907a><a class="title" href="/tools/magfem-web/docs/" data-v-9f43907a><!--[--><!--]--><!--[--><img class="VPImage logo" src="/tools/magfem-web/docs/logo.svg" alt data-v-ab19afbb><!--]--><span data-v-9f43907a>MagFEM</span><!--[--><!--]--></a></div></div><div class="content" data-v-9fd4d1dd><div class="content-body" data-v-9fd4d1dd><!--[--><!--]--><div class="VPNavBarSearch search" data-v-9fd4d1dd><!--[--><!----><div id="local-search"><button type="button" class="DocSearch DocSearch-Button" aria-label="Buscar"><span class="DocSearch-Button-Container"><span class="vp-icon DocSearch-Search-Icon"></span><span class="DocSearch-Button-Placeholder">Buscar</span></span><span class="DocSearch-Button-Keys"><kbd class="DocSearch-Button-Key"></kbd><kbd class="DocSearch-Button-Key">K</kbd></span></button></div><!--]--></div><nav aria-labelledby="main-nav-aria-label" class="VPNavBarMenu menu" data-v-9fd4d1dd data-v-afb2845e><span id="main-nav-aria-label" class="visually-hidden" data-v-afb2845e> Main Navigation </span><!--[--><!--[--><a class="VPLink link VPNavBarMenuLink" href="/tools/magfem-web/docs/guide/" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>Guia</span><!--]--></a><!--]--><!--[--><a class="VPLink link VPNavBarMenuLink active" href="/tools/magfem-web/docs/scripting/api.html" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>API</span><!--]--></a><!--]--><!--[--><a class="VPLink link VPNavBarMenuLink" href="/tools/magfem-web/docs/theory/formulation.html" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>Teoria</span><!--]--></a><!--]--><!--[--><a class="VPLink link vp-external-link-icon VPNavBarMenuLink" href="https://thalesmaia.com/tools/magfem-web/" target="_blank" rel="noreferrer" tabindex="0" data-v-afb2845e data-v-815115f5><!--[--><span data-v-815115f5>Abrir o MagFEM</span><!--]--></a><!--]--><!--]--></nav><div class="VPFlyout VPNavBarTranslations translations" data-v-9fd4d1dd data-v-acee064b data-v-bfe7971f><button type="button" class="button" aria-haspopup="true" aria-expanded="false" aria-label="Idioma" data-v-bfe7971f><span class="text" data-v-bfe7971f><span class="vpi-languages option-icon" data-v-bfe7971f></span><!----><span class="vpi-chevron-down text-icon" data-v-bfe7971f></span></span></button><div class="menu" data-v-bfe7971f><div class="VPMenu" data-v-bfe7971f data-v-20ed86d6><!----><!--[--><!--[--><div class="items" data-v-acee064b><p class="title" data-v-acee064b>Português</p><!--[--><div class="VPMenuLink" data-v-acee064b data-v-7eeeb2dc><a class="VPLink link" href="/tools/magfem-web/docs/en/scripting/api.html" data-v-7eeeb2dc><!--[--><span data-v-7eeeb2dc>English</span><!--]--></a></div><!--]--></div><!--]--><!--]--></div></div></div><div class="VPNavBarAppearance appearance" data-v-9fd4d1dd data-v-3f90c1a5><button class="VPSwitch VPSwitchAppearance" type="button" role="switch" title aria-checked="false" data-v-3f90c1a5 data-v-be9742d9 data-v-b4ccac88><span class="check" data-v-b4ccac88><span class="icon" data-v-b4ccac88><!--[--><span class="vpi-sun sun" data-v-be9742d9></span><span class="vpi-moon moon" data-v-be9742d9></span><!--]--></span></span></button></div><div class="VPSocialLinks VPNavBarSocialLinks social-links" data-v-9fd4d1dd data-v-ef6192dc data-v-e71e869c><!--[--><a class="VPSocialLink no-icon" href="https://github.com/thalesmaoa/magfem" aria-label="github" target="_blank" rel="noopener" data-v-e71e869c data-v-60a9a2d3><span class="vpi-social-github"></span></a><!--]--></div><div class="VPFlyout VPNavBarExtra extra" data-v-9fd4d1dd data-v-f953d92f data-v-bfe7971f><button type="button" class="button" aria-haspopup="true" aria-expanded="false" aria-label="extra navigation" data-v-bfe7971f><span class="vpi-more-horizontal icon" data-v-bfe7971f></span></button><div class="menu" data-v-bfe7971f><div class="VPMenu" data-v-bfe7971f data-v-20ed86d6><!----><!--[--><!--[--><div class="group translations" data-v-f953d92f><p class="trans-title" data-v-f953d92f>Português</p><!--[--><div class="VPMenuLink" data-v-f953d92f data-v-7eeeb2dc><a class="VPLink link" href="/tools/magfem-web/docs/en/scripting/api.html" data-v-7eeeb2dc><!--[--><span data-v-7eeeb2dc>English</span><!--]--></a></div><!--]--></div><div class="group" data-v-f953d92f><div class="item appearance" data-v-f953d92f><p class="label" data-v-f953d92f>Tema</p><div class="appearance-action" data-v-f953d92f><button class="VPSwitch VPSwitchAppearance" type="button" role="switch" title aria-checked="false" data-v-f953d92f data-v-be9742d9 data-v-b4ccac88><span class="check" data-v-b4ccac88><span class="icon" data-v-b4ccac88><!--[--><span class="vpi-sun sun" data-v-be9742d9></span><span class="vpi-moon moon" data-v-be9742d9></span><!--]--></span></span></button></div></div></div><div class="group" data-v-f953d92f><div class="item social-links" data-v-f953d92f><div class="VPSocialLinks social-links-list" data-v-f953d92f data-v-e71e869c><!--[--><a class="VPSocialLink no-icon" href="https://github.com/thalesmaoa/magfem" aria-label="github" target="_blank" rel="noopener" data-v-e71e869c data-v-60a9a2d3><span class="vpi-social-github"></span></a><!--]--></div></div></div><!--]--><!--]--></div></div></div><!--[--><!--]--><button type="button" class="VPNavBarHamburger hamburger" aria-label="mobile navigation" aria-expanded="false" aria-controls="VPNavScreen" data-v-9fd4d1dd data-v-6bee1efd><span class="container" data-v-6bee1efd><span class="top" data-v-6bee1efd></span><span class="middle" data-v-6bee1efd></span><span class="bottom" data-v-6bee1efd></span></span></button></div></div></div></div><div class="divider" data-v-9fd4d1dd><div class="divider-line" data-v-9fd4d1dd></div></div></div><!----></header><div class="VPLocalNav has-sidebar empty" data-v-d8b57b2d data-v-2488c25a><div class="container" data-v-2488c25a><button class="menu" aria-expanded="false" aria-controls="VPSidebarNav" data-v-2488c25a><span class="vpi-align-left menu-icon" data-v-2488c25a></span><span class="menu-text" data-v-2488c25a>Menu</span></button><div class="VPLocalNavOutlineDropdown" style="--vp-vh:0px;" data-v-2488c25a data-v-6b867909><button data-v-6b867909>Voltar ao topo</button><!----></div></div></div><aside class="VPSidebar" data-v-d8b57b2d data-v-42c4c606><div class="curtain" data-v-42c4c606></div><nav class="nav" id="VPSidebarNav" aria-labelledby="sidebar-aria-label" tabindex="-1" data-v-42c4c606><span class="visually-hidden" id="sidebar-aria-label" data-v-42c4c606> Sidebar Navigation </span><!--[--><!--]--><!--[--><div class="no-transition group" data-v-51288d80><section class="VPSidebarItem level-0" data-v-51288d80 data-v-0009425e><div class="item" role="button" tabindex="0" data-v-0009425e><div class="indicator" data-v-0009425e></div><h2 class="text" data-v-0009425e>Guia</h2><!----></div><div class="items" data-v-0009425e><!--[--><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Introdução</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/first-model.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Primeiro modelo</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/geometry.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Geometria (CAD)</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/mesh.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Malha e materiais</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/solver.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Resolução</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/results.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Resultados</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/circuit.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Circuito externo</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/files.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Arquivos, importar e exportar</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/guide/shortcuts.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Atalhos de teclado</p><!--]--></a><!----></div><!----></div><!--]--></div></section></div><div class="no-transition group" data-v-51288d80><section class="VPSidebarItem level-0 has-active" data-v-51288d80 data-v-0009425e><div class="item" role="button" tabindex="0" data-v-0009425e><div class="indicator" data-v-0009425e></div><h2 class="text" data-v-0009425e>Scripts e API</h2><!----></div><div class="items" data-v-0009425e><!--[--><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/scripting/console.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Console</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/scripting/api.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Referência da API</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/scripting/bridge.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Ponte local (Python)</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/scripting/other-languages.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Matlab, Julia e HTTP</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/scripting/examples.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Exemplos</p><!--]--></a><!----></div><!----></div><!--]--></div></section></div><div class="no-transition group" data-v-51288d80><section class="VPSidebarItem level-0" data-v-51288d80 data-v-0009425e><div class="item" role="button" tabindex="0" data-v-0009425e><div class="indicator" data-v-0009425e></div><h2 class="text" data-v-0009425e>Teoria</h2><!----></div><div class="items" data-v-0009425e><!--[--><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/theory/formulation.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Formulação</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/theory/validation.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Validação</p><!--]--></a><!----></div><!----></div><!--]--></div></section></div><div class="no-transition group" data-v-51288d80><section class="VPSidebarItem level-0" data-v-51288d80 data-v-0009425e><div class="item" role="button" tabindex="0" data-v-0009425e><div class="indicator" data-v-0009425e></div><h2 class="text" data-v-0009425e>Sobre</h2><!----></div><div class="items" data-v-0009425e><!--[--><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/about/cite.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Citar</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/about/license.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Licença e créditos</p><!--]--></a><!----></div><!----></div><div class="VPSidebarItem level-1 is-link" data-v-0009425e><div class="item" data-v-0009425e><div class="indicator" data-v-0009425e></div><a class="VPLink link link" href="/tools/magfem-web/docs/about/contributing.html" data-v-0009425e><!--[--><p class="text" data-v-0009425e>Contribuir</p><!--]--></a><!----></div><!----></div><!--]--></div></section></div><!--]--><!--[--><!--]--></nav></aside><div class="VPContent has-sidebar" id="VPContent" data-v-d8b57b2d data-v-9a6c75ad><div class="VPDoc has-sidebar has-aside" data-v-9a6c75ad data-v-e6f2a212><!--[--><!--]--><div class="container" data-v-e6f2a212><div class="aside" data-v-e6f2a212><div class="aside-curtain" data-v-e6f2a212></div><div class="aside-container" data-v-e6f2a212><div class="aside-content" data-v-e6f2a212><div class="VPDocAside" data-v-e6f2a212 data-v-cb998dce><!--[--><!--]--><!--[--><!--]--><nav aria-labelledby="doc-outline-aria-label" class="VPDocAsideOutline" data-v-cb998dce data-v-f610f197><div class="content" data-v-f610f197><div class="outline-marker" data-v-f610f197></div><div aria-level="2" class="outline-title" id="doc-outline-aria-label" role="heading" data-v-f610f197>Nesta página</div><ul class="VPDocOutlineItem root" data-v-f610f197 data-v-53c99d69><!--[--><!--]--></ul></div></nav><!--[--><!--]--><div class="spacer" data-v-cb998dce></div><!--[--><!--]--><!----><!--[--><!--]--><!--[--><!--]--></div></div></div></div><div class="content" data-v-e6f2a212><div class="content-container" data-v-e6f2a212><!--[--><!--]--><main class="main" data-v-e6f2a212><div style="position:relative;" class="vp-doc _tools_magfem-web_docs_scripting_api" data-v-e6f2a212><div><h1 id="referencia-da-api" tabindex="-1">Referência da API <a class="header-anchor" href="#referencia-da-api" aria-label="Permalink to &quot;Referência da API&quot;">​</a></h1><p>Os comandos do <a href="./console.html">console</a>, agrupados por objeto. Argumentos entre colchetes são opcionais. Ids são strings (<code>&quot;l3&quot;</code>, <code>&quot;p5&quot;</code>, <code>&quot;n2&quot;</code>); onde se espera um id, também vale o <strong>nome</strong> dado à entidade ou ao nó, e <code>getid(&quot;nome&quot;)</code> devolve o id. Muitos comandos que criam algo aceitam <code>id=</code> (para fixar o id) e <code>name=</code>.</p><h2 id="geometria-—-g" tabindex="-1">Geometria — <code>g</code> <a class="header-anchor" href="#geometria-—-g" aria-label="Permalink to &quot;Geometria — `g`&quot;">​</a></h2><h3 id="entidades" tabindex="-1">Entidades <a class="header-anchor" href="#entidades" aria-label="Permalink to &quot;Entidades&quot;">​</a></h3><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>g.point((x, y))</code></td><td>ponto</td></tr><tr><td><code>g.line(a, b, construction=False)</code></td><td>linha; <code>a</code> e <code>b</code> são coordenadas ou ids de pontos</td></tr><tr><td><code>g.circle(centro, r=5)</code></td><td>círculo</td></tr><tr><td><code>g.arc(centro, inicio, fim)</code></td><td>arco anti-horário de <code>inicio</code> a <code>fim</code></td></tr><tr><td><code>g.rectangle(canto, oposto)</code></td><td>retângulo (agrupado, com H/V)</td></tr><tr><td><code>g.rectangle_center(centro, canto)</code></td><td>retângulo simétrico em torno do centro</td></tr></tbody></table><h3 id="restricoes" tabindex="-1">Restrições <a class="header-anchor" href="#restricoes" aria-label="Permalink to &quot;Restrições&quot;">​</a></h3><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>g.horizontal(l)</code>, <code>g.vertical(l)</code></td><td>linha (ou dois pontos) horizontal/vertical</td></tr><tr><td><code>g.parallel(a, b)</code>, <code>g.perpendicular(a, b)</code></td><td>duas linhas</td></tr><tr><td><code>g.tangent(a, b)</code></td><td>linha e arco/círculo, ou dois arcos/círculos</td></tr><tr><td><code>g.equal(a, b)</code></td><td>comprimentos ou raios iguais</td></tr><tr><td><code>g.coincident(a, b)</code></td><td>dois pontos no mesmo lugar</td></tr><tr><td><code>g.point_on(p, curva)</code></td><td>ponto sobre a curva</td></tr><tr><td><code>g.midpoint(p, l)</code></td><td>ponto no meio da linha</td></tr><tr><td><code>g.symmetric(p1, p2, axis=&quot;y&quot; | linha)</code></td><td>pontos simétricos em relação a um eixo</td></tr><tr><td><code>g.concentric(c1, c2)</code></td><td>mesmo centro</td></tr><tr><td><code>g.fix(p)</code>, <code>g.unfix(p)</code></td><td>prende/solta um ponto</td></tr><tr><td><code>g.detach(&quot;O&quot;)</code></td><td>solta curvas presas à própria Origem (desenhos antigos)</td></tr></tbody></table><h3 id="cotas-e-variaveis" tabindex="-1">Cotas e variáveis <a class="header-anchor" href="#cotas-e-variaveis" aria-label="Permalink to &quot;Cotas e variáveis&quot;">​</a></h3><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>g.distance(a, [b,] &quot;50 mm&quot;)</code></td><td>distância (linha, dois pontos ou ponto-linha)</td></tr><tr><td><code>g.hdistance(a, b, &quot;10 mm&quot;)</code>, <code>g.vdistance(a, b, &quot;10 mm&quot;)</code></td><td>distância horizontal/vertical</td></tr><tr><td><code>g.radius(c, &quot;L/2&quot;)</code>, <code>g.diameter(c, 10)</code></td><td>raio e diâmetro</td></tr><tr><td><code>g.angle(l1, l2, &quot;30 deg&quot;)</code></td><td>ângulo entre linhas</td></tr><tr><td><code>g.set_dimension(&quot;k5&quot;, &quot;g*2&quot;)</code></td><td>muda o valor (ou a expressão) de uma cota</td></tr><tr><td><code>g.value(&quot;k5&quot;)</code></td><td>valor atual de uma cota</td></tr><tr><td><code>g.var(&quot;g&quot;, &quot;0.5 mm&quot;)</code></td><td>cria ou muda uma variável</td></tr><tr><td><code>g.del_var(&quot;g&quot;)</code>, <code>g.rename_var(&quot;g&quot;, &quot;gap&quot;)</code></td><td>apaga e renomeia variáveis</td></tr></tbody></table><h3 id="edicao" tabindex="-1">Edição <a class="header-anchor" href="#edicao" aria-label="Permalink to &quot;Edição&quot;">​</a></h3><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>g.trim(curva, (x, y))</code></td><td>tesoura: remove o trecho da curva que contém o ponto</td></tr><tr><td><code>g.delete(ids...)</code></td><td>apaga</td></tr><tr><td><code>g.rename(id, &quot;nome&quot;)</code></td><td>dá nome a uma entidade</td></tr><tr><td><code>g.move(p, (x, y))</code></td><td>move um ponto</td></tr><tr><td><code>g.translate(ids, dx=5, dy=0)</code></td><td>translada</td></tr><tr><td><code>g.rotate(ids, &quot;15 deg&quot;, pivot=(0, 0))</code></td><td>gira</td></tr><tr><td><code>g.set_radius(c, 5)</code></td><td>muda o raio</td></tr><tr><td><code>g.construction(ids, True)</code></td><td>marca como construção</td></tr><tr><td><code>g.offset(ids, &quot;2 mm&quot;)</code>, <code>g.set_offset(g, &quot;-5 mm&quot;)</code></td><td>offset associativo e sua distância</td></tr><tr><td><code>g.mirror(ids, axis=&quot;y&quot;)</code></td><td>espelho associativo (eixo <code>&quot;x&quot;</code>, <code>&quot;y&quot;</code> ou uma linha)</td></tr><tr><td><code>g.array(ids, nx=3, ny=1, dx=&quot;20 mm&quot;, dy=0)</code></td><td>padrão linear</td></tr><tr><td><code>g.array_circular(ids, n=6, angle=&quot;360 deg&quot;, center=(0, 0))</code></td><td>padrão circular</td></tr><tr><td><code>g.set_pattern(g, nx=4, dx=&quot;25 mm&quot;)</code></td><td>muda um padrão</td></tr><tr><td><code>g.group([ids], name=&quot;rotor&quot;)</code>, <code>g.ungroup(g)</code></td><td>agrupa e desagrupa</td></tr><tr><td><code>g.hide(g)</code>, <code>g.show(g)</code></td><td>oculta e mostra um grupo</td></tr></tbody></table><h3 id="consulta-e-problema" tabindex="-1">Consulta e problema <a class="header-anchor" href="#consulta-e-problema" aria-label="Permalink to &quot;Consulta e problema&quot;">​</a></h3><table tabindex="0"><thead><tr><th>Comando</th><th>Devolve / faz</th></tr></thead><tbody><tr><td><code>g.get(id)</code></td><td>a entidade (dicionário)</td></tr><tr><td><code>g.list()</code></td><td>lista de ids</td></tr><tr><td><code>g.measure(a, b)</code></td><td>distância mínima entre duas entidades</td></tr><tr><td><code>g.area(ids)</code></td><td>área fechada pelas curvas</td></tr><tr><td><code>g.dof()</code></td><td>graus de liberdade restantes</td></tr><tr><td><code>g.units(&quot;mm&quot;)</code></td><td>unidade de comprimento do projeto</td></tr><tr><td><code>g.problem(&quot;planar&quot; | &quot;axisymmetric&quot;, depth=&quot;100 mm&quot;)</code></td><td>tipo de problema e profundidade (plano)</td></tr></tbody></table><h2 id="malha-—-m" tabindex="-1">Malha — <code>m</code> <a class="header-anchor" href="#malha-—-m" aria-label="Permalink to &quot;Malha — `m`&quot;">​</a></h2><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>m.material(&quot;Cobre&quot;, mur=1, sigma=58, br=0, color=&quot;#e0914f&quot;, bh=[(H, B), ...], kh=, alpha=, ke=, group=)</code></td><td>cria ou edita um material (σ em MS/m, Br em T; <code>bh=None</code> apaga a curva)</td></tr><tr><td><code>m.del_material(nome)</code>, <code>m.duplicate_material(nome)</code>, <code>m.restore_material(nome)</code></td><td>apaga, duplica e restaura o padrão</td></tr><tr><td><code>m.circuit(&quot;Bobina&quot;, current=&quot;10&quot;)</code></td><td>cria ou edita um circuito</td></tr><tr><td><code>m.del_circuit(&quot;Bobina&quot;)</code></td><td>apaga</td></tr><tr><td><code>m.region((x, y), name=, material=, circuit=, current=, turns=, angle=, label=(dx, dy))</code></td><td>atribui à região que contém o ponto; devolve a área</td></tr><tr><td><code>m.regions()</code></td><td>lista <code>[((x, y), área, material)]</code></td></tr><tr><td><code>m.boundary_def(&quot;Nome&quot;, type=, value=, a1=, a2=, c0=, c1=, color=)</code></td><td>cria ou edita um contorno</td></tr><tr><td><code>m.boundary([&quot;l1&quot;, &quot;l2&quot;], &quot;Nome&quot; | &quot;dirichlet&quot; | &quot;neumann&quot; | &quot;periodic&quot; | &quot;antiperiodic&quot; | None)</code></td><td>aplica um contorno às curvas</td></tr><tr><td><code>m.mesh_size((x, y), &quot;0.5 mm&quot; | &quot;auto&quot;)</code></td><td>tamanho do elemento na região</td></tr><tr><td><code>m.curve_size([curvas], &quot;1 mm&quot;)</code></td><td>tamanho ao longo de curvas (<code>None</code> tira)</td></tr><tr><td><code>m.settings(&quot;n1&quot;, size=&quot;2 mm&quot; | &quot;auto&quot;, min_angle=30)</code></td><td>tamanho padrão e qualidade da malha</td></tr><tr><td><code>m.generate(&quot;n1&quot;)</code></td><td>gera a malha</td></tr><tr><td><code>m.add(name=&quot;Malha&quot;)</code>, <code>m.rename(id, nome)</code>, <code>m.remove(id)</code></td><td>nós de malha</td></tr></tbody></table><p>Tipos de contorno em <code>type=</code>: <code>dirichlet</code> (A = value + a1·x + a2·y), <code>neumann</code>, <code>mixed</code> (c0, c1), <code>periodic</code>, <code>antiperiodic</code>.</p><h2 id="metodo-de-resolucao-—-s" tabindex="-1">Método de resolução — <code>s</code> <a class="header-anchor" href="#metodo-de-resolucao-—-s" aria-label="Permalink to &quot;Método de resolução — `s`&quot;">​</a></h2><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>s.add_physics(name=&quot;Campo magnético&quot;, circuit=False)</code></td><td>nova física (campo, ou circuito com <code>circuit=True</code>)</td></tr><tr><td><code>s.physics(&quot;n2&quot;, analysis=&quot;magnetostatic&quot; | &quot;harmonic&quot; | &quot;transient&quot;, frequency=, dt=, t_end=, schematic=)</code></td><td>configura a análise (frequência em Hz, tempos em s)</td></tr><tr><td><code>s.solve(&quot;n2&quot;)</code></td><td>resolve (gera a malha antes, se preciso)</td></tr><tr><td><code>s.rename(id, nome)</code>, <code>s.remove(id)</code></td><td>organização</td></tr></tbody></table><h2 id="resultados-—-r" tabindex="-1">Resultados — <code>r</code> <a class="header-anchor" href="#resultados-—-r" aria-label="Permalink to &quot;Resultados — `r`&quot;">​</a></h2><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>r.view(&quot;n2&quot;, name=)</code></td><td>nova vista de campo</td></tr><tr><td><code>r.interpolate(&quot;n2&quot;, level=3)</code></td><td>vista interpolada (1 a 6)</td></tr><tr><td><code>r.plot(vista, &quot;surface&quot; | &quot;contour&quot; | &quot;arrow&quot; | &quot;line&quot;, quantity=&quot;b&quot; | &quot;h&quot; | &quot;a&quot; | &quot;j&quot; | &quot;bn&quot; | &quot;bt&quot;)</code></td><td>camada numa vista (ou gráfico sobre linha)</td></tr><tr><td><code>r.show(id, visible=, range=(0, 1.5), n_lines=20, spacing=, scale=, curve=, quantity=, color=, color_by_value=, colormap=, regions=[(x, y)], outputs=[(&quot;fx&quot;, &quot;Fx&quot;)], var_name=, expr=, unit_label=, at_time=, legend=(x, y, s))</code></td><td>opções de uma camada ou item</td></tr><tr><td><code>r.table(&quot;n2&quot;, name=)</code></td><td>nova tabela</td></tr><tr><td><code>r.item(tabela, &quot;circuits&quot; | &quot;lineint&quot; | &quot;surfint&quot; | &quot;formula&quot;, name=)</code></td><td>item de tabela</td></tr><tr><td><code>r.move(camada, vista)</code>, <code>r.duplicate(id)</code>, <code>r.rename(id, nome)</code>, <code>r.remove(id)</code></td><td>organização</td></tr><tr><td><code>r.result(&quot;Fx&quot;, physics=&quot;n2&quot;)</code></td><td>número de uma variável de resultado (no instante mostrado, no transitório)</td></tr><tr><td><code>r.results(&quot;n2&quot;)</code></td><td>lista <code>[(nome, valor, unidade), ...]</code></td></tr><tr><td><code>r.series(&quot;Bobina_I&quot;)</code></td><td>transitório: <code>(tempos em s, valores)</code></td></tr></tbody></table><p>Grandezas das integrais (para <code>outputs=</code>): superfície — <code>area</code>, <code>volume</code>, <code>intA</code>, <code>current</code>, <code>energy</code>, <code>bavg</code>, <code>b2</code>, <code>loss</code>, <code>ironLoss</code>, <code>fx</code>, <code>fy</code>, <code>torque</code>; linha — <code>length</code>, <code>flux</code>, <code>mmf</code>, <code>intB</code>, <code>intBn</code>, <code>bavg</code>, <code>fx</code>, <code>fy</code>, <code>torque</code>. Todas em SI.</p><h2 id="esquematico-—-c" tabindex="-1">Esquemático — <code>c</code> <a class="header-anchor" href="#esquematico-—-c" aria-label="Permalink to &quot;Esquemático — `c`&quot;">​</a></h2><table tabindex="0"><thead><tr><th>Comando</th><th>Descrição</th></tr></thead><tbody><tr><td><code>c.add(name=&quot;Circuito 1&quot;)</code></td><td>novo esquemático</td></tr><tr><td><code>c.part(esq, &quot;V&quot; | &quot;I&quot; | &quot;R&quot; | &quot;L&quot; | &quot;C&quot; | &quot;gnd&quot; | &quot;coil&quot;, x=, y=, rot=, value=, amp=, freq=, phase=, dc=, circuit=)</code></td><td>componente</td></tr><tr><td><code>c.wire(esq, (parte, terminal), (parte, terminal), mid=)</code></td><td>fio entre terminais</td></tr><tr><td><code>c.route(fio, x)</code> ou <code>c.route(fio, y=80)</code></td><td>caminho do fio</td></tr><tr><td><code>c.set(parte, value=, name=)</code>, <code>c.move(parte, (x, y))</code>, <code>c.rotate(parte)</code>, <code>c.remove(parte)</code></td><td>edição</td></tr></tbody></table><h2 id="globais" tabindex="-1">Globais <a class="header-anchor" href="#globais" aria-label="Permalink to &quot;Globais&quot;">​</a></h2><p><code>help()</code>, <code>getid(&quot;nome&quot;)</code>, <code>undo()</code>, <code>redo()</code>, <code>fit()</code>, <code>reset()</code>. <code>clear()</code> e <code>next_id(n)</code> aparecem no script exportado.</p></div></div></main><footer class="VPDocFooter" data-v-e6f2a212 data-v-1bcd8184><!--[--><!--]--><div class="edit-info" data-v-1bcd8184><div class="edit-link" data-v-1bcd8184><a class="VPLink link vp-external-link-icon no-icon edit-link-button" href="https://github.com/thalesmaoa/magfem/edit/main/docs/scripting/api.md" target="_blank" rel="noreferrer" data-v-1bcd8184><!--[--><span class="vpi-square-pen edit-link-icon" data-v-1bcd8184></span> Editar esta página no GitHub<!--]--></a></div><!----></div><nav class="prev-next" aria-labelledby="doc-footer-aria-label" data-v-1bcd8184><span class="visually-hidden" id="doc-footer-aria-label" data-v-1bcd8184>Pager</span><div class="pager" data-v-1bcd8184><a class="VPLink link pager-link prev" href="/tools/magfem-web/docs/scripting/console.html" data-v-1bcd8184><!--[--><span class="desc" data-v-1bcd8184>Anterior</span><span class="title" data-v-1bcd8184>Console</span><!--]--></a></div><div class="pager" data-v-1bcd8184><a class="VPLink link pager-link next" href="/tools/magfem-web/docs/scripting/bridge.html" data-v-1bcd8184><!--[--><span class="desc" data-v-1bcd8184>Próxima</span><span class="title" data-v-1bcd8184>Ponte local (Python)</span><!--]--></a></div></nav></footer><!--[--><!--]--></div></div></div><!--[--><!--]--></div></div><footer class="VPFooter has-sidebar" data-v-d8b57b2d data-v-566314d4><div class="container" data-v-566314d4><p class="message" data-v-566314d4>Código MIT · Biblioteca de materiais do FEMM 4.2 (AFPL)</p><p class="copyright" data-v-566314d4>© 2026 Thales Maia</p></div></footer><!--[--><!--]--></div></div>
-    <script>window.__VP_HASH_MAP__=JSON.parse("{\"about_cite.md\":\"BbE-znL8\",\"about_contributing.md\":\"CnkrsLxD\",\"about_license.md\":\"BsePhTEP\",\"en_about_cite.md\":\"BYcqKCF7\",\"en_about_contributing.md\":\"zaliHo0M\",\"en_about_license.md\":\"D69Ny-FN\",\"en_guide_circuit.md\":\"BK1-AhTO\",\"en_guide_files.md\":\"Dg3ErihU\",\"en_guide_first-model.md\":\"C_otZgpR\",\"en_guide_geometry.md\":\"BLtuTLhR\",\"en_guide_index.md\":\"Zodvl4ly\",\"en_guide_mesh.md\":\"CN_txqJE\",\"en_guide_results.md\":\"DqQ8DJVs\",\"en_guide_shortcuts.md\":\"CXBubVig\",\"en_guide_solver.md\":\"BvEsc0r1\",\"en_index.md\":\"Cu_q-nrK\",\"en_scripting_api.md\":\"D2eartHr\",\"en_scripting_bridge.md\":\"DoZPJklX\",\"en_scripting_console.md\":\"EFD2nc0P\",\"en_scripting_examples.md\":\"CLS-ghZT\",\"en_scripting_other-languages.md\":\"BrDM6qgi\",\"en_theory_formulation.md\":\"Cwabbvgi\",\"en_theory_validation.md\":\"4kMa1vw2\",\"guide_circuit.md\":\"BGWN0ZmM\",\"guide_files.md\":\"D0BMkGsa\",\"guide_first-model.md\":\"Dw2iJ062\",\"guide_geometry.md\":\"DtbwNzOm\",\"guide_index.md\":\"BtUaSLwB\",\"guide_mesh.md\":\"Biokh_Ol\",\"guide_results.md\":\"DUfsXNsG\",\"guide_shortcuts.md\":\"AIASO3qG\",\"guide_solver.md\":\"CoVIiLGK\",\"index.md\":\"_hm8ofm1\",\"scripting_api.md\":\"CsIJ4v0w\",\"scripting_bridge.md\":\"CF6NH4Qu\",\"scripting_console.md\":\"Cwj2wy_P\",\"scripting_examples.md\":\"CNBvW1iQ\",\"scripting_other-languages.md\":\"Bfb6omiW\",\"theory_formulation.md\":\"DU_HcPt2\",\"theory_validation.md\":\"7RA07uK4\"}");window.__VP_SITE_DATA__=JSON.parse("{\"lang\":\"en-US\",\"dir\":\"ltr\",\"title\":\"MagFEM\",\"description\":\"A VitePress site\",\"base\":\"/tools/magfem-web/docs/\",\"head\":[],\"router\":{\"prefetchLinks\":true},\"appearance\":true,\"themeConfig\":{\"logo\":\"/logo.svg\",\"socialLinks\":[{\"icon\":\"github\",\"link\":\"https://github.com/thalesmaoa/magfem\"}],\"search\":{\"provider\":\"local\",\"options\":{\"locales\":{\"root\":{\"translations\":{\"button\":{\"buttonText\":\"Buscar\",\"buttonAriaLabel\":\"Buscar\"},\"modal\":{\"noResultsText\":\"Nenhum resultado para\",\"resetButtonTitle\":\"Limpar a busca\",\"footer\":{\"selectText\":\"selecionar\",\"navigateText\":\"navegar\",\"closeText\":\"fechar\"}}}}}}}},\"locales\":{\"root\":{\"label\":\"Português\",\"lang\":\"pt-BR\",\"description\":\"Documentação do MagFEM: elementos finitos magnéticos 2D no navegador.\",\"themeConfig\":{\"nav\":[{\"text\":\"Guia\",\"link\":\"/guide/\",\"activeMatch\":\"/guide/\"},{\"text\":\"API\",\"link\":\"/scripting/api\",\"activeMatch\":\"/scripting/\"},{\"text\":\"Teoria\",\"link\":\"/theory/formulation\",\"activeMatch\":\"/theory/\"},{\"text\":\"Abrir o MagFEM\",\"link\":\"https://thalesmaia.com/tools/magfem-web/\"}],\"sidebar\":[{\"text\":\"Guia\",\"items\":[{\"text\":\"Introdução\",\"link\":\"/guide/\"},{\"text\":\"Primeiro modelo\",\"link\":\"/guide/first-model\"},{\"text\":\"Geometria (CAD)\",\"link\":\"/guide/geometry\"},{\"text\":\"Malha e materiais\",\"link\":\"/guide/mesh\"},{\"text\":\"Resolução\",\"link\":\"/guide/solver\"},{\"text\":\"Resultados\",\"link\":\"/guide/results\"},{\"text\":\"Circuito externo\",\"link\":\"/guide/circuit\"},{\"text\":\"Arquivos, importar e exportar\",\"link\":\"/guide/files\"},{\"text\":\"Atalhos de teclado\",\"link\":\"/guide/shortcuts\"}]},{\"text\":\"Scripts e API\",\"items\":[{\"text\":\"Console\",\"link\":\"/scripting/console\"},{\"text\":\"Referência da API\",\"link\":\"/scripting/api\"},{\"text\":\"Ponte local (Python)\",\"link\":\"/scripting/bridge\"},{\"text\":\"Matlab, Julia e HTTP\",\"link\":\"/scripting/other-languages\"},{\"text\":\"Exemplos\",\"link\":\"/scripting/examples\"}]},{\"text\":\"Teoria\",\"items\":[{\"text\":\"Formulação\",\"link\":\"/theory/formulation\"},{\"text\":\"Validação\",\"link\":\"/theory/validation\"}]},{\"text\":\"Sobre\",\"items\":[{\"text\":\"Citar\",\"link\":\"/about/cite\"},{\"text\":\"Licença e créditos\",\"link\":\"/about/license\"},{\"text\":\"Contribuir\",\"link\":\"/about/contributing\"}]}],\"outline\":{\"level\":[2,3],\"label\":\"Nesta página\"},\"docFooter\":{\"prev\":\"Anterior\",\"next\":\"Próxima\"},\"editLink\":{\"pattern\":\"https://github.com/thalesmaoa/magfem/edit/main/docs/:path\",\"text\":\"Editar esta página no GitHub\"},\"darkModeSwitchLabel\":\"Tema\",\"sidebarMenuLabel\":\"Menu\",\"returnToTopLabel\":\"Voltar ao topo\",\"langMenuLabel\":\"Idioma\",\"footer\":{\"message\":\"Código MIT · Biblioteca de materiais do FEMM 4.2 (AFPL)\",\"copyright\":\"© 2026 Thales Maia\"}}},\"en\":{\"label\":\"English\",\"lang\":\"en\",\"link\":\"/en/\",\"description\":\"MagFEM documentation: 2D magnetic finite elements in the browser.\",\"themeConfig\":{\"nav\":[{\"text\":\"Guide\",\"link\":\"/en/guide/\",\"activeMatch\":\"/en/guide/\"},{\"text\":\"API\",\"link\":\"/en/scripting/api\",\"activeMatch\":\"/en/scripting/\"},{\"text\":\"Theory\",\"link\":\"/en/theory/formulation\",\"activeMatch\":\"/en/theory/\"},{\"text\":\"Open MagFEM\",\"link\":\"https://thalesmaia.com/tools/magfem-web/\"}],\"sidebar\":[{\"text\":\"Guide\",\"items\":[{\"text\":\"Introduction\",\"link\":\"/en/guide/\"},{\"text\":\"First model\",\"link\":\"/en/guide/first-model\"},{\"text\":\"Geometry (CAD)\",\"link\":\"/en/guide/geometry\"},{\"text\":\"Mesh and materials\",\"link\":\"/en/guide/mesh\"},{\"text\":\"Solving\",\"link\":\"/en/guide/solver\"},{\"text\":\"Results\",\"link\":\"/en/guide/results\"},{\"text\":\"External circuit\",\"link\":\"/en/guide/circuit\"},{\"text\":\"Files, import and export\",\"link\":\"/en/guide/files\"},{\"text\":\"Keyboard shortcuts\",\"link\":\"/en/guide/shortcuts\"}]},{\"text\":\"Scripting and API\",\"items\":[{\"text\":\"Console\",\"link\":\"/en/scripting/console\"},{\"text\":\"API reference\",\"link\":\"/en/scripting/api\"},{\"text\":\"Local bridge (Python)\",\"link\":\"/en/scripting/bridge\"},{\"text\":\"Matlab, Julia and HTTP\",\"link\":\"/en/scripting/other-languages\"},{\"text\":\"Examples\",\"link\":\"/en/scripting/examples\"}]},{\"text\":\"Theory\",\"items\":[{\"text\":\"Formulation\",\"link\":\"/en/theory/formulation\"},{\"text\":\"Validation\",\"link\":\"/en/theory/validation\"}]},{\"text\":\"About\",\"items\":[{\"text\":\"Cite\",\"link\":\"/en/about/cite\"},{\"text\":\"License and credits\",\"link\":\"/en/about/license\"},{\"text\":\"Contributing\",\"link\":\"/en/about/contributing\"}]}],\"outline\":{\"level\":[2,3]},\"editLink\":{\"pattern\":\"https://github.com/thalesmaoa/magfem/edit/main/docs/:path\",\"text\":\"Edit this page on GitHub\"},\"footer\":{\"message\":\"MIT code · FEMM 4.2 material library (AFPL)\",\"copyright\":\"© 2026 Thales Maia\"}}}},\"scrollOffset\":134,\"cleanUrls\":false}");</script>
-    
-  </body>
+<html class="writer-html5" lang="pt-BR" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Referência da API &mdash; MagFEM</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=34306bf6" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=c0c8e3fa"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/translations.js?v=71a39b36"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="../genindex.html" />
+    <link rel="search" title="Buscar" href="../search.html" />
+    <link rel="next" title="Ponte local (Python)" href="bridge.html" />
+    <link rel="prev" title="Console" href="console.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            MagFEM
+              <img src="../_static/magfem-logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Pesquisar documentos" aria-label="Pesquisar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Menu de navegação">
+              <p class="caption" role="heading"><span class="caption-text">Guia</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">Introdução</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/index.html#o-fluxo-de-trabalho">O fluxo de trabalho</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/index.html#a-interface">A interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/index.html#proximos-passos">Próximos passos</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/first-model.html">Primeiro modelo: bobina com núcleo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/first-model.html#problema-axissimetrico">1. Problema axissimétrico</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/first-model.html#geometria">2. Geometria</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/first-model.html#materiais-circuito-e-malha">3. Materiais, circuito e malha</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/first-model.html#resolver">4. Resolver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/first-model.html#resultados">5. Resultados</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/first-model.html#experimente">6. Experimente</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/first-model.html#o-script-completo">O script completo</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/geometry.html">Geometria (CAD)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#ferramentas-de-desenho">Ferramentas de desenho</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#encaixes-snap">Encaixes (snap)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#restricoes">Restrições</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#cotas-e-variaveis">Cotas e variáveis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#editar">Editar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#selecao-por-caixa">Seleção por caixa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#plano-e-axissimetrico">Plano e axissimétrico</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/geometry.html#importar-geometria">Importar geometria</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/mesh.html">Malha e materiais</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/mesh.html#regioes">Regiões</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/mesh.html#materiais">Materiais</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/mesh.html#circuitos-e-correntes">Circuitos e correntes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/mesh.html#contornos">Contornos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/mesh.html#gerar-a-malha">Gerar a malha</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/solver.html">Resolução</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/solver.html#tipos-de-analise">Tipos de análise</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../guide/solver.html#magnetostatica">Magnetostática</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guide/solver.html#harmonica-ac">Harmônica (AC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../guide/solver.html#transitoria">Transitória</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/solver.html#circuito-externo">Circuito externo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/solver.html#desempenho">Desempenho</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/results.html">Resultados</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/results.html#vistas-de-campo">Vistas de campo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/results.html#tabelas-e-variaveis-de-resultado">Tabelas e variáveis de resultado</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/results.html#forca-e-torque">Força e torque</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/results.html#transitorio-e-ac">Transitório e AC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/results.html#exportar">Exportar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/circuit.html">Circuito externo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#criar-o-circuito">Criar o circuito</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#fontes">Fontes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#resolver-e-ver-os-sinais">Resolver e ver os sinais</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/files.html">Arquivos, importar e exportar</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/files.html#projetos">Projetos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/files.html#rascunho-e-copias-automaticas">Rascunho e cópias automáticas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/files.html#importar">Importar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/files.html#exportar">Exportar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/shortcuts.html">Atalhos de teclado</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/shortcuts.html#desenho">Desenho</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/shortcuts.html#restricoes-com-a-selecao">Restrições (com a seleção)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/shortcuts.html#geral">Geral</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/shortcuts.html#console">Console</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/shortcuts.html#esquematico">Esquemático</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Scripts e API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="console.html">Console</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="console.html#a-linguagem">A linguagem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="console.html#objetos">Objetos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="console.html#funcoes-globais">Funções globais</a></li>
+<li class="toctree-l2"><a class="reference internal" href="console.html#recursos-do-console">Recursos do console</a></li>
+<li class="toctree-l2"><a class="reference internal" href="console.html#script-exportado">Script exportado</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Referência da API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#geometria-g">Geometria — <code class="docutils literal notranslate"><span class="pre">g</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#entidades">Entidades</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#restricoes">Restrições</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cotas-e-variaveis">Cotas e variáveis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#edicao">Edição</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#consulta-e-problema">Consulta e problema</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#malha-m">Malha — <code class="docutils literal notranslate"><span class="pre">m</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#metodo-de-resolucao-s">Método de resolução — <code class="docutils literal notranslate"><span class="pre">s</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resultados-r">Resultados — <code class="docutils literal notranslate"><span class="pre">r</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#esquematico-c">Esquemático — <code class="docutils literal notranslate"><span class="pre">c</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#globais">Globais</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bridge.html">Ponte local (Python)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bridge.html#instalar">Instalar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bridge.html#conectar">Conectar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bridge.html#o-console-no-terminal">O console no terminal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bridge.html#scripts-em-python">Scripts em Python</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bridge.html#erros">Erros</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bridge.html#seguranca">Segurança</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bridge.html#http-direto">HTTP direto</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="other-languages.html">Matlab, Julia e HTTP</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="other-languages.html#matlab-octave">Matlab / Octave</a></li>
+<li class="toctree-l2"><a class="reference internal" href="other-languages.html#julia">Julia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="other-languages.html#protocolo-http">Protocolo HTTP</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Exemplos</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#varredura-de-forca">Varredura de força</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#contator">Contator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#ideias">Ideias</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Teoria</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../theory/formulation.html">Formulação</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#magnetostatica">Magnetostática</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#condicoes-de-contorno">Condições de contorno</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#solucao">Solução</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#transitorio">Transitório</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#harmonico-ac">Harmônico (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#pos-processamento">Pós-processamento</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#forca-e-torque">Força e torque</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../theory/validation.html">Validação</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../theory/validation.html#comparacao-com-o-femm">Comparação com o FEMM</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Sobre</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about/cite.html">Citar</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../about/cite.html#citacao-abnt">Citação (ABNT)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../about/cite.html#citation-apa">Citation (APA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../about/cite.html#bibtex">BibTeX</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../about/license.html">Licença e créditos</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../about/license.html#magfem">MagFEM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../about/license.html#componentes-de-terceiros">Componentes de terceiros</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../about/contributing.html">Contribuir</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../about/contributing.html#rodar-localmente">Rodar localmente</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../about/contributing.html#organizacao">Organização</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../about/contributing.html#esta-documentacao">Esta documentação</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../about/contributing.html#estilo">Estilo</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Menu de navegação móvel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MagFEM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Navegação da página">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Referência da API</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/thalesmaoa/magfem/blob/main/docs/pt/scripting/api.md" class="fa fa-github"> Editar no GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="referencia-da-api">
+<h1>Referência da API<a class="headerlink" href="#referencia-da-api" title="Link para este cabeçalho"></a></h1>
+<p>Os comandos do <a class="reference internal" href="console.html"><span class="std std-doc">console</span></a>, agrupados por objeto. Argumentos entre colchetes são opcionais. Ids são
+strings (<code class="docutils literal notranslate"><span class="pre">&quot;l3&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;p5&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;n2&quot;</span></code>); onde se espera um id, também vale o <strong>nome</strong> dado à entidade ou ao nó, e
+<code class="docutils literal notranslate"><span class="pre">getid(&quot;nome&quot;)</span></code> devolve o id. Muitos comandos que criam algo aceitam <code class="docutils literal notranslate"><span class="pre">id=</span></code> (para fixar o id) e <code class="docutils literal notranslate"><span class="pre">name=</span></code>.</p>
+<section id="geometria-g">
+<h2>Geometria — <code class="docutils literal notranslate"><span class="pre">g</span></code><a class="headerlink" href="#geometria-g" title="Link para este cabeçalho"></a></h2>
+<section id="entidades">
+<h3>Entidades<a class="headerlink" href="#entidades" title="Link para este cabeçalho"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.point((x,</span> <span class="pre">y))</span></code></p></td>
+<td><p>ponto</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.line(a,</span> <span class="pre">b,</span> <span class="pre">construction=False)</span></code></p></td>
+<td><p>linha; <code class="docutils literal notranslate"><span class="pre">a</span></code> e <code class="docutils literal notranslate"><span class="pre">b</span></code> são coordenadas ou ids de pontos</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.circle(centro,</span> <span class="pre">r=5)</span></code></p></td>
+<td><p>círculo</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.arc(centro,</span> <span class="pre">inicio,</span> <span class="pre">fim)</span></code></p></td>
+<td><p>arco anti-horário de <code class="docutils literal notranslate"><span class="pre">inicio</span></code> a <code class="docutils literal notranslate"><span class="pre">fim</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.rectangle(canto,</span> <span class="pre">oposto)</span></code></p></td>
+<td><p>retângulo (agrupado, com H/V)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.rectangle_center(centro,</span> <span class="pre">canto)</span></code></p></td>
+<td><p>retângulo simétrico em torno do centro</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="restricoes">
+<h3>Restrições<a class="headerlink" href="#restricoes" title="Link para este cabeçalho"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.horizontal(l)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.vertical(l)</span></code></p></td>
+<td><p>linha (ou dois pontos) horizontal/vertical</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.parallel(a,</span> <span class="pre">b)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.perpendicular(a,</span> <span class="pre">b)</span></code></p></td>
+<td><p>duas linhas</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.tangent(a,</span> <span class="pre">b)</span></code></p></td>
+<td><p>linha e arco/círculo, ou dois arcos/círculos</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.equal(a,</span> <span class="pre">b)</span></code></p></td>
+<td><p>comprimentos ou raios iguais</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.coincident(a,</span> <span class="pre">b)</span></code></p></td>
+<td><p>dois pontos no mesmo lugar</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.point_on(p,</span> <span class="pre">curva)</span></code></p></td>
+<td><p>ponto sobre a curva</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.midpoint(p,</span> <span class="pre">l)</span></code></p></td>
+<td><p>ponto no meio da linha</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.symmetric(p1,</span> <span class="pre">p2,</span> <span class="pre">axis=&quot;y&quot;</span> <span class="pre">|</span> <span class="pre">linha)</span></code></p></td>
+<td><p>pontos simétricos em relação a um eixo</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.concentric(c1,</span> <span class="pre">c2)</span></code></p></td>
+<td><p>mesmo centro</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.fix(p)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.unfix(p)</span></code></p></td>
+<td><p>prende/solta um ponto</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.detach(&quot;O&quot;)</span></code></p></td>
+<td><p>solta curvas presas à própria Origem (desenhos antigos)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cotas-e-variaveis">
+<h3>Cotas e variáveis<a class="headerlink" href="#cotas-e-variaveis" title="Link para este cabeçalho"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.distance(a,</span> <span class="pre">[b,]</span> <span class="pre">&quot;50</span> <span class="pre">mm&quot;)</span></code></p></td>
+<td><p>distância (linha, dois pontos ou ponto-linha)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.hdistance(a,</span> <span class="pre">b,</span> <span class="pre">&quot;10</span> <span class="pre">mm&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.vdistance(a,</span> <span class="pre">b,</span> <span class="pre">&quot;10</span> <span class="pre">mm&quot;)</span></code></p></td>
+<td><p>distância horizontal/vertical</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.radius(c,</span> <span class="pre">&quot;L/2&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.diameter(c,</span> <span class="pre">10)</span></code></p></td>
+<td><p>raio e diâmetro</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.angle(l1,</span> <span class="pre">l2,</span> <span class="pre">&quot;30</span> <span class="pre">deg&quot;)</span></code></p></td>
+<td><p>ângulo entre linhas</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.set_dimension(&quot;k5&quot;,</span> <span class="pre">&quot;g*2&quot;)</span></code></p></td>
+<td><p>muda o valor (ou a expressão) de uma cota</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.value(&quot;k5&quot;)</span></code></p></td>
+<td><p>valor atual de uma cota</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.var(&quot;g&quot;,</span> <span class="pre">&quot;0.5</span> <span class="pre">mm&quot;)</span></code></p></td>
+<td><p>cria ou muda uma variável</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.del_var(&quot;g&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.rename_var(&quot;g&quot;,</span> <span class="pre">&quot;gap&quot;)</span></code></p></td>
+<td><p>apaga e renomeia variáveis</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="edicao">
+<h3>Edição<a class="headerlink" href="#edicao" title="Link para este cabeçalho"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.trim(curva,</span> <span class="pre">(x,</span> <span class="pre">y))</span></code></p></td>
+<td><p>tesoura: remove o trecho da curva que contém o ponto</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.delete(ids...)</span></code></p></td>
+<td><p>apaga</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.rename(id,</span> <span class="pre">&quot;nome&quot;)</span></code></p></td>
+<td><p>dá nome a uma entidade</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.move(p,</span> <span class="pre">(x,</span> <span class="pre">y))</span></code></p></td>
+<td><p>move um ponto</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.translate(ids,</span> <span class="pre">dx=5,</span> <span class="pre">dy=0)</span></code></p></td>
+<td><p>translada</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.rotate(ids,</span> <span class="pre">&quot;15</span> <span class="pre">deg&quot;,</span> <span class="pre">pivot=(0,</span> <span class="pre">0))</span></code></p></td>
+<td><p>gira</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.set_radius(c,</span> <span class="pre">5)</span></code></p></td>
+<td><p>muda o raio</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.construction(ids,</span> <span class="pre">True)</span></code></p></td>
+<td><p>marca como construção</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.offset(ids,</span> <span class="pre">&quot;2</span> <span class="pre">mm&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.set_offset(g,</span> <span class="pre">&quot;-5</span> <span class="pre">mm&quot;)</span></code></p></td>
+<td><p>offset associativo e sua distância</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.mirror(ids,</span> <span class="pre">axis=&quot;y&quot;)</span></code></p></td>
+<td><p>espelho associativo (eixo <code class="docutils literal notranslate"><span class="pre">&quot;x&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;y&quot;</span></code> ou uma linha)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.array(ids,</span> <span class="pre">nx=3,</span> <span class="pre">ny=1,</span> <span class="pre">dx=&quot;20</span> <span class="pre">mm&quot;,</span> <span class="pre">dy=0)</span></code></p></td>
+<td><p>padrão linear</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.array_circular(ids,</span> <span class="pre">n=6,</span> <span class="pre">angle=&quot;360</span> <span class="pre">deg&quot;,</span> <span class="pre">center=(0,</span> <span class="pre">0))</span></code></p></td>
+<td><p>padrão circular</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.set_pattern(g,</span> <span class="pre">nx=4,</span> <span class="pre">dx=&quot;25</span> <span class="pre">mm&quot;)</span></code></p></td>
+<td><p>muda um padrão</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.group([ids],</span> <span class="pre">name=&quot;rotor&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.ungroup(g)</span></code></p></td>
+<td><p>agrupa e desagrupa</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.hide(g)</span></code>, <code class="docutils literal notranslate"><span class="pre">g.show(g)</span></code></p></td>
+<td><p>oculta e mostra um grupo</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="consulta-e-problema">
+<h3>Consulta e problema<a class="headerlink" href="#consulta-e-problema" title="Link para este cabeçalho"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Devolve / faz</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.get(id)</span></code></p></td>
+<td><p>a entidade (dicionário)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.list()</span></code></p></td>
+<td><p>lista de ids</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.measure(a,</span> <span class="pre">b)</span></code></p></td>
+<td><p>distância mínima entre duas entidades</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.area(ids)</span></code></p></td>
+<td><p>área fechada pelas curvas</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.dof()</span></code></p></td>
+<td><p>graus de liberdade restantes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">g.units(&quot;mm&quot;)</span></code></p></td>
+<td><p>unidade de comprimento do projeto</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">g.problem(&quot;planar&quot;</span> <span class="pre">|</span> <span class="pre">&quot;axisymmetric&quot;,</span> <span class="pre">depth=&quot;100</span> <span class="pre">mm&quot;)</span></code></p></td>
+<td><p>tipo de problema e profundidade (plano)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="malha-m">
+<h2>Malha — <code class="docutils literal notranslate"><span class="pre">m</span></code><a class="headerlink" href="#malha-m" title="Link para este cabeçalho"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.material(&quot;Cobre&quot;,</span> <span class="pre">mur=1,</span> <span class="pre">sigma=58,</span> <span class="pre">br=0,</span> <span class="pre">color=&quot;#e0914f&quot;,</span> <span class="pre">bh=[(H,</span> <span class="pre">B),</span> <span class="pre">...],</span> <span class="pre">kh=,</span> <span class="pre">alpha=,</span> <span class="pre">ke=,</span> <span class="pre">group=)</span></code></p></td>
+<td><p>cria ou edita um material (σ em MS/m, Br em T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> apaga a curva)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.del_material(nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.duplicate_material(nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.restore_material(nome)</span></code></p></td>
+<td><p>apaga, duplica e restaura o padrão</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.circuit(&quot;Bobina&quot;,</span> <span class="pre">current=&quot;10&quot;)</span></code></p></td>
+<td><p>cria ou edita um circuito</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.del_circuit(&quot;Bobina&quot;)</span></code></p></td>
+<td><p>apaga</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.region((x,</span> <span class="pre">y),</span> <span class="pre">name=,</span> <span class="pre">material=,</span> <span class="pre">circuit=,</span> <span class="pre">current=,</span> <span class="pre">turns=,</span> <span class="pre">angle=,</span> <span class="pre">label=(dx,</span> <span class="pre">dy))</span></code></p></td>
+<td><p>atribui à região que contém o ponto; devolve a área</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.regions()</span></code></p></td>
+<td><p>lista <code class="docutils literal notranslate"><span class="pre">[((x,</span> <span class="pre">y),</span> <span class="pre">área,</span> <span class="pre">material)]</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.boundary_def(&quot;Nome&quot;,</span> <span class="pre">type=,</span> <span class="pre">value=,</span> <span class="pre">a1=,</span> <span class="pre">a2=,</span> <span class="pre">c0=,</span> <span class="pre">c1=,</span> <span class="pre">color=)</span></code></p></td>
+<td><p>cria ou edita um contorno</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.boundary([&quot;l1&quot;,</span> <span class="pre">&quot;l2&quot;],</span> <span class="pre">&quot;Nome&quot;</span> <span class="pre">|</span> <span class="pre">&quot;dirichlet&quot;</span> <span class="pre">|</span> <span class="pre">&quot;neumann&quot;</span> <span class="pre">|</span> <span class="pre">&quot;periodic&quot;</span> <span class="pre">|</span> <span class="pre">&quot;antiperiodic&quot;</span> <span class="pre">|</span> <span class="pre">None)</span></code></p></td>
+<td><p>aplica um contorno às curvas</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.mesh_size((x,</span> <span class="pre">y),</span> <span class="pre">&quot;0.5</span> <span class="pre">mm&quot;</span> <span class="pre">|</span> <span class="pre">&quot;auto&quot;)</span></code></p></td>
+<td><p>tamanho do elemento na região</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.curve_size([curvas],</span> <span class="pre">&quot;1</span> <span class="pre">mm&quot;)</span></code></p></td>
+<td><p>tamanho ao longo de curvas (<code class="docutils literal notranslate"><span class="pre">None</span></code> tira)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.settings(&quot;n1&quot;,</span> <span class="pre">size=&quot;2</span> <span class="pre">mm&quot;</span> <span class="pre">|</span> <span class="pre">&quot;auto&quot;,</span> <span class="pre">min_angle=30)</span></code></p></td>
+<td><p>tamanho padrão e qualidade da malha</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.generate(&quot;n1&quot;)</span></code></p></td>
+<td><p>gera a malha</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.add(name=&quot;Malha&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.rename(id,</span> <span class="pre">nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.remove(id)</span></code></p></td>
+<td><p>nós de malha</p></td>
+</tr>
+</tbody>
+</table>
+<p>Tipos de contorno em <code class="docutils literal notranslate"><span class="pre">type=</span></code>: <code class="docutils literal notranslate"><span class="pre">dirichlet</span></code> (A = value + a1·x + a2·y), <code class="docutils literal notranslate"><span class="pre">neumann</span></code>, <code class="docutils literal notranslate"><span class="pre">mixed</span></code> (c0, c1), <code class="docutils literal notranslate"><span class="pre">periodic</span></code>,
+<code class="docutils literal notranslate"><span class="pre">antiperiodic</span></code>.</p>
+</section>
+<section id="metodo-de-resolucao-s">
+<h2>Método de resolução — <code class="docutils literal notranslate"><span class="pre">s</span></code><a class="headerlink" href="#metodo-de-resolucao-s" title="Link para este cabeçalho"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.add_physics(name=&quot;Campo</span> <span class="pre">magnético&quot;,</span> <span class="pre">circuit=False)</span></code></p></td>
+<td><p>nova física (campo, ou circuito com <code class="docutils literal notranslate"><span class="pre">circuit=True</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.physics(&quot;n2&quot;,</span> <span class="pre">analysis=&quot;magnetostatic&quot;</span> <span class="pre">|</span> <span class="pre">&quot;harmonic&quot;</span> <span class="pre">|</span> <span class="pre">&quot;transient&quot;,</span> <span class="pre">frequency=,</span> <span class="pre">dt=,</span> <span class="pre">t_end=,</span> <span class="pre">schematic=)</span></code></p></td>
+<td><p>configura a análise (frequência em Hz, tempos em s)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.solve(&quot;n2&quot;)</span></code></p></td>
+<td><p>resolve (gera a malha antes, se preciso)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.rename(id,</span> <span class="pre">nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">s.remove(id)</span></code></p></td>
+<td><p>organização</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="resultados-r">
+<h2>Resultados — <code class="docutils literal notranslate"><span class="pre">r</span></code><a class="headerlink" href="#resultados-r" title="Link para este cabeçalho"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.view(&quot;n2&quot;,</span> <span class="pre">name=)</span></code></p></td>
+<td><p>nova vista de campo</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.interpolate(&quot;n2&quot;,</span> <span class="pre">level=3)</span></code></p></td>
+<td><p>vista interpolada (1 a 6)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.plot(vista,</span> <span class="pre">&quot;surface&quot;</span> <span class="pre">|</span> <span class="pre">&quot;contour&quot;</span> <span class="pre">|</span> <span class="pre">&quot;arrow&quot;</span> <span class="pre">|</span> <span class="pre">&quot;line&quot;,</span> <span class="pre">quantity=&quot;b&quot;</span> <span class="pre">|</span> <span class="pre">&quot;h&quot;</span> <span class="pre">|</span> <span class="pre">&quot;a&quot;</span> <span class="pre">|</span> <span class="pre">&quot;j&quot;</span> <span class="pre">|</span> <span class="pre">&quot;bn&quot;</span> <span class="pre">|</span> <span class="pre">&quot;bt&quot;)</span></code></p></td>
+<td><p>camada numa vista (ou gráfico sobre linha)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.show(id,</span> <span class="pre">visible=,</span> <span class="pre">range=(0,</span> <span class="pre">1.5),</span> <span class="pre">n_lines=20,</span> <span class="pre">spacing=,</span> <span class="pre">scale=,</span> <span class="pre">curve=,</span> <span class="pre">quantity=,</span> <span class="pre">color=,</span> <span class="pre">color_by_value=,</span> <span class="pre">colormap=,</span> <span class="pre">regions=[(x,</span> <span class="pre">y)],</span> <span class="pre">outputs=[(&quot;fx&quot;,</span> <span class="pre">&quot;Fx&quot;)],</span> <span class="pre">var_name=,</span> <span class="pre">expr=,</span> <span class="pre">unit_label=,</span> <span class="pre">at_time=,</span> <span class="pre">legend=(x,</span> <span class="pre">y,</span> <span class="pre">s))</span></code></p></td>
+<td><p>opções de uma camada ou item</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.table(&quot;n2&quot;,</span> <span class="pre">name=)</span></code></p></td>
+<td><p>nova tabela</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.item(tabela,</span> <span class="pre">&quot;circuits&quot;</span> <span class="pre">|</span> <span class="pre">&quot;lineint&quot;</span> <span class="pre">|</span> <span class="pre">&quot;surfint&quot;</span> <span class="pre">|</span> <span class="pre">&quot;formula&quot;,</span> <span class="pre">name=)</span></code></p></td>
+<td><p>item de tabela</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.move(camada,</span> <span class="pre">vista)</span></code>, <code class="docutils literal notranslate"><span class="pre">r.duplicate(id)</span></code>, <code class="docutils literal notranslate"><span class="pre">r.rename(id,</span> <span class="pre">nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">r.remove(id)</span></code></p></td>
+<td><p>organização</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.result(&quot;Fx&quot;,</span> <span class="pre">physics=&quot;n2&quot;)</span></code></p></td>
+<td><p>número de uma variável de resultado (no instante mostrado, no transitório)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">r.results(&quot;n2&quot;)</span></code></p></td>
+<td><p>lista <code class="docutils literal notranslate"><span class="pre">[(nome,</span> <span class="pre">valor,</span> <span class="pre">unidade),</span> <span class="pre">...]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r.series(&quot;Bobina_I&quot;)</span></code></p></td>
+<td><p>transitório: <code class="docutils literal notranslate"><span class="pre">(tempos</span> <span class="pre">em</span> <span class="pre">s,</span> <span class="pre">valores)</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Grandezas das integrais (para <code class="docutils literal notranslate"><span class="pre">outputs=</span></code>): superfície — <code class="docutils literal notranslate"><span class="pre">area</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">intA</span></code>, <code class="docutils literal notranslate"><span class="pre">current</span></code>, <code class="docutils literal notranslate"><span class="pre">energy</span></code>, <code class="docutils literal notranslate"><span class="pre">bavg</span></code>,
+<code class="docutils literal notranslate"><span class="pre">b2</span></code>, <code class="docutils literal notranslate"><span class="pre">loss</span></code>, <code class="docutils literal notranslate"><span class="pre">ironLoss</span></code>, <code class="docutils literal notranslate"><span class="pre">fx</span></code>, <code class="docutils literal notranslate"><span class="pre">fy</span></code>, <code class="docutils literal notranslate"><span class="pre">torque</span></code>; linha — <code class="docutils literal notranslate"><span class="pre">length</span></code>, <code class="docutils literal notranslate"><span class="pre">flux</span></code>, <code class="docutils literal notranslate"><span class="pre">mmf</span></code>, <code class="docutils literal notranslate"><span class="pre">intB</span></code>, <code class="docutils literal notranslate"><span class="pre">intBn</span></code>, <code class="docutils literal notranslate"><span class="pre">bavg</span></code>, <code class="docutils literal notranslate"><span class="pre">fx</span></code>,
+<code class="docutils literal notranslate"><span class="pre">fy</span></code>, <code class="docutils literal notranslate"><span class="pre">torque</span></code>. Todas em SI.</p>
+</section>
+<section id="esquematico-c">
+<h2>Esquemático — <code class="docutils literal notranslate"><span class="pre">c</span></code><a class="headerlink" href="#esquematico-c" title="Link para este cabeçalho"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Comando</p></th>
+<th class="head"><p>Descrição</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">c.add(name=&quot;Circuito</span> <span class="pre">1&quot;)</span></code></p></td>
+<td><p>novo esquemático</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">c.part(esq,</span> <span class="pre">&quot;V&quot;</span> <span class="pre">|</span> <span class="pre">&quot;I&quot;</span> <span class="pre">|</span> <span class="pre">&quot;R&quot;</span> <span class="pre">|</span> <span class="pre">&quot;L&quot;</span> <span class="pre">|</span> <span class="pre">&quot;C&quot;</span> <span class="pre">|</span> <span class="pre">&quot;gnd&quot;</span> <span class="pre">|</span> <span class="pre">&quot;coil&quot;,</span> <span class="pre">x=,</span> <span class="pre">y=,</span> <span class="pre">rot=,</span> <span class="pre">value=,</span> <span class="pre">amp=,</span> <span class="pre">freq=,</span> <span class="pre">phase=,</span> <span class="pre">dc=,</span> <span class="pre">circuit=)</span></code></p></td>
+<td><p>componente</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">c.wire(esq,</span> <span class="pre">(parte,</span> <span class="pre">terminal),</span> <span class="pre">(parte,</span> <span class="pre">terminal),</span> <span class="pre">mid=)</span></code></p></td>
+<td><p>fio entre terminais</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">c.route(fio,</span> <span class="pre">x)</span></code> ou <code class="docutils literal notranslate"><span class="pre">c.route(fio,</span> <span class="pre">y=80)</span></code></p></td>
+<td><p>caminho do fio</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">c.set(parte,</span> <span class="pre">value=,</span> <span class="pre">name=)</span></code>, <code class="docutils literal notranslate"><span class="pre">c.move(parte,</span> <span class="pre">(x,</span> <span class="pre">y))</span></code>, <code class="docutils literal notranslate"><span class="pre">c.rotate(parte)</span></code>, <code class="docutils literal notranslate"><span class="pre">c.remove(parte)</span></code></p></td>
+<td><p>edição</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="globais">
+<h2>Globais<a class="headerlink" href="#globais" title="Link para este cabeçalho"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">help()</span></code>, <code class="docutils literal notranslate"><span class="pre">getid(&quot;nome&quot;)</span></code>, <code class="docutils literal notranslate"><span class="pre">undo()</span></code>, <code class="docutils literal notranslate"><span class="pre">redo()</span></code>, <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">reset()</span></code>. <code class="docutils literal notranslate"><span class="pre">clear()</span></code> e <code class="docutils literal notranslate"><span class="pre">next_id(n)</span></code> aparecem no script
+exportado.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Rodapé">
+        <a href="console.html" class="btn btn-neutral float-left" title="Console" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Anterior</a>
+        <a href="bridge.html" class="btn btn-neutral float-right" title="Ponte local (Python)" accesskey="n" rel="next">Próximo <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Direitos autorais 2026, Thales Maia.</p>
+  </div>
+
+  Compilado com <a href="https://www.sphinx-doc.org/">Sphinx</a> usando um
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    fornecido por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="Idioma">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"> Idioma e links</span>
+    pt
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>Idioma</dt><dd><strong>português</strong></dd><dd><a href="../en/scripting/api.html">English</a></dd>
+    </dl>
+    <hr/>
+    <dl>
+      <dt>Links</dt>
+      <dd><a href="https://thalesmaia.com/tools/magfem-web/">Abrir o MagFEM</a></dd>
+      <dd><a href="https://github.com/thalesmaoa/magfem">GitHub</a></dd>
+      <dd><a href="https://github.com/thalesmaoa/magfem/issues">Relatar um problema</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>

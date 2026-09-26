@@ -1,0 +1,5 @@
+/* Ajustes mínimos ao tema do Read the Docs. */
+/* Topo do menu (logo e busca) e barra do celular com a cor da barra superior do app. */
+.wy-side-nav-search, .wy-nav-top { background-color: #243447; }
+.rst-content img { border: 1px solid #e1e4e5; }
+.wy-side-nav-search > a img.logo { max-width: 96px; }
