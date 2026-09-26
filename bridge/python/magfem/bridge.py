@@ -24,7 +24,7 @@ import threading
 import urllib.parse
 from typing import Any, Callable
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 DEFAULT_PORT = 8765
 _GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 # Páginas que podem conectar: o site publicado e o servidor de desenvolvimento local.
@@ -118,6 +118,29 @@ class Bridge:
             raise BridgeError("a ponte não está rodando")
         fut = asyncio.run_coroutine_threadsafe(self._run(code, log=False), self._loop)
         return fut.result(timeout)
+
+    def complete(self, text: str, timeout: float = 2) -> dict[str, Any]:
+        """Sugestões de autocompletar do console da página para o texto até o cursor ({start, items})."""
+        if not self._loop:
+            raise BridgeError("a ponte não está rodando")
+        cf = asyncio.run_coroutine_threadsafe(self._request({"type": "complete", "text": text}), self._loop)
+        try:
+            return cf.result(timeout)
+        except Exception:
+            cf.cancel()  # página antiga (sem suporte) ou lenta: não deixa o pedido pendurado
+            raise
+
+    async def _request(self, msg: dict[str, Any]) -> dict[str, Any]:
+        if not self.browser_connected:
+            return {"ok": False, "error": "nenhuma página do MagFEM conectada"}
+        rid = next(self._ids)
+        fut = asyncio.get_running_loop().create_future()
+        self._pending[rid] = fut
+        try:
+            await self._browser.send(json.dumps({**msg, "id": rid}))
+            return await fut
+        finally:
+            self._pending.pop(rid, None)
 
     async def _run(self, code: str, log: bool = True) -> dict[str, Any]:
         if not self.browser_connected:

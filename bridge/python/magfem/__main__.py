@@ -77,9 +77,11 @@ def _console(b: Bridge, connected: threading.Event, prompting: threading.Event) 
     O prompt só aparece com a página conectada; se ela cair, a próxima linha espera a reconexão.
     """
     try:
-        import readline  # noqa: F401  (histórico com ↑ e edição de linha, quando existe)
+        import readline  # histórico com ↑, edição de linha e Tab (quando existe)
     except ImportError:
-        pass
+        readline = None
+    if readline is not None:
+        _setup_completion(readline, b)
     while True:
         while not connected.wait(0.5):  # timeout curto: Ctrl+C continua funcionando
             pass
@@ -109,6 +111,43 @@ def _console(b: Bridge, connected: threading.Event, prompting: threading.Event) 
             print(f"  ✗ {r.get('error')}")
         elif r.get("value") is not None and not r.get("out"):
             print(f"  {json.dumps(r['value'], ensure_ascii=False)}")
+
+
+def _setup_completion(readline, b: Bridge) -> None:
+    """Tab completa como o console da web: a página devolve as sugestões (comandos, ids, variáveis)."""
+    matches: list[str] = []
+    labels: dict[str, str] = {}
+
+    def complete(_text: str, state: int) -> str | None:
+        if state == 0:
+            matches.clear()
+            labels.clear()
+            line = readline.get_line_buffer()[: readline.get_endidx()]
+            try:
+                r = b.complete(line)
+            except Exception:
+                r = {}
+            start = r.get("start", len(line))
+            for it in r.get("items") or []:
+                full = line[:start] + it["insert"]
+                matches.append(full)
+                labels[full] = it["label"] + (f"  ({it['detail']})" if it.get("detail") else "")
+        return matches[state] if state < len(matches) else None
+
+    def show(_sub: str, found: list[str], _longest: int) -> None:
+        # Lista pelos nomes (não pela linha inteira) e redesenha o prompt com o que já foi digitado.
+        print()
+        for f in found[:40]:
+            print(f"  {labels.get(f, f)}")
+        if len(found) > 40:
+            print(f"  … (+{len(found) - 40})")
+        print(PROMPT + readline.get_line_buffer(), end="", flush=True)
+
+    readline.set_completer_delims("")  # o texto a completar é a linha toda até o cursor
+    readline.set_completer(complete)
+    readline.set_completion_display_matches_hook(show)
+    # libedit (macOS) usa outra sintaxe para ligar o Tab.
+    readline.parse_and_bind("bind ^I rl_complete" if "libedit" in (readline.__doc__ or "") else "tab: complete")
 
 
 if __name__ == "__main__":

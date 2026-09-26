@@ -1,7 +1,7 @@
 // Ponte com scripts locais (pacote Python `magfem`): a página conecta por WebSocket em
 // ws://127.0.0.1:<porta>/ws, apresenta a chave de pareamento e executa os comandos recebidos no console.
 import { useSyncExternalStore } from 'react';
-import { CommandConsole } from '../cad/console';
+import { CommandConsole, completions } from '../cad/console';
 import type { SketchEditor } from '../cad/editor';
 import { editorConsoleHost } from '../ui/consoleHost';
 
@@ -76,7 +76,7 @@ export function connectBridge(ed: SketchEditor, port: number, key: string) {
     if (state.status !== 'error') set({ status: 'off' });
   };
   ws.onmessage = (ev) => {
-    let msg: { type?: string; id?: number; code?: string; error?: string };
+    let msg: { type?: string; id?: number; code?: string; text?: string; error?: string };
     try {
       msg = JSON.parse(String(ev.data));
     } catch {
@@ -84,7 +84,11 @@ export function connectBridge(ed: SketchEditor, port: number, key: string) {
     }
     if (msg.type === 'welcome') set({ status: 'on' });
     else if (msg.type === 'error') set({ status: 'error', message: msg.error });
-    else if (msg.type === 'run' && typeof msg.code === 'string') {
+    else if (msg.type === 'complete' && typeof msg.text === 'string') {
+      // Tab no console do terminal: as mesmas sugestões do console da web (com as variáveis desta conexão).
+      const r = completions(ed.sketch, cmd.env, msg.text);
+      ws.send(JSON.stringify({ type: 'result', id: msg.id, ok: true, start: r.start, items: r.items.map(({ insert, label, detail }) => ({ insert, label, detail })) }));
+    } else if (msg.type === 'run' && typeof msg.code === 'string') {
       const { id, code } = msg;
       // Em fila: um comando termina (inclusive a solução) antes do próximo começar.
       queue = queue.then(async () => {

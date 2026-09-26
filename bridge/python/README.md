@@ -25,7 +25,7 @@ Para não colar a chave toda vez, fixe-a: `python -m magfem --key minha-chave` (
 ## Console no terminal
 
 `python -m magfem` sobe a ponte e abre um console `magfem>` ligado à página, como o console da web: cada linha
-digitada roda no app (`help()` lista os comandos; ↑ repete; Ctrl+D sai). Com ela aberta, scripts em outro terminal
+digitada roda no app (`help()` lista os comandos; Tab completa comandos, ids e variáveis como na web; ↑ repete; Ctrl+D sai). Com ela aberta, scripts em outro terminal
 usam a mesma ponte com `magfem.connect(key="<chave>")`, e seus comandos aparecem marcados com `[script]`.
 
 ## Erros nos scripts
