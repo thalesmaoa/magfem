@@ -24,7 +24,7 @@ import threading
 import urllib.parse
 from typing import Any, Callable
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 DEFAULT_PORT = 8765
 _GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 # Páginas que podem conectar: o site publicado e o servidor de desenvolvimento local.

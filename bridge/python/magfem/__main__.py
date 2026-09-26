@@ -24,19 +24,25 @@ def main() -> None:
     connected = threading.Event()
     key: list[str] = []
 
-    def say(text: str) -> None:
-        # Mensagem assíncrona: não bagunça a linha do prompt.
-        sys.stdout.write(("\r\033[K" if interactive else "") + text + "\n" + (PROMPT if interactive else ""))
+    prompting = threading.Event()  # o console está esperando uma linha (há um prompt na tela)
+
+    def say(text: str, redraw: bool = True) -> None:
+        # Mensagem assíncrona: não bagunça a linha do prompt (e o redesenha só se ele estiver na tela).
+        on = interactive and prompting.is_set()
+        sys.stdout.write(("\r\033[K" if on else "") + text + "\n" + (PROMPT if on and redraw else ""))
         sys.stdout.flush()
 
     def log(event: str) -> None:
         if event == "connected":
+            # Mensagem antes de liberar o console: o prompt vem depois dela, sem duplicar.
+            say(
+                "● Página do MagFEM conectada." + (" Digite comandos do console (help() lista; Ctrl+D sai)." if interactive else "")
+                + f"\n  Scripts em outro terminal: mf = magfem.connect(key=\"{key[0]}\")"
+            )
             connected.set()
-            say("● Página do MagFEM conectada." + (" Digite comandos do console (help() lista; Ctrl+D sai)." if interactive else ""))
-            say(f"  Scripts em outro terminal: mf = magfem.connect(key=\"{key[0]}\")")
         elif event == "disconnected":
             connected.clear()
-            say("○ Página desconectada (esperando reconectar).")
+            say("○ Página desconectada (esperando reconectar; o console volta quando ela conectar).", redraw=False)
         elif event.startswith("run:"):
             r = json.loads(event[4:])
             lines = r["code"].strip().splitlines() or [""]
@@ -58,31 +64,39 @@ def main() -> None:
     try:
         if not interactive:
             threading.Event().wait()
-        _console(b, connected)
+        _console(b, connected, prompting)
     except KeyboardInterrupt:
         print()
     finally:
         b.stop()
 
 
-def _console(b: Bridge, connected: threading.Event) -> None:
-    """Console como o da web: cada linha vai para a página; mostra a saída, o valor e os erros."""
+def _console(b: Bridge, connected: threading.Event, prompting: threading.Event) -> None:
+    """Console como o da web: cada linha vai para a página; mostra a saída, o valor e os erros.
+
+    O prompt só aparece com a página conectada; se ela cair, a próxima linha espera a reconexão.
+    """
     try:
         import readline  # noqa: F401  (histórico com ↑ e edição de linha, quando existe)
     except ImportError:
         pass
     while True:
+        while not connected.wait(0.5):  # timeout curto: Ctrl+C continua funcionando
+            pass
+        prompting.set()
         try:
             line = input(PROMPT)
         except EOFError:
             print()
             return
+        finally:
+            prompting.clear()
         if not line.strip():
             continue
         if line.strip() in ("exit", "quit", "exit()", "quit()"):
             return
         if not connected.is_set():
-            print("  (nenhuma página conectada: no app, clique em 'Script local' e cole a porta e a chave)")
+            print("  (a página desconectou; a linha não foi enviada. Esperando reconectar…)")
             continue
         try:
             r = b.run(line)
