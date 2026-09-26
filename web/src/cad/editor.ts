@@ -1428,15 +1428,49 @@ export class SketchEditor {
     const a = this.picks[0].pos;
     const dx = p.pos.x - a.x;
     const dy = p.pos.y - a.y;
-    if (Math.abs(dx) > 1e-9 && Math.abs(dy) <= HV_TOL * Math.abs(dx)) {
-      this.inferHV = 'H';
-      return { pos: { x: p.pos.x, y: a.y } };
+    const hv: 'H' | 'V' | null =
+      Math.abs(dx) > 1e-9 && Math.abs(dy) <= HV_TOL * Math.abs(dx) ? 'H' : Math.abs(dy) > 1e-9 && Math.abs(dx) <= HV_TOL * Math.abs(dy) ? 'V' : null;
+    if (!hv) return p;
+    const pos = hv === 'H' ? { x: p.pos.x, y: a.y } : { x: a.x, y: p.pos.y };
+    if (p.curveId) {
+      // Encaixado numa curva: vai para a interseção da reta H/V com a curva (as duas restrições valem);
+      // se ela estiver longe do cursor, a curva vence a inferência.
+      const q = this.hvOnCurve(p.curveId, hv, hv === 'H' ? a.y : a.x, p.pos);
+      if (!q || dist(this.view.toScreen(q), this.view.toScreen(p.pos)) > CURVE_SNAP_PX) return p;
+      this.inferHV = hv;
+      return { pos: q, curveId: p.curveId };
     }
-    if (Math.abs(dy) > 1e-9 && Math.abs(dx) <= HV_TOL * Math.abs(dy)) {
-      this.inferHV = 'V';
-      return { pos: { x: a.x, y: p.pos.y } };
+    this.inferHV = hv;
+    return { pos };
+  }
+
+  /** Interseção da reta y = c (H) ou x = c (V) com a curva, mais perto de `near`. */
+  private hvOnCurve(id: Id, hv: 'H' | 'V', c: number, near: Vec): Vec | null {
+    const sk = this.sketch;
+    const e = sk.entities[id];
+    const cands: Vec[] = [];
+    if (e?.type === 'line') {
+      const p1 = pt(sk, e.p1), p2 = pt(sk, e.p2);
+      const u1 = hv === 'H' ? p1.y : p1.x, u2 = hv === 'H' ? p2.y : p2.x;
+      if (Math.abs(u2 - u1) > 1e-12) {
+        const t = (c - u1) / (u2 - u1);
+        if (t >= -1e-9 && t <= 1 + 1e-9) cands.push({ x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) });
+      }
+    } else if (e?.type === 'circle' || e?.type === 'arc') {
+      const ce = pt(sk, e.c);
+      const off = hv === 'H' ? c - ce.y : c - ce.x;
+      if (Math.abs(off) <= e.r) {
+        const h = Math.sqrt(e.r * e.r - off * off);
+        for (const sgn of [-1, 1]) {
+          const q = hv === 'H' ? { x: ce.x + sgn * h, y: c } : { x: c, y: ce.y + sgn * h };
+          // Arco: só pontos dentro do arco (perto dele).
+          if (e.type === 'circle' || closestOnCurve(sk, e, q).d < 1e-6 * Math.max(1, e.r)) cands.push(q);
+        }
+      }
     }
-    return p;
+    let best: Vec | null = null;
+    for (const q of cands) if (!best || dist(q, near) < dist(best, near)) best = q;
+    return best;
   }
 
   // ---------- eventos ----------

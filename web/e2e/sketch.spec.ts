@@ -265,3 +265,23 @@ test('axissimétrico: desenhar em r < 0 avisa que só vale o lado direito', asyn
   await expect(page.locator('.status .msg')).toContainText('só vale o lado direito (r ≥ 0)');
   await page.screenshot({ path: 'test-results/axi-lado-esquerdo.png' });
 });
+
+test('linha: o segundo ponto também trava sobre uma curva, mesmo com a inferência horizontal', async ({ page }) => {
+  const box = page.getByRole('textbox', { name: 'Console' });
+  await box.fill('v = g.line((20, 0), (20, 40))');
+  await box.press('Enter');
+  await page.locator('canvas.sketch').click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('l');
+  await clickWorld(page, { x: 0, y: 10 });
+  await clickWorld(page, { x: 20.2, y: 10.3 }); // perto da linha vertical e quase horizontal ao 1º ponto
+  await page.keyboard.press('Escape');
+  const sk = await sketch(page);
+  const vline = Object.values(sk.entities).find((e: any) => e.type === 'line' && sk.entities[e.p1].x === 20 && sk.entities[e.p2].x === 20) as any;
+  const on = sk.constraints.filter((c: any) => c.type === 'pointOn' && c.refs[1] === vline.id);
+  expect(on).toHaveLength(1);
+  const p = sk.entities[on[0].refs[0]];
+  expect(p.x).toBeCloseTo(20, 6);
+  expect(p.y).toBeCloseTo(10, 6); // horizontal ao primeiro ponto
+  expect(sk.constraints.some((c: any) => c.type === 'horizontal')).toBe(true);
+});
