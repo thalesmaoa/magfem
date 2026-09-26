@@ -14,6 +14,7 @@ import { CircuitTable, physicsTimeSeries, qLabel, tableItemRows } from './Canvas
 import { findRegion as findRegionP } from '../cad/regions';
 import { pointCode } from '../cad/mesh';
 import { defaultVarName, LINE_Q, outputsOf, resultVars, safeName, SURF_Q, varNameOf } from '../cad/results';
+import { curvesCode } from '../cad/script';
 
 const PLOT_ICON: Record<PlotKind, JSX.Element> = {
   surface: <span className="plot-ico map" />,
@@ -24,6 +25,84 @@ const PLOT_ICON: Record<PlotKind, JSX.Element> = {
 
 const FILTER_ICON = <span className="plot-ico iso">∿</span>;
 const TABLE_ICON = <span className="plot-ico iso">▦</span>;
+type Curve = NonNullable<PostNode['curves']>[number];
+const DASH: Record<'solid' | 'dash' | 'dot', string | undefined> = { solid: undefined, dash: '6 3', dot: '1.5 3' };
+
+/** Amostra da linha (cor, traço e espessura) de uma curva do gráfico no tempo. */
+function LineSwatch({ color, dash, width }: { color: string; dash: 'solid' | 'dash' | 'dot'; width: number }) {
+  return (
+    <svg width="34" height="12" viewBox="0 0 34 12" aria-hidden="true">
+      <line x1="2" x2="32" y1="6" y2="6" stroke={color} strokeWidth={width} strokeDasharray={DASH[dash]} strokeLinecap={dash === 'dot' ? 'round' : undefined} />
+    </svg>
+  );
+}
+
+/** Botão com a amostra da linha; abre uma janela com rótulo, cor, tipo de linha e espessura. */
+function CurveStyleButton({ curve, fallback, onApply }: { curve: Curve; fallback: string; onApply: (st: Partial<Curve>) => void }) {
+  const t = useT();
+  const ref = useRef<HTMLDialogElement>(null);
+  const cur = { label: curve.label ?? '', color: curve.color ?? fallback, dash: curve.dash ?? (curve.axis === 'right' ? 'dash' : 'solid'), width: curve.width ?? 1.8 };
+  const [draft, setDraft] = useState(cur);
+  const open = () => {
+    setDraft(cur);
+    ref.current?.showModal();
+  };
+  return (
+    <>
+      <button type="button" className="tp-style-btn" aria-label={`${t.table.tp.style}: ${curve.name}`} title={t.table.tp.style} onClick={open}>
+        <LineSwatch color={cur.color} dash={cur.dash} width={cur.width} />
+      </button>
+      <dialog ref={ref} className="cite tp-style" onClick={(e) => e.target === ref.current && ref.current?.close()}>
+        <h2>{curve.name}</h2>
+        <label className="field">
+          <span>{t.table.tp.label}</span>
+          <input value={draft.label} placeholder={curve.name} aria-label={t.table.tp.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>{t.table.tp.color}</span>
+          <input type="color" value={draft.color} aria-label={t.table.tp.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>{t.table.tp.dash}</span>
+          <select value={draft.dash} aria-label={t.table.tp.dash} onChange={(e) => setDraft({ ...draft, dash: e.target.value as 'solid' | 'dash' | 'dot' })}>
+            <option value="solid">{t.table.tp.dashes.solid}</option>
+            <option value="dash">{t.table.tp.dashes.dash}</option>
+            <option value="dot">{t.table.tp.dashes.dot}</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{t.table.tp.width}</span>
+          <select value={draft.width} aria-label={t.table.tp.width} onChange={(e) => setDraft({ ...draft, width: Number(e.target.value) })}>
+            {[1, 1.8, 2.5, 3.5].map((w) => (
+              <option key={w} value={w}>
+                {w} px
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="tp-style-preview">
+          <LineSwatch color={draft.color} dash={draft.dash} width={draft.width} />
+          <span style={{ color: draft.color }}>{draft.label || curve.name}</span>
+        </div>
+        <div className="actions">
+          <button className="btn secondary" onClick={() => ref.current?.close()}>
+            {t.table.tp.cancel}
+          </button>
+          <button
+            className="btn"
+            onClick={() => {
+              onApply({ label: draft.label.trim() || undefined, color: draft.color, dash: draft.dash, width: draft.width });
+              ref.current?.close();
+            }}
+          >
+            OK
+          </button>
+        </div>
+      </dialog>
+    </>
+  );
+}
+
 /** Cores padrão das curvas (as mesmas dos gráficos). */
 const TP_COLORS = ['#e8408a', '#1f6fd1', '#2e8b57', '#d4880f', '#8e44ad', '#0aa3a3'];
 const ITEM_ICON: Record<TableItem, JSX.Element> = { circuits: Icons.circuit, lineint: <span className="plot-ico iso">∫ℓ</span>, surfint: <span className="plot-ico iso">∬</span>, formula: <span className="plot-ico iso">ƒx</span>, timeplot: Icons.sine };
@@ -963,14 +1042,12 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
     // Gráfico no tempo: cada variável de resultado da física pode ir para o eixo esquerdo, o direito ou ficar fora.
     const all = node.physics ? physicsTimeSeries(ed, node.physics) : null;
     const curves = node.curves ?? [];
-    const curveCode = (list: typeof curves) =>
-      `r.show(${q(node.id)}, curves=[${list.map((c) => `(${q(c.name)}, ${q(c.axis)}${c.color || c.label ? `, ${c.color ? q(c.color) : 'None'}` : ''}${c.label ? `, ${q(c.label)}` : ''})`).join(', ')}])`;
+    const curveCode = (list: typeof curves) => `r.show(${q(node.id)}, curves=${curvesCode(list)})`;
     const setCurves = (list: typeof curves) => set({ curves: list.length ? list : undefined }, curveCode(list));
     // Mantém a ordem em que as variáveis foram escolhidas.
     const setAxis = (name: string, axis: string) =>
       setCurves(!axis ? curves.filter((c) => c.name !== name) : curves.some((c) => c.name === name) ? curves.map((c) => (c.name === name ? { ...c, axis: axis as 'left' | 'right' } : c)) : [...curves, { name, axis: axis as 'left' | 'right' }]);
-    const setColor = (name: string, color: string) => setCurves(curves.map((c) => (c.name === name ? { ...c, color } : c)));
-    const setLabel = (name: string, label: string) => setCurves(curves.map((c) => (c.name === name ? { ...c, label: label || undefined } : c)));
+    const setStyle = (name: string, st: Partial<(typeof curves)[number]>) => setCurves(curves.map((c) => (c.name === name ? { ...c, ...st } : c)));
     return (
       <div className="props-body">
         <section>
@@ -1015,8 +1092,7 @@ export function TableItemProps({ ed, node }: { ed: SketchEditor; node: PostNode 
                       <option value="right">{t.table.tp.right}</option>
                       <option value="">{t.table.tp.remove}</option>
                     </select>
-                    <LazyInput className="tp-label" value={c.label ?? ''} placeholder={t.table.tp.labelPh} ariaLabel={`${t.table.tp.label}: ${c.name}`} onCommit={(v) => setLabel(c.name, v.trim())} />
-                    <input type="color" aria-label={`${t.table.tp.color}: ${c.name}`} value={c.color ?? TP_COLORS[curves.indexOf(c) % TP_COLORS.length]} onChange={(e) => setColor(c.name, e.target.value)} />
+                    <CurveStyleButton curve={c} fallback={TP_COLORS[curves.indexOf(c) % TP_COLORS.length]} onApply={(st) => setStyle(c.name, st)} />
                   </label>
                 );
               })}

@@ -69,6 +69,14 @@ test('gráfico no tempo: variáveis nos eixos esquerdo e direito, exportação, 
   await add.fill('Bobina_I');
   await add.press('Enter');
   expect((await sketch(page)).nodes.find((n: any) => n.id === 'tp').curves.map((c: any) => c.name)).toEqual(['Bobina_V', 'Bobina_lambda', 'Bobina_I']);
+  // Estilo da curva numa janela: rótulo, tipo de linha e espessura.
+  await page.getByRole('button', { name: 'Estilo da curva (rótulo, cor, linha): Bobina_V' }).click();
+  const dlg = page.locator('dialog.tp-style[open]');
+  await dlg.getByLabel('Rótulo na legenda').fill('Tensão induzida');
+  await dlg.getByLabel('Tipo de linha').selectOption('dot');
+  await dlg.getByLabel('Espessura').selectOption('2.5');
+  await dlg.getByRole('button', { name: 'OK' }).click();
+  expect((await sketch(page)).nodes.find((n: any) => n.id === 'tp').curves[0]).toMatchObject({ name: 'Bobina_V', label: 'Tensão induzida', dash: 'dot', width: 2.5, color: '#00aa00' });
   // Recarregar a página: os itens de Resultados continuam (sem virar "Mapa 2D"/"Linhas de fluxo") e a solução volta.
   await page.waitForTimeout(1000);
   await page.reload();

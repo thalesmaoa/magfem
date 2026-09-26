@@ -1,7 +1,7 @@
 // Script da API que recria o modelo exatamente (mesmos ids), para rodar no console ou pelo WebSocket.
 import { q } from './code';
 import { computeArrangement, findRegion } from './regions';
-import type { Constraint, Material, Sketch } from './types';
+import type { Constraint, Material, PostNode, Sketch } from './types';
 
 const n = (v: number) => {
   const r = Number(v.toPrecision(12));
@@ -145,7 +145,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       const kw: string[] = [];
       if (p.varName) kw.push(`var_name=${q(p.varName)}`);
       if (p.outputs) kw.push(`outputs=[${p.outputs.map((o) => `(${q(o.q)}, ${q(o.name)})`).join(', ')}]`);
-      if (p.curves) kw.push(`curves=[${p.curves.map((c) => `(${q(c.name)}, ${q(c.axis)}${c.color || c.label ? `, ${c.color ? q(c.color) : 'None'}` : ''}${c.label ? `, ${q(c.label)}` : ''})`).join(', ')}]`);
+      if (p.curves) kw.push(`curves=${curvesCode(p.curves)}`);
       if (p.expr) kw.push(`expr=${q(p.expr)}`);
       if (p.unitLabel) kw.push(`unit_label=${q(p.unitLabel)}`);
       if (p.atTime !== undefined) kw.push(`at_time=${p.atTime}`);
@@ -193,6 +193,17 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
 }
 
 /** Comando que recria um material (com id), usado no script e na importação do FEMM. */
+/** Lista de curvas do gráfico no tempo como literal do console (nome, eixo, cor, rótulo, traço, espessura). */
+export function curvesCode(list: NonNullable<PostNode['curves']>): string {
+  return `[${list
+    .map((c) => {
+      const extra = [c.color ? q(c.color) : 'None', c.label ? q(c.label) : 'None', c.dash ? q(c.dash) : 'None', c.width ? String(c.width) : 'None'];
+      while (extra.length && extra[extra.length - 1] === 'None') extra.pop();
+      return `(${[q(c.name), q(c.axis), ...extra].join(', ')})`;
+    })
+    .join(', ')}]`;
+}
+
 export function materialLine(m: Material): string {
   const kw = [`id=${q(m.id)}`, `group=${q(m.group ?? 'custom')}`, `color=${q(m.color)}`, `mur=${n(m.mur)}`, `sigma=${n(m.sigma)}`];
   if (m.br) kw.push(`br=${n(m.br)}`);

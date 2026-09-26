@@ -590,7 +590,7 @@ function niceScale(vals: number[]) {
  */
 export function DualAxisChart(props: {
   x: number[];
-  series: { label: string; unit: string; y: number[]; axis: 'left' | 'right'; color?: string }[];
+  series: { label: string; unit: string; y: number[]; axis: 'left' | 'right'; color?: string; dash?: 'solid' | 'dash' | 'dot'; width?: number }[];
   xLabel: string;
   leftTag: string;
   rightTag: string;
@@ -603,7 +603,7 @@ export function DualAxisChart(props: {
   const right = series.some((s2) => s2.axis === 'right');
   const Wc = Math.max(320, Math.round(props.width ?? 640)), L = 64, R = right ? 64 : 14, Tt = 12;
   // Legenda: cada entrada com a largura do próprio texto, quebrando linha quando não cabe.
-  const legendText = (s2: (typeof series)[number]) => `${s2.axis === 'right' ? '┅' : '━'} ${s2.label}${s2.unit ? ` (${s2.unit})` : ''} · ${s2.axis === 'left' ? props.leftTag : props.rightTag}`;
+  const legendText = (s2: (typeof series)[number]) => `${(s2.dash ?? (s2.axis === 'right' ? 'dash' : 'solid')) === 'solid' ? '━' : s2.dash === 'dot' ? '┈' : '┅'} ${s2.label}${s2.unit ? ` (${s2.unit})` : ''} · ${s2.axis === 'left' ? props.leftTag : props.rightTag}`;
   const legendPos: { x: number; row: number }[] = [];
   {
     let lx = L, row = 0;
@@ -652,7 +652,7 @@ export function DualAxisChart(props: {
       {series.map((s2, i) => (
         <g key={s2.label}>
           {segs(s2.y, s2.axis === 'left' ? sl : sr).map((pts, j) => (
-            <polyline key={j} points={pts} fill="none" stroke={colorOf(i)} strokeWidth={1.8} strokeDasharray={s2.axis === 'right' ? '6 3' : undefined} />
+            <polyline key={j} points={pts} fill="none" stroke={colorOf(i)} strokeWidth={s2.width ?? 1.8} strokeDasharray={{ solid: undefined, dash: '6 3', dot: '1.5 3' }[s2.dash ?? (s2.axis === 'right' ? 'dash' : 'solid')]} strokeLinecap={(s2.dash ?? '') === 'dot' ? 'round' : undefined} />
           ))}
         </g>
       ))}

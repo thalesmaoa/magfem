@@ -119,7 +119,7 @@ Boundary types for `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`, 
 | `r.show(id, visible=, range=(0, 1.5), n_lines=20, spacing=, scale=, curve=, quantity=, color=, color_by_value=, colormap=, regions=[(x, y)], outputs=[("fx", "Fx")], var_name=, expr=, unit_label=, at_time=, legend=(x, y, s))` | options of a layer or item |
 | `r.table("n2", name=)` | new table |
 | `r.item(table, "circuits" \| "lineint" \| "surfint" \| "formula" \| "timeplot", name=)` | table item |
-| `r.show(item, curves=[("Coil_V", "left"), ("Coil_lambda", "right", "#1f6fd1", "Flux")])` | time plot: variable, axis, (optional) color and label |
+| `r.show(item, curves=[("Coil_V", "left"), ("Coil_lambda", "right", "#1f6fd1", "Flux", "dash", 2.5)])` | time plot: variable, axis and, optionally, color, label, line type (`solid`, `dash`, `dot`) and width |
 | `r.move(layer, view)`, `r.duplicate(id)`, `r.rename(id, name)`, `r.remove(id)` | organization |
 | `r.result("Fx", physics="n2")` | number of a result variable (at the shown instant, in transient) |
 | `r.results("n2")` | list `[(name, value, unit), ...]` |

@@ -30,7 +30,7 @@ A **Table** collects items, and each item produces named **result variables** th
 | Surface integral | over the chosen regions: area, volume, ∫A, current, energy, mean B, losses (Joule and iron), **force Fx, Fy and torque** |
 | Line integral | along a curve: length, flux Φ, magnetomotive force ∫H·dl, ∫B, mean B, **force and torque** (closed contour) |
 | Formula | an expression of the other variables (for example `0.5*Coil_L*Coil_I^2`) |
-| Time plot | transient: the variables you choose (by name, with autocomplete), each on the left or right axis, with its own color and label; the mouse shows the values; resizable from the corner; exports CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG and PNG |
+| Time plot | transient: the variables you choose (by name, with autocomplete), each on the left or right axis; each curve's style button sets its label, color, line type and width; the mouse shows the values; resizable from the corner; exports CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG and PNG |
 
 Each output has an editable name (by default the item prefix plus the quantity, such as `S1_fx`). Circuit variables
 are named `<circuit>_I`, `<circuit>_lambda`, `<circuit>_L` and `<circuit>_R`.

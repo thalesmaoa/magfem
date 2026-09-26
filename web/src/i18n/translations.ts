@@ -593,7 +593,7 @@ export interface Translations {
     addItem: string;
     items: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
     itemHelp: Record<'circuits' | 'lineint' | 'surfint' | 'formula' | 'timeplot', string>;
-    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string) => string; help: string; color: string; label: string; labelPh: string; matHint: string };
+    tp: { needTransient: string; empty: string; pick: string; none: string; left: string; right: string; leftShort: string; rightShort: string; solveFirst: string; exportHint: string; add: string; addPlaceholder: string; remove: string; unknown: (n: string) => string; help: string; color: string; label: string; labelPh: string; matHint: string; style: string; dash: string; dashes: { solid: string; dash: string; dot: string }; width: string; cancel: string };
     varName: string;
     show: string;
     loss: string;
@@ -1362,6 +1362,11 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
       color: 'Cor',
       label: 'Rótulo na legenda',
       labelPh: 'rótulo (opcional)',
+      style: 'Estilo da curva (rótulo, cor, linha)',
+      dash: 'Tipo de linha',
+      dashes: { solid: 'contínua', dash: 'tracejada', dot: 'pontilhada' },
+      width: 'Espessura',
+      cancel: 'Cancelar',
       matHint: 'MATLAB .mat: t e uma variável por curva (scipy.io.loadmat no Python, MAT.jl no Julia, load no Octave)',
       unknown: (n) => `Variável de resultado "${n}" não existe nesta física.`,
       help: 'Qualquer variável de resultado da física: circuitos (_I, _lambda, _L, _V, _P), integrais (ex.: Fx) e fórmulas.',
@@ -2140,6 +2145,11 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
       color: 'Color',
       label: 'Legend label',
       labelPh: 'label (optional)',
+      style: 'Curve style (label, color, line)',
+      dash: 'Line type',
+      dashes: { solid: 'solid', dash: 'dashed', dot: 'dotted' },
+      width: 'Width',
+      cancel: 'Cancel',
       matHint: 'MATLAB .mat: t and one variable per curve (scipy.io.loadmat in Python, MAT.jl in Julia, load in Octave)',
       unknown: (n) => `Result variable "${n}" does not exist in this physics.`,
       help: 'Any result variable of the physics: circuits (_I, _lambda, _L, _V, _P), integrals (e.g. Fx) and formulas.',
