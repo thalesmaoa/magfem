@@ -31,7 +31,7 @@ entreferro móvel.
   - restrições (coincidente, horizontal/vertical, paralelo, tangente, simetria…);
   - cotas com unidades e expressões ligadas a variáveis;
   - offset, espelho e padrões linear/circular associativos;
-  - exportação SVG/DXF/PNG.
+  - importação DXF/SVG (pontos coincidentes unidos para fechar as regiões) e exportação SVG/DXF/PNG.
 - **Pré-processamento:**
   - regiões detectadas automaticamente;
   - materiais: biblioteca agrupada, curvas B-H e a **biblioteca de materiais do FEMM 4.2**

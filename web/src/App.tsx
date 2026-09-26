@@ -10,6 +10,7 @@ import { isMeshSel, type TreeSel } from './cad/tree';
 import type { PostNode } from './cad/types';
 import { emptySketch } from './cad/types';
 import { setLang, T, useLang, useT, type Lang } from './i18n';
+import { addShapes, parseDXF, parseSVG } from './io/importCad';
 import { hasFsAccess, loadDraft, loadFileHandle, openProject, parse, saveDraft, saveFileHandle, saveProject, serialize } from './io/project';
 import { download, toDXF, toSVG } from './io/export';
 import { Icons } from './ui/icons';
@@ -46,6 +47,7 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [name, setName] = useState<string>(() => T().app.untitled);
   const handleRef = useRef<Handle>(null);
+  const importRef = useRef<HTMLInputElement>(null);
   const [savedVersion, setSavedVersion] = useState(0);
   const version = useDocVersion(doc);
   const [core, setCore] = useState<{ v?: string; err?: string }>({});
@@ -268,6 +270,35 @@ export default function App() {
             {Icons.saveAs}
             <span>{t.file.saveAs}</span>
           </button>
+          <button onClick={() => importRef.current?.click()} title={t.file.importHint}>
+            {Icons.importFile}
+            <span>{t.file.importCad}</span>
+          </button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".dxf,.svg"
+            hidden
+            aria-label={t.file.importCad}
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (!f || !ed) return;
+              try {
+                const text = await f.text();
+                const imp = /\.svg$/i.test(f.name) ? parseSVG(text) : parseDXF(text);
+                const r = addShapes(ed.sketch, imp.shapes);
+                const c = r.counts;
+                if (!c.lines && !c.arcs && !c.circles) return ed.flash(t.file.importEmpty(f.name));
+                ed.commit(r.sketch, [`# importado: ${f.name} (${c.lines} linhas, ${c.arcs} arcos, ${c.circles} círculos)`]);
+                ed.fit();
+                const skip = Object.entries(imp.skipped).map(([k, n]) => `${n} ${k}`).join(', ');
+                ed.flash(t.file.imported(f.name, c.lines + c.arcs + c.circles, skip));
+              } catch (err) {
+                ed.flash(t.file.openError(String(err)));
+              }
+            }}
+          />
           {ed && <ExportMenu ed={ed} name={name} />}
           <span className="sep" />
           <button onClick={() => setCiting(true)}>{t.cite.button}</button>

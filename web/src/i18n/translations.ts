@@ -15,6 +15,10 @@ export interface Translations {
     downloadedAs: (n: string) => string;
     saveError: (e: string) => string;
     openError: (e: string) => string;
+    importCad: string;
+    importHint: string;
+    importEmpty: (n: string) => string;
+    imported: (n: string, count: number, skipped: string) => string;
     newDone: string;
     invalidFile: string;
     unsupportedVersion: (v: unknown) => string;
@@ -665,6 +669,10 @@ const PT: Translations = {
     downloadedAs: (n) => `Baixado como ${n}`,
     saveError: (e) => `Erro ao salvar: ${e}`,
     openError: (e) => `Erro ao abrir: ${e}`,
+    importCad: 'Importar',
+    importHint: 'Importar desenho DXF ou SVG (linhas, arcos e círculos; pontos coincidentes são unidos)',
+    importEmpty: (n) => `Nada para importar em ${n}.`,
+    imported: (n, c, s) => `${n}: ${c} curvas importadas${s ? ` (ignorados: ${s})` : ''}.`,
     newDone: 'Novo projeto. Ctrl+Z recupera o anterior.',
     invalidFile: 'Arquivo não é um projeto magfem válido.',
     unsupportedVersion: (v) => `Versão de arquivo não suportada (${String(v)}). Atualize a página.`,
@@ -1395,6 +1403,10 @@ const EN: Translations = {
     downloadedAs: (n) => `Downloaded as ${n}`,
     saveError: (e) => `Save error: ${e}`,
     openError: (e) => `Open error: ${e}`,
+    importCad: 'Import',
+    importHint: 'Import a DXF or SVG drawing (lines, arcs and circles; coincident points are merged)',
+    importEmpty: (n) => `Nothing to import in ${n}.`,
+    imported: (n, c, s) => `${n}: ${c} curves imported${s ? ` (skipped: ${s})` : ''}.`,
     newDone: 'New project. Ctrl+Z restores the previous one.',
     invalidFile: 'Not a valid magfem project file.',
     unsupportedVersion: (v) => `Unsupported file version (${String(v)}). Reload the page.`,

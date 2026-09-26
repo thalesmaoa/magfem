@@ -144,6 +144,14 @@ export const Icons = {
       <path d="M13.5 1.5l0 3.2l-3.2 0" />
     </S>
   ),
+  importFile: (
+    // Seta entrando numa bandeja (importar DXF/SVG).
+    <S>
+      <path d="M10 3v9" />
+      <path d="M6.5 8.5L10 12l3.5-3.5" />
+      <path d="M4 12v4h12v-4" />
+    </S>
+  ),
   github: (
     // Marca do GitHub (octocat), preenchida.
     <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
