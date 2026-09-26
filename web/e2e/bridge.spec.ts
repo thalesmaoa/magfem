@@ -47,3 +47,13 @@ test('ponte Python: o script monta o modelo, resolve e lê a força pela ponte',
   // O que o script fez aparece no histórico do app.
   await expect(page.locator('.console .code').last()).toContainText('r.show(');
 });
+
+test('Script local: mostra o comando de instalação pelo GitHub com botão de copiar', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await openApp(page);
+  await page.getByRole('button', { name: /Script local/ }).click();
+  const cmd = 'pip install "git+https://github.com/thalesmaoa/magfem#subdirectory=bridge/python"';
+  await expect(page.locator('.bridge-cmd code').first()).toHaveText(cmd);
+  await page.getByRole('button', { name: 'Copiar para a área de transferência' }).first().click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(cmd);
+});

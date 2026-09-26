@@ -4,6 +4,32 @@ import { createPortal } from 'react-dom';
 import { connectBridge, disconnectBridge, useBridge } from '../bridge/client';
 import type { SketchEditor } from '../cad/editor';
 import { useT } from '../i18n';
+import { Icons } from './icons';
+
+export const INSTALL_CMD = 'pip install "git+https://github.com/thalesmaoa/magfem#subdirectory=bridge/python"';
+
+/** Comando num bloco de código com botão de copiar. */
+function CopyCmd({ cmd }: { cmd: string }) {
+  const t = useT();
+  const [done, setDone] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setDone(true);
+      setTimeout(() => setDone(false), 1500);
+    } catch {
+      // Sem permissão de clipboard: o texto continua selecionável.
+    }
+  };
+  return (
+    <div className="bridge-cmd">
+      <code>{cmd}</code>
+      <button type="button" className="icon-btn" aria-label={t.bridge.copy} title={done ? t.bridge.copied : t.bridge.copy} onClick={copy}>
+        {done ? '✓' : Icons.copy}
+      </button>
+    </div>
+  );
+}
 
 export function BridgeButton({ ed }: { ed: SketchEditor }) {
   const t = useT();
@@ -39,7 +65,8 @@ export function BridgeButton({ ed }: { ed: SketchEditor }) {
           })()}
         >
           <p className="help-line">{t.bridge.howto}</p>
-          <code className="bridge-cmd">python -m magfem</code>
+          <CopyCmd cmd={INSTALL_CMD} />
+          <CopyCmd cmd="python -m magfem" />
           {b.status === 'on' ? (
             <>
               <p>{t.bridge.connected(b.port)}</p>

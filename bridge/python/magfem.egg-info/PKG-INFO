@@ -1,3 +1,14 @@
+Metadata-Version: 2.4
+Name: magfem
+Version: 1.0.0
+Summary: Controle o MagFEM (elementos finitos magnéticos 2D no navegador) a partir de scripts: ponte local WebSocket/HTTP.
+Author: Thales Maia
+License: MIT
+Project-URL: Homepage, https://thalesmaia.com/tools/magfem-web/
+Project-URL: Source, https://github.com/thalesmaoa/magfem
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+
 # magfem (Python)
 
 Controle o [MagFEM](https://thalesmaia.com/tools/magfem-web/) — elementos finitos magnéticos 2D no

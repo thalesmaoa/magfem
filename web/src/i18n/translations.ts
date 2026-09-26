@@ -79,6 +79,8 @@ export interface Translations {
     button: string;
     hint: string;
     howto: string;
+    copy: string;
+    copied: string;
     port: string;
     key: string;
     connect: string;
@@ -755,7 +757,9 @@ const PT: Translations = {
   bridge: {
     button: 'Script local',
     hint: 'Controle o modelo por um script (Python, Matlab, Julia...) pela ponte local',
-    howto: 'No terminal, rode a ponte e cole aqui a chave que ela mostra (pip install magfem, ou a pasta bridge/python do repositório):',
+    howto: 'No terminal, instale e rode a ponte; depois cole aqui a porta e a chave que ela mostra:',
+    copy: 'Copiar para a área de transferência',
+    copied: 'Copiado!',
     port: 'Porta',
     key: 'Chave',
     connect: 'Conectar',
@@ -1507,7 +1511,9 @@ const EN: Translations = {
   bridge: {
     button: 'Local script',
     hint: 'Drive the model from a script (Python, Matlab, Julia...) through the local bridge',
-    howto: 'In a terminal, run the bridge and paste the key it prints (pip install magfem, or the repository bridge/python folder):',
+    howto: 'In a terminal, install and run the bridge, then paste here the port and key it prints:',
+    copy: 'Copy to clipboard',
+    copied: 'Copied!',
     port: 'Port',
     key: 'Key',
     connect: 'Connect',

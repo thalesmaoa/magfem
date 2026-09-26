@@ -223,7 +223,7 @@ O Tasmota usa **WebSerial**: o browser *abre* a porta serial. O análogo aqui é
 uma conexão com um processo local — **uma página web não consegue ficar escutando conexões**, então
 alguém local precisa ser o servidor. Por isso um **bridge local**:
 
-1. Usuário roda `magfem-bridge` (ou `pip install magfem` e o próprio script sobe o bridge).
+1. Usuário roda `magfem-bridge` (ou `pip install "git+https://github.com/thalesmaoa/magfem#subdirectory=bridge/python"` e o próprio script sobe o bridge).
    Ele imprime uma **chave de pareamento** e a porta.
 2. No site, "Conectar script local" → cola a chave → a página abre `ws://127.0.0.1:<porta>`.
    O Chrome mostra uma vez o prompt de *Local Network Access* (permitido; é o mecanismo oficial).
