@@ -454,7 +454,7 @@ export class SketchEditor {
         freq: input.freq,
         jPhase: input.jPhase,
         jSteps: harmonicJ ?? input.jSteps,
-        harmonic: input.harmonic ? { freq: input.freq!, Are: out.A, Aim: out.Aim, sigma: input.sigma ?? [] } : undefined,
+        harmonic: input.harmonic ? { freq: input.freq!, Are: out.A, Aim: out.Aim, sigma: input.sigma ?? [], iron: input.iron } : undefined,
         circuit: netInfo && out.nodeV ? { ...netInfo, nodeV: out.nodeV, elI: out.elI } : undefined,
       });
       this.postFrame = out.times.length && !input.harmonic ? out.times.length - 1 : 0;

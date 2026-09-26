@@ -190,6 +190,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
 export function materialLine(m: Material): string {
   const kw = [`id=${q(m.id)}`, `group=${q(m.group ?? 'custom')}`, `color=${q(m.color)}`, `mur=${n(m.mur)}`, `sigma=${n(m.sigma)}`];
   if (m.br) kw.push(`br=${n(m.br)}`);
+  for (const k of ['kh', 'alpha', 'ke'] as const) if (m[k] !== undefined) kw.push(`${k}=${n(m[k]!)}`);
   if (m.bh) kw.push(`bh=[${m.bh.map((p) => `(${n(p[0])}, ${n(p[1])})`).join(', ')}]`);
   return `m.material(${q(m.name)}, ${kw.join(', ')})`;
 }

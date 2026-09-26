@@ -38,6 +38,8 @@ export interface MagInput {
   freq?: number;
   dt?: number;
   steps?: number;
+  /** Perdas no ferro (Steinmetz) por região: [kh, alpha, ke] ou null (só pós-processamento; o núcleo ignora). */
+  iron?: ([number, number, number] | null)[];
   /** Harmônico (AC): fasores na frequência freq; J = amplitude de pico. */
   harmonic?: boolean;
   harmonicFrames?: number;
@@ -91,7 +93,7 @@ export interface Solution {
   freq?: number;
   jPhase?: number[];
   /** Harmônico (AC): fasor Â (partes real e imaginária por nó), frequência e σ por região (S/m). */
-  harmonic?: { freq: number; Are: Float64Array; Aim: Float64Array; sigma: number[] };
+  harmonic?: { freq: number; Are: Float64Array; Aim: Float64Array; sigma: number[]; iron?: ([number, number, number] | null)[] };
   /** J de cada região em cada passo (transitório com correntes em função de t). */
   jSteps?: number[];
   /** Circuito externo acoplado: tensões de nó e correntes de elemento por passo. */
@@ -179,6 +181,7 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
   const sigma = new Array<number>(nr).fill(0);
   const jPhase = new Array<number>(nr).fill(0);
   const bhRegion = new Array<[number, number][] | undefined>(nr).fill(undefined);
+  const iron = new Array<[number, number, number] | null>(nr).fill(null);
   for (const a of sk.regionAssigns) {
     const r = findRegion(arr, a);
     if (!r || assigned.has(r.index)) continue;
@@ -186,6 +189,7 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
     if (!m) continue;
     assigned.add(r.index);
     nu[r.index] = 1 / (MU0 * m.mur);
+    if (m.kh || m.ke) iron[r.index] = [m.kh ?? 0, m.alpha ?? 2, m.ke ?? 0];
     if (m.bh && m.bh.length >= 2) bhRegion[r.index] = m.bh.filter(([h, b]) => h > 0 && b > 0).map(([h, b]) => [b, h]);
     // Correntes parasitas só em condutores sem fonte (bobina com corrente imposta = enrolamento, σ ignorado).
     if (!a.current && !a.circuit && m.sigma > 0) sigma[r.index] = m.sigma * 1e6;
@@ -326,6 +330,7 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
       bhB,
       bhH,
       sigma,
+      iron,
       jPhase,
     },
     problems,
@@ -858,6 +863,7 @@ export interface SurfaceIntegrals {
   by: number; // média de B_y (ou B_z) (T)
   intA: number; // ∫A dS (Wb·m no plano; ∫ψ dS no axissimétrico)
   loss: number; // harmônico: perda média por correntes parasitas ½σω²|Â|² (W)
+  ironLoss: number; // harmônico: perdas no ferro (Steinmetz) com o pico de |B| do fasor (W)
   fx: number; // força (N) pelo tensor de Maxwell ponderado sobre o corpo formado pelas regiões
   fy: number; // (axissimétrico: F_z em fy)
   torque: number; // torque em torno da origem (N·m)
@@ -867,7 +873,7 @@ export interface SurfaceIntegrals {
 export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>): SurfaceIntegrals {
   const { xy, triangles, triRegion } = sol.mesh;
   const depth = depthOf(sk);
-  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0, intA: 0, loss: 0, fx: 0, fy: 0, torque: 0 };
+  const out: SurfaceIntegrals = { area: 0, volume: 0, current: 0, energy: 0, bAvg: 0, b2: 0, bx: 0, by: 0, intA: 0, loss: 0, ironLoss: 0, fx: 0, fy: 0, torque: 0 };
   const hm = sol.harmonic;
   for (let t = 0; t < triangles.length / 3; t++) {
     const r = triRegion[t];
@@ -894,6 +900,25 @@ export function surfaceIntegrals(sol: Solution, sk: Sketch, regions: Set<number>
       let re = (hm.Are[a] + hm.Are[b] + hm.Are[c]) / 3, im = (hm.Aim[a] + hm.Aim[b] + hm.Aim[c]) / 3;
       if (sol.axisymmetric) (re /= Math.max(rc, 1e-12)), (im /= Math.max(rc, 1e-12));
       out.loss += 0.5 * hm.sigma[r] * w * w * (re * re + im * im) * dV;
+    }
+    // Perdas no ferro (Steinmetz) com o pico de |B| do fasor: B = ∇Â girado (÷ r no axissimétrico).
+    const ic = hm?.iron?.[r];
+    if (hm && ic) {
+      const x = [xy[2 * a], xy[2 * b], xy[2 * c]].map((v) => v * 1e-3), y = [xy[2 * a + 1], xy[2 * b + 1], xy[2 * c + 1]].map((v) => v * 1e-3);
+      const a2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
+      const nodes = [a, b, c];
+      let gxr = 0, gyr = 0, gxi = 0, gyi = 0;
+      for (let q = 0; q < 3; q++) {
+        const j = (q + 1) % 3, l = (q + 2) % 3;
+        gxr += ((y[j] - y[l]) * hm.Are[nodes[q]]) / a2;
+        gyr += ((x[l] - x[j]) * hm.Are[nodes[q]]) / a2;
+        gxi += ((y[j] - y[l]) * hm.Aim[nodes[q]]) / a2;
+        gyi += ((x[l] - x[j]) * hm.Aim[nodes[q]]) / a2;
+      }
+      const wr = sol.axisymmetric ? 1 / Math.max(rc, 1e-12) : 1;
+      const bpk = wr * Math.sqrt(gxr * gxr + gyr * gyr + gxi * gxi + gyi * gyi);
+      const f = hm.freq;
+      out.ironLoss += (ic[0] * f * Math.pow(bpk, ic[1]) + ic[2] * f * f * bpk * bpk) * dV;
     }
   }
   if (out.area > 0) {

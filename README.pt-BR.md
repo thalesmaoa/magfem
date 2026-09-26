@@ -47,7 +47,8 @@ entreferro móvel.
   - magnetostático, **não linear** sempre que o material tem curva B-H (Newton-Raphson);
   - análise **transitória** com correntes parasitas, com correntes definidas como funções do tempo;
   - análise **AC (harmônica)** com fasores: correntes parasitas, permeabilidade efetiva nos materiais
-    com curva B-H, perdas por correntes parasitas e resultados animados ao longo de um período;
+    com curva B-H, perdas por correntes parasitas e no ferro (Steinmetz) e resultados animados ao longo
+    de um período;
   - **"Campo magnético + circuito"**: editor de esquemático com R, L, C, V, I e bobinas do FEM,
     resolvido junto com o campo num único sistema;
   - validado contra soluções analíticas.

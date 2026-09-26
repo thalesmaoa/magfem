@@ -355,6 +355,7 @@ export interface Translations {
     boundaryHelp: Record<BoundaryType, string>;
     addMaterial: string;
     femmImport: string;
+    steinmetzHelp: string;
     searchMaterial: string;
     fromFemm: string;
     femmHint: string;
@@ -574,6 +575,7 @@ export interface Translations {
     varName: string;
     show: string;
     loss: string;
+    ironLoss: string;
     fx: string;
     fy: string;
     torque: string;
@@ -1074,6 +1076,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     },
     addMaterial: 'Novo material',
     femmImport: 'Importar do FEMM…',
+    steinmetzHelp: 'Perdas no ferro (Steinmetz, W/m³): p = k_h·f·B^α + k_e·(f·B)², com B de pico — usadas na análise AC. Em branco: sem perdas no ferro.',
     searchMaterial: 'Buscar material (também na biblioteca do FEMM)',
     fromFemm: 'Da biblioteca do FEMM (importa ao escolher)',
     femmHint: 'Biblioteca de materiais do FEMM 4.2 (245 materiais); também lê um matlib.dat seu (femm42/bin/matlib.dat)',
@@ -1302,6 +1305,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     varName: 'Nome (variáveis)',
     show: 'Mostrar',
     loss: 'Perdas por correntes parasitas (média, AC)',
+    ironLoss: 'Perdas no ferro (Steinmetz, AC)',
     fx: 'Força F_x (tensor de Maxwell)',
     fy: 'Força F_y (F_z no axissimétrico)',
     torque: 'Torque (em torno da origem)',
@@ -1808,6 +1812,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     },
     addMaterial: 'New material',
     femmImport: 'Import from FEMM…',
+    steinmetzHelp: 'Iron losses (Steinmetz, W/m³): p = k_h·f·B^α + k_e·(f·B)², B = peak — used in the AC analysis. Blank: no iron losses.',
     searchMaterial: 'Search material (also in the FEMM library)',
     fromFemm: 'From the FEMM library (imported when picked)',
     femmHint: 'FEMM 4.2 material library (245 materials); can also read your own matlib.dat (femm42/bin/matlib.dat)',
@@ -2036,6 +2041,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     varName: 'Name (variables)',
     show: 'Show',
     loss: 'Eddy-current losses (average, AC)',
+    ironLoss: 'Iron losses (Steinmetz, AC)',
     fx: 'Force F_x (Maxwell stress)',
     fy: 'Force F_y (F_z if axisymmetric)',
     torque: 'Torque (about the origin)',

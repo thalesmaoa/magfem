@@ -148,7 +148,7 @@ export function MaterialEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
   const set = (patch: Partial<Material>, code: string) => ed.meshOp((s) => updateMaterial(s, id, patch), `m.material(${q(m.name)}, ${code})`);
   // Material da biblioteca original: pode voltar ao padrão.
   const orig = DEFAULT_MATERIALS.find((d) => d.id === id);
-  const num = (label: string, key: 'mur' | 'sigma' | 'br', allowEmpty = false) => (
+  const num = (label: string, key: 'mur' | 'sigma' | 'br' | 'kh' | 'alpha' | 'ke', allowEmpty = false) => (
     <label className="field">
       <span>{label}</span>
       <LazyInput
@@ -156,7 +156,7 @@ export function MaterialEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
         ariaLabel={label}
         placeholder={allowEmpty ? '—' : undefined}
         onCommit={(v) => {
-          if (allowEmpty && !v.trim()) return set({ [key]: undefined }, `${key}=0`);
+          if (allowEmpty && !v.trim()) return set({ [key]: undefined }, `${key}=${key === 'br' ? '0' : 'None'}`);
           const n = Number(v.replace(',', '.'));
           if (!Number.isFinite(n) || n < 0 || (key === 'mur' && n <= 0)) return ed.flash(t.msg.positive);
           set({ [key]: n }, `${key}=${n}`);
@@ -187,6 +187,10 @@ export function MaterialEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
       {num(t.mesh.mur, 'mur')}
       {num(t.mesh.sigma, 'sigma')}
       {num(t.mesh.br, 'br', true)}
+      <p className="help-line">{t.mesh.steinmetzHelp}</p>
+      {num('k_h (W/m³)', 'kh', true)}
+      {num('α', 'alpha', true)}
+      {num('k_e (W/m³)', 'ke', true)}
       <BHEditor ed={ed} m={m} />
       <div className="lib-actions">
         <button

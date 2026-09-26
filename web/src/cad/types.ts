@@ -336,6 +336,10 @@ export interface Material {
   br?: number;
   /** Curva B-H não linear: pares [H (A/m), B (T)]. */
   bh?: [number, number][];
+  /** Perdas no ferro (Steinmetz, W/m³): p = kh·f·B^alpha + ke·(f·B)², B = pico. Ausente = sem perdas no ferro. */
+  kh?: number;
+  alpha?: number;
+  ke?: number;
 }
 
 /** Material (e fonte) atribuído a uma região; a região é reencontrada pelas curvas do contorno. */

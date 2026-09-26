@@ -652,6 +652,7 @@ export function qLabel(q: string): string {
     intB: t.table.line.intB,
     intBn: t.table.line.intBn,
     loss: t.table.loss,
+    ironLoss: t.table.ironLoss,
     fx: t.table.fx,
     fy: t.table.fy,
     torque: t.table.torque,

@@ -897,6 +897,8 @@ export class CommandConsole {
         need(1);
         const patch: Partial<Material> = {};
         for (const k of ['mur', 'sigma', 'br'] as const) if (kw[k] !== undefined) patch[k] = Number(kw[k]);
+        // Steinmetz (None apaga).
+        for (const k of ['kh', 'alpha', 'ke'] as const) if (kw[k] !== undefined) patch[k] = kw[k] === null ? undefined : Number(kw[k]);
         if (kw.color !== undefined) patch.color = String(kw.color);
         if (kw.bh !== undefined) patch.bh = kw.bh === null ? undefined : (seq(kw.bh) ?? []).map((p) => (seq(p) ?? []).map(Number) as [number, number]);
         if (kw.name !== undefined) patch.name = String(kw.name);
