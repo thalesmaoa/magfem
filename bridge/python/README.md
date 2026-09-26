@@ -20,6 +20,9 @@ t, i = mf.series("Primario_I")   # transitório: curva no tempo
 mf.run('g.circle((0, 0), r=5)')  # qualquer linha do console do MagFEM
 ```
 
+Também dá para deixar a ponte rodando num terminal (`python -m magfem`): ela avisa quando a página conecta e mostra
+cada comando recebido; os scripts, em outro terminal, usam `magfem.connect(key="<chave>")`.
+
 No app, clique em **Script local** (barra de status), informe a porta e cole a chave. Os comandos do
 script aparecem no histórico e o desenho muda ao vivo. O "exportar código" do app gera um script que
 recria o modelo — dá para colá-lo inteiro em `mf.run(...)`.

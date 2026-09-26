@@ -22,7 +22,7 @@ import secrets
 import struct
 import threading
 import urllib.parse
-from typing import Any
+from typing import Any, Callable
 
 VERSION = "1.0.0"
 DEFAULT_PORT = 8765
@@ -38,8 +38,9 @@ class BridgeError(RuntimeError):
 class Bridge:
     """Servidor da ponte. Use start() para rodar numa thread, ou serve_forever() em primeiro plano."""
 
-    def __init__(self, port: int = DEFAULT_PORT, key: str | None = None, host: str = "127.0.0.1"):
+    def __init__(self, port: int = DEFAULT_PORT, key: str | None = None, host: str = "127.0.0.1", log: Callable[[str], None] | None = None):
         self.host = host
+        self._log = log or (lambda _msg: None)
         self.port = port
         self.key = key or secrets.token_urlsafe(9)
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -126,7 +127,9 @@ class Bridge:
         self._pending[rid] = fut
         try:
             await self._browser.send(json.dumps({"type": "run", "id": rid, "code": code}))
-            return await fut
+            res = await fut
+            self._log("run:" + json.dumps({"code": code, "ok": res.get("ok"), "error": res.get("error")}))
+            return res
         finally:
             self._pending.pop(rid, None)
 
@@ -207,6 +210,7 @@ class Bridge:
             await self._browser.close()
         self._browser = ws
         await ws.send(json.dumps({"type": "welcome", "version": VERSION}))
+        self._log("connected")
         try:
             while True:
                 msg = await ws.recv()
@@ -223,6 +227,7 @@ class Bridge:
         finally:
             if self._browser is ws:
                 self._browser = None
+                self._log("disconnected")
             for fut in self._pending.values():
                 if not fut.done():
                     fut.set_result({"ok": False, "error": "a página do MagFEM desconectou"})
