@@ -82,7 +82,7 @@ The [console](./console.md) commands, grouped by object. Arguments in brackets a
 
 | Command | Description |
 |---|---|
-| `m.material("Copper", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | creates or edits a material (σ in MS/m, Br in T; `bh=None` removes the curve; sheets: `lam_fill=0.95, lam_thickness=0.5` in mm, `None` back to solid) |
+| `m.material("Copper", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | creates or edits a material (σ in MS/m, Br in T; `bh=None` removes the curve; sheets: `lam_fill=0.95, lam_thickness=0.5` in mm, `None` back to solid; thermal: `kth=400` W/m·K, `alpha_r=0.00393` 1/K) |
 | `m.del_material(name)`, `m.duplicate_material(name)`, `m.restore_material(name)` | deletes, duplicates and restores the default |
 | `m.circuit("Coil", current="10")` | creates or edits a circuit |
 | `m.del_circuit("Coil")` | deletes |
@@ -107,6 +107,10 @@ Boundary types for `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`, 
 | `s.physics("n2", analysis="magnetostatic" \| "harmonic" \| "transient", frequency=, dt=, t_end=, schematic=)` | sets the analysis (frequency in Hz, times in s) |
 | `s.current("n2", "Coil", "10*sin(2*pi*60*t)")` | current of a circuit (or region) in this physics only; `None` goes back to the default |
 | `s.solve("n2")` | solves (generating the mesh first if needed) |
+| `s.add_physics(name="Thermal", thermal=True, source="n2")` | steady thermal physics, with the losses of physics `n2` |
+| `s.thermal("n5", source="n2", t_amb="25", h="10", h_faces="5", couple_r=True)` | ambient, convection, front/back faces and σ(T) |
+| `s.thermal_bc("n5", "Duct", curves=["l3"], type="convection" \| "temperature" \| "insulated", h="60", t="30", channel="Fan")` | condition on curves (`curves=None` removes) |
+| `s.channel("n5", "Fan", flow="120", t_in="25")` | air channel: flow (m³/h) and inlet (`flow=None` removes) |
 | `s.rename(id, name)`, `s.remove(id)` | organization |
 
 ## Results — `r`

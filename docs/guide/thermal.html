@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introdução &mdash; MagFEM</title>
+  <title>Térmica (regime) &mdash; MagFEM</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=34306bf6" />
@@ -19,11 +19,13 @@
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../_static/translations.js?v=71a39b36"></script>
+      <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Índice" href="../genindex.html" />
     <link rel="search" title="Buscar" href="../search.html" />
-    <link rel="next" title="Primeiro modelo: bobina com núcleo" href="first-model.html" />
-    <link rel="prev" title="Documentação do MagFEM" href="../index.html" /> 
+    <link rel="next" title="Arquivos, importar e exportar" href="files.html" />
+    <link rel="prev" title="Circuito externo" href="circuit.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -48,10 +50,10 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Menu de navegação">
               <p class="caption" role="heading"><span class="caption-text">Guia</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Introdução</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#o-fluxo-de-trabalho">O fluxo de trabalho</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#a-interface">A interface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#proximos-passos">Próximos passos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introdução</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="index.html#o-fluxo-de-trabalho">O fluxo de trabalho</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-interface">A interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#proximos-passos">Próximos passos</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="first-model.html">Primeiro modelo: bobina com núcleo</a><ul>
@@ -109,13 +111,13 @@
 <li class="toctree-l2"><a class="reference internal" href="circuit.html#resolver-e-ver-os-sinais">Resolver e ver os sinais</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="thermal.html">Térmica (regime)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="thermal.html#como-usar">Como usar</a></li>
-<li class="toctree-l2"><a class="reference internal" href="thermal.html#resfriamento">Resfriamento</a></li>
-<li class="toctree-l2"><a class="reference internal" href="thermal.html#ventilador-canal-de-ar">Ventilador (canal de ar)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="thermal.html#resistividade-com-a-temperatura">Resistividade com a temperatura</a></li>
-<li class="toctree-l2"><a class="reference internal" href="thermal.html#resultados">Resultados</a></li>
-<li class="toctree-l2"><a class="reference internal" href="thermal.html#limitacoes">Limitações</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Térmica (regime)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#como-usar">Como usar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resfriamento">Resfriamento</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ventilador-canal-de-ar">Ventilador (canal de ar)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resistividade-com-a-temperatura">Resistividade com a temperatura</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resultados">Resultados</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#limitacoes">Limitações</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="files.html">Arquivos, importar e exportar</a><ul>
@@ -244,9 +246,9 @@
           <div role="navigation" aria-label="Navegação da página">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Introdução</li>
+      <li class="breadcrumb-item active">Térmica (regime)</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/thalesmaoa/magfem/blob/main/docs/pt/guide/index.md" class="fa fa-github"> Editar no GitHub</a>
+              <a href="https://github.com/thalesmaoa/magfem/blob/main/docs/pt/guide/thermal.md" class="fa fa-github"> Editar no GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -254,74 +256,102 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section class="tex2jax_ignore mathjax_ignore" id="introducao">
-<h1>Introdução<a class="headerlink" href="#introducao" title="Link para este cabeçalho"></a></h1>
-<p>O <strong>MagFEM</strong> resolve problemas de campo magnético em duas dimensões pelo método dos elementos finitos,
-direto no navegador. Serve para indutores, transformadores, atuadores, contatores e, mais adiante,
-máquinas girantes. Os problemas podem ser <strong>planos</strong> (seção transversal com profundidade) ou
-<strong>axissimétricos</strong> (sólidos de revolução em torno do eixo z).</p>
-<ul class="simple">
-<li><p><strong>Sem instalação e sem servidor.</strong> O núcleo numérico (C++ e Eigen) é compilado para WebAssembly e roda
-num Web Worker. O projeto fica na sua máquina, como no draw.io.</p></li>
-<li><p><strong>Português e inglês</strong>, tema claro e escuro, e o botão <strong>Citar</strong> no topo.</p></li>
-<li><p><strong>Código aberto</strong> (MIT) no <a class="reference external" href="https://github.com/thalesmaoa/magfem">GitHub</a>. Erros e sugestões:
-<a class="reference external" href="https://github.com/thalesmaoa/magfem/issues">issues</a>.</p></li>
-</ul>
-<p>Abra em <a class="reference external" href="https://thalesmaia.com/tools/magfem-web/">https://thalesmaia.com/tools/magfem-web/</a>. Funciona melhor no Chrome ou no Edge, que permitem
-salvar direto no mesmo arquivo; no Firefox e no Safari, salvar vira download.</p>
-<section id="o-fluxo-de-trabalho">
-<h2>O fluxo de trabalho<a class="headerlink" href="#o-fluxo-de-trabalho" title="Link para este cabeçalho"></a></h2>
-<p>A árvore à esquerda segue a ordem do trabalho, como no COMSOL:</p>
+  <section class="tex2jax_ignore mathjax_ignore" id="termica-regime">
+<h1>Térmica (regime)<a class="headerlink" href="#termica-regime" title="Link para este cabeçalho"></a></h1>
+<p>A física <strong>Térmica</strong> calcula a temperatura em regime permanente a partir das perdas de uma física magnética (AC ou
+magnetostática). O ar não é simulado como escoamento (sem CFD): ele fica fora do domínio térmico, e as superfícies
+expostas trocam calor por <strong>convecção</strong>. Um <strong>ventilador</strong> entra como um canal de ar que renova o ar e esquenta com o
+calor que leva.</p>
+<section id="como-usar">
+<h2>Como usar<a class="headerlink" href="#como-usar" title="Link para este cabeçalho"></a></h2>
 <ol class="arabic simple">
-<li><p><strong>Geometria</strong> — o desenho paramétrico (entidades, restrições, cotas e variáveis).</p></li>
-<li><p><strong>Malha</strong> — materiais das regiões, circuitos, contornos, tamanho dos elementos e a malha.</p></li>
-<li><p><strong>Método de resolução</strong> — a física (campo magnético ou circuito) e o tipo de análise.</p></li>
-<li><p><strong>Resultados</strong> — vistas de campo, gráficos e tabelas, cada uma numa aba do canvas.</p></li>
+<li><p>Resolva (ou prepare) uma física magnética <strong>AC</strong> ou <strong>magnetostática</strong> com as correntes de trabalho.</p></li>
+<li><p>No <code class="docutils literal notranslate"><span class="pre">+</span></code> de <strong>Método de resolução</strong>, crie <strong>Térmica (regime)</strong> e escolha em <strong>Perdas de</strong> a física magnética.</p></li>
+<li><p>Ajuste a <strong>temperatura ambiente</strong>, a <strong>convecção</strong> das superfícies e, no plano, as <strong>faces frente/trás</strong>.</p></li>
+<li><p>Resolva (▶). Em <strong>Resultados › Térmica</strong>, crie um <strong>Mapa de campo</strong>: superfície de temperatura e isotermas (contorno).</p></li>
 </ol>
-<p><img alt="Interface do MagFEM com um campo resolvido" src="../_images/field-pt.png" /></p>
+<p>Os materiais precisam da <strong>condutividade térmica k</strong>; os da biblioteca já têm (cobre 400, alumínio 237, aço M400 28,
+aço 1010 50 W/m·K). Sem k, vale um valor típico do grupo. Chapas laminadas conduzem <span class="math notranslate nohighlight">\(f\cdot k\)</span> no plano do desenho.</p>
 </section>
-<section id="a-interface">
-<h2>A interface<a class="headerlink" href="#a-interface" title="Link para este cabeçalho"></a></h2>
+<section id="resfriamento">
+<h2>Resfriamento<a class="headerlink" href="#resfriamento" title="Link para este cabeçalho"></a></h2>
 <table class="docutils align-default">
 <thead>
-<tr class="row-odd"><th class="head"><p>Área</p></th>
-<th class="head"><p>O que tem</p></th>
+<tr class="row-odd"><th class="head"><p>Onde</p></th>
+<th class="head"><p>O que é</p></th>
+<th class="head"><p>Valores típicos</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>Barra superior</p></td>
-<td><p>Novo, Abrir, Salvar, Salvar como, Importar, Exportar, Citar, idioma (PT/EN) e tema</p></td>
+<tr class="row-even"><td><p>Superfícies expostas</p></td>
+<td><p>convecção <span class="math notranslate nohighlight">\(h\,(T - T_{amb})\)</span> em toda borda do sólido que toca o ar</p></td>
+<td><p>natural 5–10, ventilado 25–100 W/m²·K</p></td>
 </tr>
-<tr class="row-odd"><td><p>Barra de ferramentas</p></td>
-<td><p>desenho, restrições, cota e edição (tesoura, offset, espelho, padrões), mover e agrupar</p></td>
+<tr class="row-odd"><td><p>Faces frente/trás (plano)</p></td>
+<td><p>o 2D não vê as faces da profundidade: <span class="math notranslate nohighlight">\(2h/\text{profundidade}\)</span> por volume</p></td>
+<td><p>igual à convecção natural</p></td>
 </tr>
-<tr class="row-even"><td><p>Árvore do modelo</p></td>
-<td><p>as quatro etapas; o <code class="docutils literal notranslate"><span class="pre">+</span></code> de cada nó cria itens; duplo clique renomeia</p></td>
+<tr class="row-even"><td><p>Condição em curvas</p></td>
+<td><p>convecção com outro <span class="math notranslate nohighlight">\(h\)</span>, temperatura fixa ou isolada, só nas curvas escolhidas</p></td>
+<td><p>—</p></td>
 </tr>
-<tr class="row-odd"><td><p>Propriedades</p></td>
-<td><p>abaixo da árvore: as propriedades do que está selecionado</p></td>
+<tr class="row-odd"><td><p>Canal de ar (ventilador)</p></td>
+<td><p>vazão <span class="math notranslate nohighlight">\(Q\)</span> (m³/h) e temperatura de entrada; as curvas ligadas trocam calor com o ar do canal</p></td>
+<td><p>—</p></td>
 </tr>
-<tr class="row-even"><td><p>Canvas</p></td>
-<td><p>o desenho e as abas de resultados (vistas, gráficos, tabelas, esquemático)</p></td>
+</tbody>
+</table>
+<p>Para aplicar uma condição a curvas: selecione as curvas no desenho e clique em <strong>Usar as curvas selecionadas</strong> na
+condição.</p>
+</section>
+<section id="ventilador-canal-de-ar">
+<h2>Ventilador (canal de ar)<a class="headerlink" href="#ventilador-canal-de-ar" title="Link para este cabeçalho"></a></h2>
+<p>O ar renovado leva o calor das curvas ligadas ao canal. Com vazão <span class="math notranslate nohighlight">\(Q\)</span>, <span class="math notranslate nohighlight">\(\dot m = \rho_{ar} Q\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+T_{saída} = T_{entrada} + \frac{P}{\dot m\, c_p}, \qquad T_{ar} = \frac{T_{entrada} + T_{saída}}{2},
+\]</div>
+<p>e a convecção dessas curvas usa <span class="math notranslate nohighlight">\(T_{ar}\)</span>. Temperatura e ar são resolvidos juntos por iteração: pouca vazão → o ar
+esquenta → resfria menos.</p>
+</section>
+<section id="resistividade-com-a-temperatura">
+<h2>Resistividade com a temperatura<a class="headerlink" href="#resistividade-com-a-temperatura" title="Link para este cabeçalho"></a></h2>
+<p>Com <strong>Resistividade com a temperatura</strong> ligado, a resistividade dos condutores segue
+<span class="math notranslate nohighlight">\(\rho(T) = \rho_{20}\,[1 + \alpha\,(T - 20)]\)</span> (<span class="math notranslate nohighlight">\(\alpha\)</span> = 0,00393/K no cobre). As perdas nas bobinas são recalculadas
+com a temperatura de cada região, e os <strong>condutores maciços</strong> (correntes parasitas) têm o AC resolvido de novo com o
+<span class="math notranslate nohighlight">\(\sigma\)</span> corrigido. A iteração para quando a temperatura das regiões muda menos de 0,1 K (normalmente 3 a 5 voltas).</p>
+</section>
+<section id="resultados">
+<h2>Resultados<a class="headerlink" href="#resultados" title="Link para este cabeçalho"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variável</p></th>
+<th class="head"><p>O quê</p></th>
 </tr>
-<tr class="row-odd"><td><p>Gaveta da direita</p></td>
-<td><p><strong>Problema e bibliotecas</strong>: unidade, plano/axissimétrico, profundidade, materiais e contornos</p></td>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Tmax</span></code>, <code class="docutils literal notranslate"><span class="pre">Tmin</span></code></p></td>
+<td><p>temperaturas máxima e mínima (°C)</p></td>
 </tr>
-<tr class="row-even"><td><p>Console</p></td>
-<td><p>cada ação aparece como comando da API; também aceita comandos digitados</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;região&gt;_Tavg</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;região&gt;_Tmax</span></code></p></td>
+<td><p>média e máxima por região</p></td>
 </tr>
-<tr class="row-odd"><td><p>Barra de status</p></td>
-<td><p>coordenadas, graus de liberdade, dicas, <strong>Script local</strong>, Bug reports e a versão</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">P_perdas</span></code>, <code class="docutils literal notranslate"><span class="pre">P_dissipado</span></code></p></td>
+<td><p>perdas totais e calor que sai (devem ser iguais: balanço)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;canal&gt;_Tar</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;canal&gt;_Tsaida</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;canal&gt;_P</span></code></p></td>
+<td><p>ar médio, saída e calor levado por canal</p></td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="proximos-passos">
-<h2>Próximos passos<a class="headerlink" href="#proximos-passos" title="Link para este cabeçalho"></a></h2>
+<section id="limitacoes">
+<h2>Limitações<a class="headerlink" href="#limitacoes" title="Link para este cabeçalho"></a></h2>
 <ul class="simple">
-<li><p>Faça o <a class="reference internal" href="first-model.html"><span class="std std-doc">primeiro modelo</span></a>: uma bobina axissimétrica com núcleo de aço, do desenho à indutância.</p></li>
-<li><p>Veja como desenhar e restringir a <a class="reference internal" href="geometry.html"><span class="std std-doc">geometria</span></a>.</p></li>
-<li><p>Automatize com o <a class="reference internal" href="../scripting/console.html"><span class="std std-doc">console</span></a> e a <a class="reference internal" href="../scripting/bridge.html"><span class="std std-doc">ponte local</span></a>.</p></li>
+<li><p>Regime permanente. A elevação adiabática em curto-circuito (sem tempo para o calor sair) e o transitório térmico
+são os próximos passos.</p></li>
+<li><p>O ar não é simulado: a convecção vem do <span class="math notranslate nohighlight">\(h\)</span> informado. Em canais longos, o ar esquenta ao longo do caminho; o modelo
+usa a média entre entrada e saída.</p></li>
 </ul>
 </section>
 </section>
@@ -330,8 +360,8 @@ salvar direto no mesmo arquivo; no Firefox e no Safari, salvar vira download.</p
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Rodapé">
-        <a href="../index.html" class="btn btn-neutral float-left" title="Documentação do MagFEM" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Anterior</a>
-        <a href="first-model.html" class="btn btn-neutral float-right" title="Primeiro modelo: bobina com núcleo" accesskey="n" rel="next">Próximo <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="circuit.html" class="btn btn-neutral float-left" title="Circuito externo" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Anterior</a>
+        <a href="files.html" class="btn btn-neutral float-right" title="Arquivos, importar e exportar" accesskey="n" rel="next">Próximo <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
@@ -359,7 +389,7 @@ salvar direto no mesmo arquivo; no Firefox e no Safari, salvar vira download.</p
   </span>
   <div class="rst-other-versions">
     <dl>
-      <dt>Idioma</dt><dd><strong>português</strong></dd><dd><a href="../en/guide/index.html">English</a></dd>
+      <dt>Idioma</dt><dd><strong>português</strong></dd><dd><a href="../en/guide/thermal.html">English</a></dd>
     </dl>
     <hr/>
     <dl>

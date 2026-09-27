@@ -110,6 +110,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#solving-and-viewing-signals">Solving and viewing signals</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/thermal.html">Thermal (steady)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#how-to-use">How to use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#cooling">Cooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#fan-air-channel">Fan (air channel)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resistivity-with-temperature">Resistivity with temperature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#results">Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#limitations">Limitations</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/files.html">Files, import and export</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#projects">Projects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#draft-and-automatic-copies">Draft and automatic copies</a></li>
@@ -188,6 +197,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ac-losses-in-the-wires">AC losses in the wires</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#steady-thermal">Steady thermal</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#post-processing">Post-processing</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#force-and-torque">Force and torque</a></li>
 </ul>
@@ -334,6 +344,15 @@ each element, iterated with relaxation (as in FEMM). The field is shown over one
 the foil of thickness <span class="math notranslate nohighlight">\(\min(w, h)\)</span> (approximation).</p></li>
 </ul>
 </section>
+</section>
+<section id="steady-thermal">
+<h2>Steady thermal<a class="headerlink" href="#steady-thermal" title="Link to this heading"></a></h2>
+<p><span class="math notranslate nohighlight">\(-\nabla\cdot(k\nabla T) = q\)</span> in the solid (P1; <span class="math notranslate nohighlight">\(2\pi r\)</span> weight in axisymmetric problems), with convection
+<span class="math notranslate nohighlight">\(-k\,\partial T/\partial n = h\,(T - T_{ref})\)</span> on exposed edges, the depth faces in planar problems as a sink
+<span class="math notranslate nohighlight">\(2h/d\,(T - T_{amb})\)</span>, and fixed temperature. <span class="math notranslate nohighlight">\(q\)</span> comes from the magnetic physics: <span class="math notranslate nohighlight">\(J^2/(2\sigma)\)</span> in coils (AC; with the
+wire, <span class="math notranslate nohighlight">\(\times A_{region}/(|N| A_{turn})\)</span> and the skin factor), proximity, <span class="math notranslate nohighlight">\(\tfrac12\sigma\omega^2|\hat A|^2\)</span> in solid
+conductors and Steinmetz in iron. Air channels: <span class="math notranslate nohighlight">\(T_{air} = T_{in} + P/(2\rho c_p Q)\)</span>. Resistivity:
+<span class="math notranslate nohighlight">\(\rho(T) = \rho_{20}[1 + \alpha(T - 20)]\)</span>, iterating with the AC. Conjugate gradient with Jacobi.</p>
 </section>
 <section id="post-processing">
 <h2>Post-processing<a class="headerlink" href="#post-processing" title="Link to this heading"></a></h2>

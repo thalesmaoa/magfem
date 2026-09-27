@@ -92,6 +92,15 @@ With $\delta = \sqrt{2/(\omega\mu_0\sigma)}$ and $k = (1-j)/\delta$, for a round
   $P'_{foil} = \tfrac{H_0^2}{\sigma\delta}\,\tfrac{\sinh\xi - \sin\xi}{\cosh\xi + \cos\xi}$, $\xi = t/\delta$; skin from
   the foil of thickness $\min(w, h)$ (approximation).
 
+## Steady thermal
+
+$-\nabla\cdot(k\nabla T) = q$ in the solid (P1; $2\pi r$ weight in axisymmetric problems), with convection
+$-k\,\partial T/\partial n = h\,(T - T_{ref})$ on exposed edges, the depth faces in planar problems as a sink
+$2h/d\,(T - T_{amb})$, and fixed temperature. $q$ comes from the magnetic physics: $J^2/(2\sigma)$ in coils (AC; with the
+wire, $\times A_{region}/(|N| A_{turn})$ and the skin factor), proximity, $\tfrac12\sigma\omega^2|\hat A|^2$ in solid
+conductors and Steinmetz in iron. Air channels: $T_{air} = T_{in} + P/(2\rho c_p Q)$. Resistivity:
+$\rho(T) = \rho_{20}[1 + \alpha(T - 20)]$, iterating with the AC. Conjugate gradient with Jacobi.
+
 ## Post-processing
 
 - Energy: $W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV$.

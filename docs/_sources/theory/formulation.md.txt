@@ -92,6 +92,15 @@ Com $\delta = \sqrt{2/(\omega\mu_0\sigma)}$ e $k = (1-j)/\delta$, para um fio re
   $P'_{lâm} = \tfrac{H_0^2}{\sigma\delta}\,\tfrac{\sinh\xi - \sin\xi}{\cosh\xi + \cos\xi}$, $\xi = t/\delta$; pelicular
   pela lâmina de espessura $\min(w, h)$ (aproximação).
 
+## Térmica em regime
+
+$-\nabla\cdot(k\nabla T) = q$ no sólido (P1; peso $2\pi r$ no axissimétrico), com convecção
+$-k\,\partial T/\partial n = h\,(T - T_{ref})$ nas bordas expostas, faces da profundidade no plano como sumidouro
+$2h/d\,(T - T_{amb})$, e temperatura fixa. $q$ vem da física magnética: $J^2/(2\sigma)$ nas bobinas (AC; com o fio,
+$\times A_{região}/(|N| A_{espira})$ e o fator pelicular), proximidade, $\tfrac12\sigma\omega^2|\hat A|^2$ nos maciços e
+Steinmetz no ferro. Canais de ar: $T_{ar} = T_{entrada} + P/(2\rho c_p Q)$. Resistividade:
+$\rho(T) = \rho_{20}[1 + \alpha(T - 20)]$, iterando com o AC. Gradiente conjugado com Jacobi.
+
 ## Pós-processamento
 
 - Energia: $W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV$.

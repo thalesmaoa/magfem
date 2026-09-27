@@ -26,6 +26,10 @@ solution. They run on every code change.
 | DC R with AWG wire (axisymmetric) | $N\,2\pi r/(\sigma A_{wire})$ | < 0.2 % |
 | Skin, round wire | $1 + (a/\delta)^4/48$ and $a/(2\delta) + 1/4$ | < 1e-5 |
 | Proximity, round wire in a uniform field | $N\,\ell\,\pi\sigma\omega^2\hat B^2 a^4/8$ (low frequency) | < 0.1 % |
+| Thermal: slab with generation and convection | $T = T_{amb} + qL/2h + q x(L-x)/2k$ | < 0.1 K |
+| Thermal: axisymmetric cylinder | $T = T_{amb} + qR/2h + q(R^2-r^2)/4k$ | < 0.1 K |
+| Thermal: fan (air balance) | $T_{out} = T_{in} + P/(\rho c_p Q)$ | < 1e-3 |
+| Thermal with σ(T) (DC block) | $T = T_{amb} + P_{20}(1+\alpha(T-20))/(hS)$ | < 0.05 K |
 | Proximity, rectangular wire (Dowell) | $\sigma\omega^2\hat B^2 t^3/24$ per width | < 0.1 % |
 | Eddy-current losses | $\propto f^2$ at low frequency | ratio 3.97 (≈ 4) |
 

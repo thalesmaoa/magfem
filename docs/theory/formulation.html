@@ -111,6 +111,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#resolver-e-ver-os-sinais">Resolver e ver os sinais</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/thermal.html">Térmica (regime)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#como-usar">Como usar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resfriamento">Resfriamento</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#ventilador-canal-de-ar">Ventilador (canal de ar)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resistividade-com-a-temperatura">Resistividade com a temperatura</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resultados">Resultados</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#limitacoes">Limitações</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/files.html">Arquivos, importar e exportar</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#projetos">Projetos</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#rascunho-e-copias-automaticas">Rascunho e cópias automáticas</a></li>
@@ -189,6 +198,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#perdas-ca-nos-fios">Perdas CA nos fios</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#termica-em-regime">Térmica em regime</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pos-processamento">Pós-processamento</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#forca-e-torque">Força e torque</a></li>
 </ul>
@@ -335,6 +345,15 @@ elemento, iterada com relaxação (como no FEMM). O campo é mostrado ao longo d
 pela lâmina de espessura <span class="math notranslate nohighlight">\(\min(w, h)\)</span> (aproximação).</p></li>
 </ul>
 </section>
+</section>
+<section id="termica-em-regime">
+<h2>Térmica em regime<a class="headerlink" href="#termica-em-regime" title="Link para este cabeçalho"></a></h2>
+<p><span class="math notranslate nohighlight">\(-\nabla\cdot(k\nabla T) = q\)</span> no sólido (P1; peso <span class="math notranslate nohighlight">\(2\pi r\)</span> no axissimétrico), com convecção
+<span class="math notranslate nohighlight">\(-k\,\partial T/\partial n = h\,(T - T_{ref})\)</span> nas bordas expostas, faces da profundidade no plano como sumidouro
+<span class="math notranslate nohighlight">\(2h/d\,(T - T_{amb})\)</span>, e temperatura fixa. <span class="math notranslate nohighlight">\(q\)</span> vem da física magnética: <span class="math notranslate nohighlight">\(J^2/(2\sigma)\)</span> nas bobinas (AC; com o fio,
+<span class="math notranslate nohighlight">\(\times A_{região}/(|N| A_{espira})\)</span> e o fator pelicular), proximidade, <span class="math notranslate nohighlight">\(\tfrac12\sigma\omega^2|\hat A|^2\)</span> nos maciços e
+Steinmetz no ferro. Canais de ar: <span class="math notranslate nohighlight">\(T_{ar} = T_{entrada} + P/(2\rho c_p Q)\)</span>. Resistividade:
+<span class="math notranslate nohighlight">\(\rho(T) = \rho_{20}[1 + \alpha(T - 20)]\)</span>, iterando com o AC. Gradiente conjugado com Jacobi.</p>
 </section>
 <section id="pos-processamento">
 <h2>Pós-processamento<a class="headerlink" href="#pos-processamento" title="Link para este cabeçalho"></a></h2>

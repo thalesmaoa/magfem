@@ -22,6 +22,7 @@ guide/mesh
 guide/solver
 guide/results
 guide/circuit
+guide/thermal
 guide/files
 guide/shortcuts
 ```

@@ -108,6 +108,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#solving-and-viewing-signals">Solving and viewing signals</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/thermal.html">Thermal (steady)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#how-to-use">How to use</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#cooling">Cooling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#fan-air-channel">Fan (air channel)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resistivity-with-temperature">Resistivity with temperature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#results">Results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#limitations">Limitations</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/files.html">Files, import and export</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#projects">Projects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#draft-and-automatic-copies">Draft and automatic copies</a></li>
@@ -186,6 +195,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#ac-losses-in-the-wires">AC losses in the wires</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#steady-thermal">Steady thermal</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#post-processing">Post-processing</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#force-and-torque">Force and torque</a></li>
 </ul>
@@ -462,7 +472,7 @@
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.material(&quot;Copper&quot;,</span> <span class="pre">mur=1,</span> <span class="pre">sigma=58,</span> <span class="pre">br=0,</span> <span class="pre">color=&quot;#e0914f&quot;,</span> <span class="pre">bh=[(H,</span> <span class="pre">B),</span> <span class="pre">...],</span> <span class="pre">kh=,</span> <span class="pre">alpha=,</span> <span class="pre">ke=,</span> <span class="pre">group=)</span></code></p></td>
-<td><p>creates or edits a material (σ in MS/m, Br in T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> removes the curve; sheets: <code class="docutils literal notranslate"><span class="pre">lam_fill=0.95,</span> <span class="pre">lam_thickness=0.5</span></code> in mm, <code class="docutils literal notranslate"><span class="pre">None</span></code> back to solid)</p></td>
+<td><p>creates or edits a material (σ in MS/m, Br in T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> removes the curve; sheets: <code class="docutils literal notranslate"><span class="pre">lam_fill=0.95,</span> <span class="pre">lam_thickness=0.5</span></code> in mm, <code class="docutils literal notranslate"><span class="pre">None</span></code> back to solid; thermal: <code class="docutils literal notranslate"><span class="pre">kth=400</span></code> W/m·K, <code class="docutils literal notranslate"><span class="pre">alpha_r=0.00393</span></code> 1/K)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.del_material(name)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.duplicate_material(name)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.restore_material(name)</span></code></p></td>
 <td><p>deletes, duplicates and restores the default</p></td>
@@ -525,6 +535,18 @@
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.solve(&quot;n2&quot;)</span></code></p></td>
 <td><p>solves (generating the mesh first if needed)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.add_physics(name=&quot;Thermal&quot;,</span> <span class="pre">thermal=True,</span> <span class="pre">source=&quot;n2&quot;)</span></code></p></td>
+<td><p>steady thermal physics, with the losses of physics <code class="docutils literal notranslate"><span class="pre">n2</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.thermal(&quot;n5&quot;,</span> <span class="pre">source=&quot;n2&quot;,</span> <span class="pre">t_amb=&quot;25&quot;,</span> <span class="pre">h=&quot;10&quot;,</span> <span class="pre">h_faces=&quot;5&quot;,</span> <span class="pre">couple_r=True)</span></code></p></td>
+<td><p>ambient, convection, front/back faces and σ(T)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.thermal_bc(&quot;n5&quot;,</span> <span class="pre">&quot;Duct&quot;,</span> <span class="pre">curves=[&quot;l3&quot;],</span> <span class="pre">type=&quot;convection&quot;</span> <span class="pre">|</span> <span class="pre">&quot;temperature&quot;</span> <span class="pre">|</span> <span class="pre">&quot;insulated&quot;,</span> <span class="pre">h=&quot;60&quot;,</span> <span class="pre">t=&quot;30&quot;,</span> <span class="pre">channel=&quot;Fan&quot;)</span></code></p></td>
+<td><p>condition on curves (<code class="docutils literal notranslate"><span class="pre">curves=None</span></code> removes)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.channel(&quot;n5&quot;,</span> <span class="pre">&quot;Fan&quot;,</span> <span class="pre">flow=&quot;120&quot;,</span> <span class="pre">t_in=&quot;25&quot;)</span></code></p></td>
+<td><p>air channel: flow (m³/h) and inlet (<code class="docutils literal notranslate"><span class="pre">flow=None</span></code> removes)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.rename(id,</span> <span class="pre">name)</span></code>, <code class="docutils literal notranslate"><span class="pre">s.remove(id)</span></code></p></td>
 <td><p>organization</p></td>

@@ -111,6 +111,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#resolver-e-ver-os-sinais">Resolver e ver os sinais</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/thermal.html">Térmica (regime)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#como-usar">Como usar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resfriamento">Resfriamento</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#ventilador-canal-de-ar">Ventilador (canal de ar)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resistividade-com-a-temperatura">Resistividade com a temperatura</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resultados">Resultados</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#limitacoes">Limitações</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/files.html">Arquivos, importar e exportar</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#projetos">Projetos</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#rascunho-e-copias-automaticas">Rascunho e cópias automáticas</a></li>
@@ -189,6 +198,7 @@
 <li class="toctree-l3"><a class="reference internal" href="formulation.html#perdas-ca-nos-fios">Perdas CA nos fios</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="formulation.html#termica-em-regime">Térmica em regime</a></li>
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#pos-processamento">Pós-processamento</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="formulation.html#forca-e-torque">Força e torque</a></li>
 </ul>
@@ -341,6 +351,22 @@ analítica. Eles rodam a cada mudança no código.</p>
 <tr class="row-even"><td><p>Proximidade, fio redondo em campo uniforme</p></td>
 <td><p><span class="math notranslate nohighlight">\(N\,\ell\,\pi\sigma\omega^2\hat B^2 a^4/8\)</span> (baixa frequência)</p></td>
 <td><p>&lt; 0,1 %</p></td>
+</tr>
+<tr class="row-odd"><td><p>Térmica: placa com geração e convecção</p></td>
+<td><p><span class="math notranslate nohighlight">\(T = T_{amb} + qL/2h + q x(L-x)/2k\)</span></p></td>
+<td><p>&lt; 0,1 K</p></td>
+</tr>
+<tr class="row-even"><td><p>Térmica: cilindro axissimétrico</p></td>
+<td><p><span class="math notranslate nohighlight">\(T = T_{amb} + qR/2h + q(R^2-r^2)/4k\)</span></p></td>
+<td><p>&lt; 0,1 K</p></td>
+</tr>
+<tr class="row-odd"><td><p>Térmica: ventilador (balanço do ar)</p></td>
+<td><p><span class="math notranslate nohighlight">\(T_{saída} = T_{entrada} + P/(\rho c_p Q)\)</span></p></td>
+<td><p>&lt; 1e-3</p></td>
+</tr>
+<tr class="row-even"><td><p>Térmica com σ(T) (bloco CC)</p></td>
+<td><p><span class="math notranslate nohighlight">\(T = T_{amb} + P_{20}(1+\alpha(T-20))/(hS)\)</span></p></td>
+<td><p>&lt; 0,05 K</p></td>
 </tr>
 <tr class="row-odd"><td><p>Proximidade, fio retangular (Dowell)</p></td>
 <td><p><span class="math notranslate nohighlight">\(\sigma\omega^2\hat B^2 t^3/24\)</span> por largura</p></td>

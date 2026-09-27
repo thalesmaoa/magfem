@@ -109,6 +109,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../guide/circuit.html#resolver-e-ver-os-sinais">Resolver e ver os sinais</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/thermal.html">Térmica (regime)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#como-usar">Como usar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resfriamento">Resfriamento</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#ventilador-canal-de-ar">Ventilador (canal de ar)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resistividade-com-a-temperatura">Resistividade com a temperatura</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#resultados">Resultados</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../guide/thermal.html#limitacoes">Limitações</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/files.html">Arquivos, importar e exportar</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#projetos">Projetos</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../guide/files.html#rascunho-e-copias-automaticas">Rascunho e cópias automáticas</a></li>
@@ -187,6 +196,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#perdas-ca-nos-fios">Perdas CA nos fios</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#termica-em-regime">Térmica em regime</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#pos-processamento">Pós-processamento</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#forca-e-torque">Força e torque</a></li>
 </ul>
@@ -463,7 +473,7 @@ strings (<code class="docutils literal notranslate"><span class="pre">&quot;l3&q
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.material(&quot;Cobre&quot;,</span> <span class="pre">mur=1,</span> <span class="pre">sigma=58,</span> <span class="pre">br=0,</span> <span class="pre">color=&quot;#e0914f&quot;,</span> <span class="pre">bh=[(H,</span> <span class="pre">B),</span> <span class="pre">...],</span> <span class="pre">kh=,</span> <span class="pre">alpha=,</span> <span class="pre">ke=,</span> <span class="pre">group=)</span></code></p></td>
-<td><p>cria ou edita um material (σ em MS/m, Br em T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> apaga a curva; chapas: <code class="docutils literal notranslate"><span class="pre">lam_fill=0.95,</span> <span class="pre">lam_thickness=0.5</span></code> em mm, <code class="docutils literal notranslate"><span class="pre">None</span></code> volta a maciço)</p></td>
+<td><p>cria ou edita um material (σ em MS/m, Br em T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> apaga a curva; chapas: <code class="docutils literal notranslate"><span class="pre">lam_fill=0.95,</span> <span class="pre">lam_thickness=0.5</span></code> em mm, <code class="docutils literal notranslate"><span class="pre">None</span></code> volta a maciço; térmico: <code class="docutils literal notranslate"><span class="pre">kth=400</span></code> W/m·K, <code class="docutils literal notranslate"><span class="pre">alpha_r=0.00393</span></code> 1/K)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.del_material(nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.duplicate_material(nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.restore_material(nome)</span></code></p></td>
 <td><p>apaga, duplica e restaura o padrão</p></td>
@@ -526,6 +536,18 @@ strings (<code class="docutils literal notranslate"><span class="pre">&quot;l3&q
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.solve(&quot;n2&quot;)</span></code></p></td>
 <td><p>resolve (gera a malha antes, se preciso)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.add_physics(name=&quot;Térmica&quot;,</span> <span class="pre">thermal=True,</span> <span class="pre">source=&quot;n2&quot;)</span></code></p></td>
+<td><p>física térmica em regime, com as perdas da física <code class="docutils literal notranslate"><span class="pre">n2</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.thermal(&quot;n5&quot;,</span> <span class="pre">source=&quot;n2&quot;,</span> <span class="pre">t_amb=&quot;25&quot;,</span> <span class="pre">h=&quot;10&quot;,</span> <span class="pre">h_faces=&quot;5&quot;,</span> <span class="pre">couple_r=True)</span></code></p></td>
+<td><p>ambiente, convecção, faces frente/trás e σ(T)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.thermal_bc(&quot;n5&quot;,</span> <span class="pre">&quot;Canal&quot;,</span> <span class="pre">curves=[&quot;l3&quot;],</span> <span class="pre">type=&quot;convection&quot;</span> <span class="pre">|</span> <span class="pre">&quot;temperature&quot;</span> <span class="pre">|</span> <span class="pre">&quot;insulated&quot;,</span> <span class="pre">h=&quot;60&quot;,</span> <span class="pre">t=&quot;30&quot;,</span> <span class="pre">channel=&quot;Ventilador&quot;)</span></code></p></td>
+<td><p>condição em curvas (<code class="docutils literal notranslate"><span class="pre">curves=None</span></code> remove)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.channel(&quot;n5&quot;,</span> <span class="pre">&quot;Ventilador&quot;,</span> <span class="pre">flow=&quot;120&quot;,</span> <span class="pre">t_in=&quot;25&quot;)</span></code></p></td>
+<td><p>canal de ar: vazão (m³/h) e entrada (<code class="docutils literal notranslate"><span class="pre">flow=None</span></code> remove)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.rename(id,</span> <span class="pre">nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">s.remove(id)</span></code></p></td>
 <td><p>organização</p></td>

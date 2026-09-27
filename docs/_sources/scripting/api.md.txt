@@ -82,7 +82,7 @@ strings (`"l3"`, `"p5"`, `"n2"`); onde se espera um id, também vale o **nome** 
 
 | Comando | Descrição |
 |---|---|
-| `m.material("Cobre", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | cria ou edita um material (σ em MS/m, Br em T; `bh=None` apaga a curva; chapas: `lam_fill=0.95, lam_thickness=0.5` em mm, `None` volta a maciço) |
+| `m.material("Cobre", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | cria ou edita um material (σ em MS/m, Br em T; `bh=None` apaga a curva; chapas: `lam_fill=0.95, lam_thickness=0.5` em mm, `None` volta a maciço; térmico: `kth=400` W/m·K, `alpha_r=0.00393` 1/K) |
 | `m.del_material(nome)`, `m.duplicate_material(nome)`, `m.restore_material(nome)` | apaga, duplica e restaura o padrão |
 | `m.circuit("Bobina", current="10")` | cria ou edita um circuito |
 | `m.del_circuit("Bobina")` | apaga |
@@ -107,6 +107,10 @@ Tipos de contorno em `type=`: `dirichlet` (A = value + a1·x + a2·y), `neumann`
 | `s.physics("n2", analysis="magnetostatic" \| "harmonic" \| "transient", frequency=, dt=, t_end=, schematic=)` | configura a análise (frequência em Hz, tempos em s) |
 | `s.current("n2", "Bobina", "10*sin(2*pi*60*t)")` | corrente de um circuito (ou região) só nesta física; `None` volta à padrão |
 | `s.solve("n2")` | resolve (gera a malha antes, se preciso) |
+| `s.add_physics(name="Térmica", thermal=True, source="n2")` | física térmica em regime, com as perdas da física `n2` |
+| `s.thermal("n5", source="n2", t_amb="25", h="10", h_faces="5", couple_r=True)` | ambiente, convecção, faces frente/trás e σ(T) |
+| `s.thermal_bc("n5", "Canal", curves=["l3"], type="convection" \| "temperature" \| "insulated", h="60", t="30", channel="Ventilador")` | condição em curvas (`curves=None` remove) |
+| `s.channel("n5", "Ventilador", flow="120", t_in="25")` | canal de ar: vazão (m³/h) e entrada (`flow=None` remove) |
 | `s.rename(id, nome)`, `s.remove(id)` | organização |
 
 ## Resultados — `r`
