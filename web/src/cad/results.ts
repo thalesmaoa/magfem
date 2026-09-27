@@ -85,6 +85,12 @@ export function resultVars(sk0: Sketch, arr: Arrangement, sol: Solution, physics
     add(`${p}_lambda`, c.lambda, 'Wb');
     if (c.L !== null) add(`${p}_L`, c.L, 'H');
     if (c.R !== null) add(`${p}_R`, c.R, 'Ω');
+    // Harmônico com fio: R CA e perdas pelicular e de proximidade.
+    if (c.ac) {
+      add(`${p}_Rac`, c.ac.Rac, 'Ω');
+      add(`${p}_Pskin`, c.ac.pSkin, 'W');
+      add(`${p}_Pprox`, c.ac.pProx, 'W');
+    }
   }
   const formulas = new Map<Id, { value?: number; error?: string }>();
   const tables = new Set(sk.nodes.filter((n) => n.kind === 'table' && n.physics === physics).map((n) => n.id));

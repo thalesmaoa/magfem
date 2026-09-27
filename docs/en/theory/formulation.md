@@ -79,6 +79,19 @@ $A(t) = \mathrm{Re}(\hat{A}\,e^{j\omega t})$.
 - Eddy-current losses: $\tfrac{1}{2}\,\sigma\,\omega^2 |\hat{A}|^2$ ($\psi/r$ in axisymmetric problems).
 - Iron losses (Steinmetz): $p = k_h f \hat{B}^{\alpha} + k_e (f \hat{B})^2$.
 
+### AC losses in the wires
+
+With $\delta = \sqrt{2/(\omega\mu_0\sigma)}$ and $k = (1-j)/\delta$, for a round wire of radius $a$:
+
+- **Skin:** $R_{ac}/R_{dc} = \mathrm{Re}\left[\tfrac{ka}{2}\,J_0(ka)/J_1(ka)\right]$ (low frequency
+  $1 + (a/\delta)^4/48$; high, $a/(2\delta) + 1/4 + 3\delta/(32a)$). $P_{skin} = F\,R_{dc}\,\hat I^2/2$.
+- **Proximity** (transverse field of peak $\hat B$), per metre of wire:
+  $P' = \tfrac{\pi\omega^2\sigma}{2}|D|^2\int_0^a |J_1(kr)|^2 r\,dr$, $D = 2\hat B/(k J_0(ka))$; low frequency
+  $\pi\sigma\omega^2\hat B^2 a^4/8$. Summed over the coil elements with $|N|\cdot n_{par}/A$ strands per area.
+- **Rectangular** ($w \times h$): Dowell in each direction, $P' = w\,P'_{foil}(h, \hat B_x) + h\,P'_{foil}(w, \hat B_y)$, with
+  $P'_{foil} = \tfrac{H_0^2}{\sigma\delta}\,\tfrac{\sinh\xi - \sin\xi}{\cosh\xi + \cos\xi}$, $\xi = t/\delta$; skin from
+  the foil of thickness $\min(w, h)$ (approximation).
+
 ## Post-processing
 
 - Energy: $W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV$.

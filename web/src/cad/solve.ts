@@ -6,6 +6,7 @@ import type { MeshResult } from './meshgen';
 import { findRegion, type Arrangement } from './regions';
 import { BOUNDARY_UNSUPPORTED, OUTER_BOUNDARY, type Boundary, type Id, type Material, type Sketch } from './types';
 import { turnArea } from './wire';
+import { proximityLossFoil, proximityLossRound, skinDepth, skinFactorFoil, skinFactorRound } from './acwire';
 
 export const MU0 = 4e-7 * Math.PI;
 
@@ -738,6 +739,8 @@ export interface CircuitResult {
   turns: number;
   /** Maior fator de enchimento entre as regiões com fio definido (null = nenhuma tem fio). */
   fill: number | null;
+  /** Harmônico com fio definido: perdas pelicular e de proximidade (W, médias) e R CA = 2·P/Î² (Ω). */
+  ac: { pSkin: number; pProx: number; Rac: number } | null;
 }
 
 /** Laminação do material (fator de empilhamento em (0, 1] e espessura em mm), ou null se maciço. */
@@ -760,6 +763,90 @@ export function ironCoefficients(m: Material): [number, number, number] | null {
   if (!kh && !ke) return null;
   const f = lam?.fill ?? 1;
   return [kh * Math.pow(f, 1 - alpha), alpha, ke / f];
+}
+
+/**
+ * Harmônico: perdas CA nos fios de um circuito (regiões com fio definido). Pelicular: fator R_ac/R_cc do fio × perda
+ * CC; proximidade: em cada elemento da bobina, os fios que ele contém (|N|·paralelos/área) sob o B̂ local do FEM.
+ * As parasitas nos fios não realimentam o campo (bobina de fio fino).
+ */
+function windingAc(sk: Sketch, arr: Arrangement, sol: Solution, circuit: Id, rdc: number, triRegion: Int32Array | number[], area: Float64Array): { pSkin: number; pProx: number; Rac: number } | null {
+  const hm = sol.harmonic!;
+  const circ = sk.circuits.find((c) => c.id === circuit);
+  let Ipk = 0;
+  try {
+    Ipk = Math.abs(num(sk, circ?.current ?? '0', 0));
+  } catch {
+    Ipk = 0;
+  }
+  const mats = new Map(sk.materials.map((m) => [m.id, m]));
+  const { xy, triangles } = sol.mesh;
+  const depth = depthOf(sk);
+  let pSkin = 0, pProx = 0, any = false, pdcWire = 0;
+  for (const a of sk.regionAssigns) {
+    if (a.circuit !== circuit || !a.wire) continue;
+    const reg = findRegion(arr, a);
+    const sigma = (a.material ? mats.get(a.material)?.sigma ?? 0 : 0) * 1e6;
+    const aw = turnArea(a.wire);
+    if (!reg || !aw || !(sigma > 0) || !area[reg.index]) continue;
+    any = true;
+    const par = Math.max(1, Math.round(a.wire.parallel ?? 1));
+    const strands = Math.abs(a.turns ?? 1) * par;
+    const delta = skinDepth(hm.freq, sigma);
+    const round = a.wire.kind !== 'rect';
+    const rad = round ? Math.sqrt(aw / par / Math.PI) : 0;
+    const w = (a.wire.w ?? 0) * 1e-3, h = (a.wire.h ?? 0) * 1e-3;
+    const F = round ? skinFactorRound(rad, delta) : skinFactorFoil(Math.min(w, h), delta);
+    // Perda CC desta região (a fração do R do circuito que cabe a ela, pelo mesmo cálculo de R).
+    const i = reg.index;
+    let len = depth;
+    if (sol.axisymmetric) {
+      let rA = 0;
+      const nt = triangles.length / 3;
+      for (let tt = 0; tt < nt; tt++) {
+        if (triRegion[tt] !== i) continue;
+        const p = [triangles[3 * tt], triangles[3 * tt + 1], triangles[3 * tt + 2]];
+        const ar = Math.abs((xy[2 * p[1]] - xy[2 * p[0]]) * (xy[2 * p[2] + 1] - xy[2 * p[0] + 1]) - (xy[2 * p[2]] - xy[2 * p[0]]) * (xy[2 * p[1] + 1] - xy[2 * p[0] + 1])) / 2 * 1e-6;
+        rA += ((xy[2 * p[0]] + xy[2 * p[1]] + xy[2 * p[2]]) / 3) * 1e-3 * ar;
+      }
+      len = 2 * Math.PI * (rA / area[i]);
+    }
+    const rRegion = (Math.abs(a.turns ?? 1) * len) / (sigma * aw);
+    pdcWire += (rRegion * Ipk * Ipk) / 2;
+    pSkin += (F * rRegion * Ipk * Ipk) / 2;
+    // Proximidade elemento a elemento.
+    const nA = strands / area[i];
+    const nt = triangles.length / 3;
+    for (let tt = 0; tt < nt; tt++) {
+      if (triRegion[tt] !== i) continue;
+      const nodes = [triangles[3 * tt], triangles[3 * tt + 1], triangles[3 * tt + 2]];
+      const x = nodes.map((n) => xy[2 * n] * 1e-3), y = nodes.map((n) => xy[2 * n + 1] * 1e-3);
+      const a2 = (x[1] - x[0]) * (y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]);
+      let gxr = 0, gyr = 0, gxi = 0, gyi = 0;
+      for (let q = 0; q < 3; q++) {
+        const j = (q + 1) % 3, l = (q + 2) % 3;
+        gxr += ((y[j] - y[l]) * hm.Are[nodes[q]]) / a2;
+        gyr += ((x[l] - x[j]) * hm.Are[nodes[q]]) / a2;
+        gxi += ((y[j] - y[l]) * hm.Aim[nodes[q]]) / a2;
+        gyi += ((x[l] - x[j]) * hm.Aim[nodes[q]]) / a2;
+      }
+      const rc = (x[0] + x[1] + x[2]) / 3;
+      const s = sol.axisymmetric ? 1 / Math.max(rc, 1e-12) : 1;
+      // B = (∂A/∂y, −∂A/∂x): |B̂x|² e |B̂y|² (partes real e imaginária do fasor).
+      const bx2 = s * s * (gyr * gyr + gyi * gyi), by2 = s * s * (gxr * gxr + gxi * gxi);
+      const ae = Math.abs(a2) / 2;
+      const lenE = sol.axisymmetric ? 2 * Math.PI * rc : depth;
+      const pPerLen = round
+        ? proximityLossRound(rad, delta, sigma, Math.sqrt(bx2 + by2))
+        : w * proximityLossFoil(h, delta, sigma, Math.sqrt(bx2)) + h * proximityLossFoil(w, delta, sigma, Math.sqrt(by2));
+      pProx += nA * ae * lenE * pPerLen;
+    }
+  }
+  if (!any) return null;
+  // R CA do circuito: o R CC das regiões sem fio entra como está.
+  const pdcAll = (rdc * Ipk * Ipk) / 2;
+  const pac = pSkin + pProx + Math.max(0, pdcAll - pdcWire);
+  return { pSkin, pProx, Rac: Ipk > 0 ? (2 * pac) / (Ipk * Ipk) : rdc };
 }
 
 export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): CircuitResult[] {
@@ -815,7 +902,8 @@ export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): Cir
       else rOk = false;
     }
     const Rv = rOk && regions ? R : null;
-    return { id: c.id, name: c.name, I, lambda, L: I ? lambda / I : null, R: Rv, V: Rv !== null ? Rv * I : null, P: Rv !== null ? Rv * I * I : null, regions, turns, fill };
+    const ac = sol.harmonic && Rv !== null ? windingAc(sk, arr, sol, c.id, Rv, triRegion, area) : null;
+    return { id: c.id, name: c.name, I, lambda, L: I ? lambda / I : null, R: Rv, V: Rv !== null ? Rv * I : null, P: Rv !== null ? Rv * I * I : null, regions, turns, fill, ac };
   });
 }
 

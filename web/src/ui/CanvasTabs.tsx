@@ -514,6 +514,7 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
   if (!ed.sketch.circuits.length) return <p className="muted">{t.circuit.empty}</p>;
   if (!sol) return <p className="muted">{t.solve.noSolution}</p>;
   const rows = circuitResults(physicsSketch(ed.sketch, physics), ed.arrangement(), sol);
+  const anyAc = rows.some((r) => r.ac);
   const c = t.circuit.cols;
   return (
     <div className={big ? 'circ big' : 'circ'}>
@@ -530,6 +531,13 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
             <th>{c.V}</th>
             <th>{c.P}</th>
             <th>{c.fill}</th>
+            {anyAc && (
+              <>
+                <th>{c.Rac}</th>
+                <th>{c.Pskin}</th>
+                <th>{c.Pprox}</th>
+              </>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -544,6 +552,13 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
               <td>{eng(r.V, 'V')}</td>
               <td>{eng(r.P, 'W')}</td>
               <td className={r.fill !== null && r.fill > 1 ? 'bad' : undefined}>{r.fill !== null ? `${Math.round(r.fill * 100)} %` : '—'}</td>
+              {anyAc && (
+                <>
+                  <td>{r.ac ? eng(r.ac.Rac, 'Ω') : '—'}</td>
+                  <td>{r.ac ? eng(r.ac.pSkin, 'W') : '—'}</td>
+                  <td>{r.ac ? eng(r.ac.pProx, 'W') : '—'}</td>
+                </>
+              )}
             </tr>
           ))}
         </tbody>

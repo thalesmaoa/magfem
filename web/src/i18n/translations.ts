@@ -577,7 +577,7 @@ export interface Translations {
     table: string;
     tableMenu: string;
     openTable: string;
-    cols: { name: string; I: string; turns: string; lambda: string; L: string; R: string; V: string; P: string; fill: string };
+    cols: { name: string; I: string; turns: string; lambda: string; L: string; R: string; V: string; P: string; fill: string; Rac: string; Pskin: string; Pprox: string };
     note: string;
     empty: string;
   };
@@ -1344,7 +1344,7 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     table: 'Tabela de circuitos',
     tableMenu: 'Circuitos (tabela)',
     openTable: 'Abrir tabela em aba',
-    cols: { name: 'Circuito', I: 'I (A)', turns: 'Espiras', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'R CC (Ω)', V: 'V CC (V)', P: 'Perdas I²R (W)', fill: 'Enchimento' },
+    cols: { name: 'Circuito', I: 'I (A)', turns: 'Espiras', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'R CC (Ω)', V: 'V CC (V)', P: 'Perdas I²R (W)', fill: 'Enchimento', Rac: 'R CA (Ω)', Pskin: 'Perdas pelicular (W)', Pprox: 'Perdas proximidade (W)' },
     note: 'Indutância aparente λ/I (com vários circuitos, inclui o acoplamento). R CC pela seção do fio definido na região (sem fio: região toda de cobre); no plano, sem as cabeceiras.',
     empty: 'Nenhum circuito. Crie em Malha › Circuitos.',
   },
@@ -2163,7 +2163,7 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     table: 'Circuit table',
     tableMenu: 'Circuits (table)',
     openTable: 'Open table in a tab',
-    cols: { name: 'Circuit', I: 'I (A)', turns: 'Turns', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'DC R (Ω)', V: 'DC V (V)', P: 'I²R losses (W)', fill: 'Fill' },
+    cols: { name: 'Circuit', I: 'I (A)', turns: 'Turns', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'DC R (Ω)', V: 'DC V (V)', P: 'I²R losses (W)', fill: 'Fill', Rac: 'AC R (Ω)', Pskin: 'Skin losses (W)', Pprox: 'Proximity losses (W)' },
     note: 'Apparent inductance λ/I (with several circuits it includes coupling). DC R from the wire set on the region (no wire: whole region is copper); planar excludes end turns.',
     empty: 'No circuits. Create one under Mesh › Circuits.',
   },

@@ -56,7 +56,9 @@ A densidade de corrente é J = N·I / área da região.
 **Fio da bobina** (nas propriedades da região): redondo por AWG ou pelo diâmetro, ou retangular (largura × altura),
 com fios em paralelo. O R CC passa a ser $R = |N|\,\ell/(\sigma A_{espira})$, com $\ell = 2\pi r$ no axissimétrico ou a
 profundidade no plano (sem cabeceiras), e a tabela de circuitos mostra o **fator de enchimento**
-$|N|\,A_{espira}/A_{região}$ (acima de 100 %, as espiras não cabem). Sem fio, a região toda conta como cobre.
+$|N|\,A_{espira}/A_{região}$ (acima de 100 %, as espiras não cabem). Sem fio, a região toda conta como cobre. Na
+análise harmônica, o fio definido também dá as perdas por **efeito pelicular e de proximidade** e o **R CA** (veja
+[Resultados](results.md)).
 
 ## Contornos
 

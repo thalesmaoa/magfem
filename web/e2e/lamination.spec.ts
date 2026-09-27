@@ -126,3 +126,57 @@ test('fio da bobina: R CC pela seção do AWG e fator de enchimento (axissimétr
   await expect(page.getByRole('textbox', { name: 'Fator de empilhamento (0–1)' })).toHaveValue('0.95');
   expect(await page.evaluate(() => (window as any).__magfem.sketch.materials.find((m: any) => m.id === 'mat_cu').lamFill)).toBe(0.95);
 });
+
+const acModel = (wire: string, current: string, field: boolean) => [
+  'g.problem("planar", depth="100 mm")',
+  'g.rectangle((-100, -100), (100, 100))',
+  'g.rectangle((-10, -5), (10, 5))',
+  `m.circuit("Bobina", current="${current}")`,
+  `m.region((0, 0), material="Cobre", circuit="Bobina", turns=50, ${wire})`,
+  'm.region((60, 60), material="Ar")',
+  ...(field ? ['m.boundary_def("Dirichlet (A = 0)", a1="-0.1")'] : []),
+  'm.settings("n1", size="2 mm")',
+  's.physics("n2", analysis="harmonic", frequency="1000")',
+];
+
+test('AC: perdas de proximidade de fios redondos num campo uniforme = nº de fios × profundidade × P′(B̂)', async ({ page }) => {
+  await run(page, acModel('wire_d=1', '0', true));
+  await solve(page);
+  const r = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { circuitResults } = await import('/tools/magfem-web/src/cad/solve.ts');
+    const { proximityLossRound, skinDepth } = await import('/tools/magfem-web/src/cad/acwire.ts');
+    const c = circuitResults(ed.sketch, ed.arrangement(), ed.shownSol('n2'))[0];
+    const want = 50 * 0.1 * proximityLossRound(0.5e-3, skinDepth(1000, 58e6), 58e6, 0.1);
+    return { got: c.ac.pProx, want, skin: c.ac.pSkin };
+  });
+  expect(Math.abs(r.got - r.want) / r.want).toBeLessThan(1e-3);
+  expect(r.skin).toBe(0);
+});
+
+test('AC: efeito pelicular = F(a/δ)·R_cc·Î²/2 e R_ca ≥ R_cc; fio retangular pela fórmula de Dowell', async ({ page }) => {
+  await run(page, acModel('wire_d=4', '2', false));
+  await solve(page);
+  const r = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { circuitResults } = await import('/tools/magfem-web/src/cad/solve.ts');
+    const { skinFactorRound, skinDepth } = await import('/tools/magfem-web/src/cad/acwire.ts');
+    const c = circuitResults(ed.sketch, ed.arrangement(), ed.shownSol('n2'))[0];
+    return { pSkin: c.ac.pSkin, Rdc: c.R, Rac: c.ac.Rac, F: skinFactorRound(2e-3, skinDepth(1000, 58e6)) };
+  });
+  expect(r.F).toBeCloseTo(1 + (2e-3 / Math.sqrt(2 / (2 * Math.PI * 1000 * 4e-7 * Math.PI * 58e6))) ** 4 / 48, 2);
+  expect(Math.abs(r.pSkin - (r.F * r.Rdc * 4) / 2) / r.pSkin).toBeLessThan(1e-9);
+  expect(r.Rac).toBeGreaterThanOrEqual(r.Rdc * r.F * (1 - 1e-9));
+  // Retangular 3 × 1 mm (largura em x) num campo By uniforme: correntes através da largura w → h·Dowell(w, B).
+  await run(page, ['m.region((0, 0), wire_rect=(3, 1))', 'm.circuit("Bobina", current="0")', 'm.boundary_def("Dirichlet (A = 0)", a1="-0.1")']);
+  await page.evaluate(() => (window as any).__magfem.solutions.clear());
+  await solve(page);
+  const q = await page.evaluate(async () => {
+    const ed = (window as any).__magfem;
+    const { circuitResults } = await import('/tools/magfem-web/src/cad/solve.ts');
+    const { proximityLossFoil, skinDepth } = await import('/tools/magfem-web/src/cad/acwire.ts');
+    const c = circuitResults(ed.sketch, ed.arrangement(), ed.shownSol('n2'))[0];
+    return { got: c.ac.pProx, want: 50 * 0.1 * 1e-3 * proximityLossFoil(3e-3, skinDepth(1000, 58e6), 58e6, 0.1) };
+  });
+  expect(Math.abs(q.got - q.want) / q.want).toBeLessThan(1e-3);
+});

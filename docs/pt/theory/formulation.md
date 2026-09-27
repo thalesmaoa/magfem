@@ -79,6 +79,19 @@ $A(t) = \mathrm{Re}(\hat{A}\,e^{j\omega t})$.
 - Perdas por correntes parasitas: $\tfrac{1}{2}\,\sigma\,\omega^2 |\hat{A}|^2$ ($\psi/r$ no axissimétrico).
 - Perdas no ferro (Steinmetz): $p = k_h f \hat{B}^{\alpha} + k_e (f \hat{B})^2$.
 
+### Perdas CA nos fios
+
+Com $\delta = \sqrt{2/(\omega\mu_0\sigma)}$ e $k = (1-j)/\delta$, para um fio redondo de raio $a$:
+
+- **Pelicular:** $R_{ca}/R_{cc} = \mathrm{Re}\left[\tfrac{ka}{2}\,J_0(ka)/J_1(ka)\right]$ (baixa frequência
+  $1 + (a/\delta)^4/48$; alta, $a/(2\delta) + 1/4 + 3\delta/(32a)$). $P_{pel} = F\,R_{cc}\,\hat I^2/2$.
+- **Proximidade** (campo transversal de pico $\hat B$), por metro de fio:
+  $P' = \tfrac{\pi\omega^2\sigma}{2}|D|^2\int_0^a |J_1(kr)|^2 r\,dr$, $D = 2\hat B/(k J_0(ka))$; baixa frequência
+  $\pi\sigma\omega^2\hat B^2 a^4/8$. Somada nos elementos da bobina com $|N|\cdot n_{par}/A$ fios por área.
+- **Retangular** ($w \times h$): Dowell em cada direção, $P' = w\,P'_{lâm}(h, \hat B_x) + h\,P'_{lâm}(w, \hat B_y)$, com
+  $P'_{lâm} = \tfrac{H_0^2}{\sigma\delta}\,\tfrac{\sinh\xi - \sin\xi}{\cosh\xi + \cos\xi}$, $\xi = t/\delta$; pelicular
+  pela lâmina de espessura $\min(w, h)$ (aproximação).
+
 ## Pós-processamento
 
 - Energia: $W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV$.
