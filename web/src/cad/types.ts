@@ -148,7 +148,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export interface PhysicsNode {
   id: Id;
   kind: 'physics';
-  physics: 'magnetic';
+  physics: 'magnetic' | 'thermal';
   name: string;
   analysis: AnalysisType;
   /** Campo magnético + circuito: acoplado ao esquemático `schematic` (sempre transitório). */
@@ -164,6 +164,44 @@ export interface PhysicsNode {
    * gravada no circuito/região; assim estático, AC e transitório podem ter correntes diferentes.
    */
   currents?: Record<Id, string>;
+  /** Física térmica (physics = 'thermal'): ver ThermalSettings. */
+  thermal?: ThermalSettings;
+}
+
+/** Condição térmica em curvas: convecção (h e referência: ambiente ou canal de ar) ou temperatura fixa. */
+export interface ThermalBC {
+  id: Id;
+  name: string;
+  curves: Id[];
+  type: 'convection' | 'temperature' | 'insulated';
+  h?: string;
+  t?: string;
+  /** Convecção com o ar de um canal (ventilador) em vez do ambiente. */
+  channel?: Id;
+}
+
+/** Canal de ar (ventilador): renova o ar com a vazão dada; o ar esquenta com o calor que leva. */
+export interface AirChannel {
+  id: Id;
+  name: string;
+  /** Vazão (m³/h) e temperatura de entrada (°C), expressões. */
+  flow: string;
+  tIn: string;
+}
+
+/** Térmica em regime: fonte de perdas (física magnética), ambiente e resfriamento. */
+export interface ThermalSettings {
+  /** Física magnética de onde vêm as perdas (AC ou magnetostática). */
+  source?: Id;
+  /** Temperatura ambiente (°C) e convecção padrão nas superfícies expostas ao ar (W/m²·K). */
+  tAmb: string;
+  h: string;
+  /** Plano: convecção pelas faces da frente e de trás (W/m²·K); vazio = sem. */
+  hFaces?: string;
+  /** Resistividade dos condutores com a temperatura (iterando com o AC). */
+  coupleR: boolean;
+  bcs: ThermalBC[];
+  channels: AirChannel[];
 }
 
 export interface MeshNode {
@@ -358,6 +396,9 @@ export interface Material {
    */
   lamFill?: number;
   lamThickness?: number;
+  /** Térmico: condutividade térmica (W/m·K) e coeficiente de temperatura da resistividade (1/K, a 20 °C). */
+  kth?: number;
+  alphaR?: number;
 }
 
 /** Fio de uma bobina (dimensões em mm): AWG, redondo pelo diâmetro ou retangular, com fios em paralelo. */
@@ -466,14 +507,15 @@ export const DEFAULT_BOUNDARIES: Boundary[] = [
 
 /** Biblioteca inicial de materiais (cada projeto novo leva uma cópia editável). */
 export const DEFAULT_MATERIALS: Material[] = [
-  { id: 'mat_air', group: 'air', name: 'Ar', color: '#dbe9f6', mur: 1, sigma: 0 },
-  { id: 'mat_cu', group: 'conductor', name: 'Cobre', color: '#e0914f', mur: 1, sigma: 58 },
-  { id: 'mat_al', group: 'conductor', name: 'Alumínio', color: '#b8c2cc', mur: 1, sigma: 35 },
+  { id: 'mat_air', group: 'air', name: 'Ar', color: '#dbe9f6', mur: 1, sigma: 0, kth: 0.026 },
+  { id: 'mat_cu', group: 'conductor', name: 'Cobre', color: '#e0914f', mur: 1, sigma: 58, kth: 400, alphaR: 0.00393 },
+  { id: 'mat_al', group: 'conductor', name: 'Alumínio', color: '#b8c2cc', mur: 1, sigma: 35, kth: 237, alphaR: 0.00403 },
   {
     id: 'mat_m400',
     group: 'steel',
     name: 'Aço M400-50A',
     color: '#7d8a99',
+    kth: 28,
     mur: 4000,
     sigma: 0,
     bh: [
@@ -497,6 +539,8 @@ export const DEFAULT_MATERIALS: Material[] = [
     group: 'steel',
     name: 'Aço 1010',
     color: '#6b7684',
+    kth: 50,
+    alphaR: 0.0045,
     mur: 1000,
     sigma: 5,
     bh: [
@@ -512,8 +556,8 @@ export const DEFAULT_MATERIALS: Material[] = [
       [100000, 2.1],
     ],
   },
-  { id: 'mat_ndfeb', group: 'magnet', name: 'NdFeB N42', color: '#9d6bd1', mur: 1.05, sigma: 0.667, br: 1.3 },
-  { id: 'mat_ferrite', group: 'magnet', name: 'Ferrite', color: '#5f9ea0', mur: 1.1, sigma: 0, br: 0.4 },
+  { id: 'mat_ndfeb', group: 'magnet', name: 'NdFeB N42', color: '#9d6bd1', mur: 1.05, sigma: 0.667, br: 1.3, kth: 9 },
+  { id: 'mat_ferrite', group: 'magnet', name: 'Ferrite', color: '#5f9ea0', mur: 1.1, sigma: 0, br: 0.4, kth: 4 },
 ];
 
 /** Estado completo do modelo (é o que vai para o arquivo e para o histórico). */

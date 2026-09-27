@@ -79,6 +79,35 @@ export function resultVars(sk0: Sketch, arr: Arrangement, sol: Solution, physics
   };
   add('depth_m', depthOf(sk), 'm');
   env.set('mu0', num(MU0));
+  if (sol.thermal) {
+    // Térmica: temperaturas (máxima, mínima, por região), perdas, calor dissipado e canais de ar.
+    const th = sol.thermal;
+    add('Tmax', th.tmax, '°C');
+    add('Tmin', th.tmin, '°C');
+    add('P_perdas', th.pIn, 'W');
+    add('P_dissipado', th.pOut, 'W');
+    const { triangles, triRegion } = sol.mesh;
+    const tmaxR = new Map<number, number>();
+    for (let e = 0; e < triangles.length / 3; e++)
+      for (let j = 0; j < 3; j++) tmaxR.set(triRegion[e], Math.max(tmaxR.get(triRegion[e]) ?? -Infinity, sol.A[triangles[3 * e + j]]));
+    const names = new Map<number, string>();
+    for (const a of sk.regionAssigns) {
+      const r = findRegion(arr, a);
+      if (r) names.set(r.index, safeName(a.name ?? `Regiao_${r.index + 1}`));
+    }
+    for (const [r, tAvg] of th.regionT) {
+      const n = names.get(r) ?? `Regiao_${r + 1}`;
+      add(`${n}_Tavg`, tAvg, '°C');
+      add(`${n}_Tmax`, tmaxR.get(r) ?? tAvg, '°C');
+    }
+    for (const c of th.channels) {
+      const n = safeName(c.name);
+      add(`${n}_Tar`, c.tAir, '°C');
+      add(`${n}_Tsaida`, c.tOut, '°C');
+      add(`${n}_P`, c.power, 'W');
+    }
+    return { env, list, formulas: new Map() };
+  }
   for (const c of circuitResults(sk, arr, sol)) {
     const p = safeName(c.name);
     add(`${p}_I`, c.I, 'A');

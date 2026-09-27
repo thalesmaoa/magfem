@@ -243,7 +243,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
     const qty = (layer.quantity ?? PLOT_QUANTITIES[plot][0]) as 'b' | 'h' | 'a' | 'j';
     const comp = layer.component ?? 'mag';
     if (plot === 'surface') {
-      const mv = { v: triValues(sol, qty, comp), label: quantityLabel(qty, comp, sol.axisymmetric) };
+      const mv = { v: triValues(sol, qty, comp), label: quantityLabel(qty, comp, sol.axisymmetric, !!sol.thermal) };
       let lo = Infinity, hi = -Infinity;
       // Transitório: faixa de todos os instantes (a escala não pula entre quadros da animação).
       const tr = timeRange(sol, qty, comp);
@@ -296,7 +296,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
         const trc = timeRange(sol, qty, comp, true);
         if (trc) [lo, hi] = trc;
         if (layer.range) [lo, hi] = layer.range;
-        legends.push({ lo, hi, label: quantityLabel(qty, comp, sol.axisymmetric), map: layer.colormap, layer: layer.id });
+        legends.push({ lo, hi, label: quantityLabel(qty, comp, sol.axisymmetric, !!sol.thermal), map: layer.colormap, layer: layer.id });
         // Uma faixa de cor por nível.
         const byLevel = new Map<number, number[]>();
         for (let i = 0, j = 0; i < segs.length; i += 4, j++) {
@@ -323,7 +323,7 @@ function drawPost(ctx: CanvasRenderingContext2D, v: View, sk: Sketch, p: NonNull
     } else if (plot === 'arrow') {
       const h = layer.spacing && layer.spacing > 0 ? layer.spacing : Math.max(sol.meshSize, 1e-6) * 1.5;
       const { v: vs, max: vmax } = vectorSamples(sol, h, qty === 'h' ? 'h' : 'b');
-      if (layer.colorByValue) legends.push({ lo: 0, hi: vmax, label: quantityLabel(qty, 'mag', sol.axisymmetric), map: layer.colormap, layer: layer.id });
+      if (layer.colorByValue) legends.push({ lo: 0, hi: vmax, label: quantityLabel(qty, 'mag', sol.axisymmetric, !!sol.thermal), map: layer.colormap, layer: layer.id });
       const scale = (layer.scale ?? 1) * 0.9 * h;
       const solid = layer.color ?? (legends.length ? '#0d1319' : COLORS.dim);
       ctx.strokeStyle = solid;

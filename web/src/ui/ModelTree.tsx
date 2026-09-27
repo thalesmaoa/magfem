@@ -5,7 +5,7 @@ import { evaluate, evaluateVariables, formatLength, formatQ } from '../cad/expr'
 import { addNode, isMeshSel, NS, removeNode, updateNode, type AddKind, type TreeSel } from '../cad/tree';
 import { MeshProps, MeshTree } from './MeshPanel';
 import { InterpSection, PlotProps, TableItemProps, ResultsProps, ResultsTree, SolveButton, SolveSection } from './PostPanel';
-import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type RegionAssign, type TreeNode } from '../cad/types';
+import { isCurve, isDimension, ORIGIN_ID, type ConstraintType, type AnalysisType, type Entity, type Group, type Id, type PhysicsNode, type RegionAssign, type TreeNode, type ThermalBC, type AirChannel, type ThermalSettings } from '../cad/types';
 import { deleteVariable, nextVarName, renameVariable, setVariable } from '../cad/vars';
 import { groupOf } from '../cad/ops';
 import { formatValue } from '../cad/measure';
@@ -62,12 +62,12 @@ function AddMenu({ ed, kinds, label, onAdded }: { ed: SketchEditor; kinds: AddKi
   const numbered = (base: string, k: TreeNode['kind']) => (count(k) ? `${base} ${count(k) + 1}` : base);
   const add = (kind: AddKind) => {
     setOpen(false);
-    const name = kind === 'physics-circuit' ? numbered(t.tree.magneticCircuit, 'physics') : kind === 'physics-magnetic' ? numbered(t.tree.magnetic, 'physics') : kind === 'mesh' ? numbered(t.tree.addMesh, 'mesh') : numbered(t.tree.addPost, 'post');
+    const name = kind === 'physics-circuit' ? numbered(t.tree.magneticCircuit, 'physics') : kind === 'physics-thermal' ? numbered(t.thermal.name, 'physics') : kind === 'physics-magnetic' ? numbered(t.tree.magnetic, 'physics') : kind === 'mesh' ? numbered(t.tree.addMesh, 'mesh') : numbered(t.tree.addPost, 'post');
     const r = addNode(ed.sketch, kind, name);
     if (ed.commit(r.sketch, [r.code])) onAdded(r.node.id);
   };
-  const itemIcon = (k: AddKind) => (k === 'physics-circuit' ? Icons.physicsCircuit : k === 'physics-magnetic' ? ICON.physics : k === 'mesh' ? ICON.mesh : ICON.post);
-  const itemLabel = (k: AddKind) => (k === 'physics-circuit' ? t.tree.magneticCircuit : k === 'physics-magnetic' ? t.tree.magnetic : k === 'mesh' ? t.tree.addMesh : t.tree.addPost);
+  const itemIcon = (k: AddKind) => (k === 'physics-thermal' ? Icons.thermal : k === 'physics-circuit' ? Icons.physicsCircuit : k === 'physics-magnetic' ? ICON.physics : k === 'mesh' ? ICON.mesh : ICON.post);
+  const itemLabel = (k: AddKind) => (k === 'physics-thermal' ? t.thermal.add : k === 'physics-circuit' ? t.tree.magneticCircuit : k === 'physics-magnetic' ? t.tree.magnetic : k === 'mesh' ? t.tree.addMesh : t.tree.addPost);
   return (
     <div className="add-menu" ref={ref} onClick={(e) => e.stopPropagation()}>
       <button
@@ -114,7 +114,7 @@ function NodeRow({ ed, node, active, onSelect, onTreeSelect }: { ed: SketchEdito
           {displayName(node.name)}
         </span>
       )}
-      {node.kind === 'physics' && !node.coupled && <span className="crefs">{t.problem[node.analysis]}</span>}
+      {node.kind === 'physics' && !node.coupled && <span className="crefs">{node.physics === 'thermal' ? t.thermal.steady : t.problem[node.analysis]}</span>}
       {node.kind === 'physics' && <SolveButton ed={ed} id={node.id} onSelect={onTreeSelect} />}
       <button
         className="x"
@@ -131,8 +131,157 @@ function NodeRow({ ed, node, active, onSelect, onTreeSelect }: { ed: SketchEdito
   );
 }
 
+/** Física térmica: fonte das perdas, ambiente, convecção, condições em curvas e canais de ar (ventilador). */
+function ThermalProps({ ed, node }: { ed: SketchEditor; node: PhysicsNode }) {
+  const t = useT();
+  const sk = ed.sketch;
+  const th = node.thermal!;
+  const setTh = (patch: Partial<ThermalSettings>, code: string) => ed.commit(updateNode(sk, node.id, { thermal: { ...th, ...patch } }), [code]);
+  const thCode = (next: ThermalSettings) =>
+    `s.thermal(${q(node.id)}, source=${next.source ? q(next.source) : 'None'}, t_amb=${q(next.tAmb)}, h=${q(next.h)}${next.hFaces ? `, h_faces=${q(next.hFaces)}` : ''}, couple_r=${next.coupleR ? 'True' : 'False'})`;
+  const setMain = (patch: Partial<ThermalSettings>) => setTh(patch, thCode({ ...th, ...patch }));
+  const sources = sk.nodes.filter((n): n is PhysicsNode => n.kind === 'physics' && n.physics !== 'thermal' && n.analysis !== 'transient');
+  const selCurves = ed.selectedEntities.filter((id) => isCurve(sk.entities[id]));
+  const bcCode = (b: ThermalBC) => {
+    const ch = b.channel ? th.channels.find((c) => c.id === b.channel)?.name : undefined;
+    return `s.thermal_bc(${q(node.id)}, ${q(b.name)}, curves=[${b.curves.map(q).join(', ')}], type=${q(b.type)}${b.h ? `, h=${q(b.h)}` : ''}${b.t ? `, t=${q(b.t)}` : ''}${ch ? `, channel=${q(ch)}` : ''})`;
+  };
+  const setBc = (b: ThermalBC, patch: Partial<ThermalBC>) => {
+    const next = { ...b, ...patch };
+    setTh({ bcs: th.bcs.map((x) => (x.id === b.id ? next : x)) }, bcCode(next));
+  };
+  const chCode = (c: AirChannel) => `s.channel(${q(node.id)}, ${q(c.name)}, flow=${q(c.flow)}, t_in=${q(c.tIn)})`;
+  const setCh = (c: AirChannel, patch: Partial<AirChannel>) => {
+    const next = { ...c, ...patch };
+    setTh({ channels: th.channels.map((x) => (x.id === c.id ? next : x)) }, chCode(next));
+  };
+  const field = (label: string, value: string, onV: (v: string) => void, placeholder?: string) => (
+    <label className="field">
+      <span>{label}</span>
+      <LazyInput value={value} placeholder={placeholder} ariaLabel={label} onCommit={(v) => onV(v.trim())} />
+    </label>
+  );
+  return (
+    <>
+      <section>
+        <label className="field">
+          <span>{t.thermal.source}</span>
+          <select aria-label={t.thermal.source} value={th.source ?? ''} onChange={(e) => setMain({ source: e.target.value || undefined })}>
+            <option value="">—</option>
+            {sources.map((s) => (
+              <option key={s.id} value={s.id}>
+                {displayName(s.name)} ({t.problem[s.analysis]})
+              </option>
+            ))}
+          </select>
+        </label>
+        {field(t.thermal.tAmb, th.tAmb, (v) => v && setMain({ tAmb: v }))}
+        {field(t.thermal.h, th.h, (v) => v && setMain({ h: v }))}
+        <p className="help-line">{t.thermal.hHelp}</p>
+        {sk.settings.problem !== 'axisymmetric' && (
+          <>
+            {field(t.thermal.hFaces, th.hFaces ?? '', (v) => setMain({ hFaces: v || undefined }), '—')}
+            <p className="help-line">{t.thermal.hFacesHelp}</p>
+          </>
+        )}
+        <label className="check">
+          <input type="checkbox" checked={th.coupleR} onChange={(e) => setMain({ coupleR: e.target.checked })} />
+          {t.thermal.coupleR}
+        </label>
+        <p className="help-line">{t.thermal.help}</p>
+      </section>
+      <section>
+        <h3>{t.thermal.channels}</h3>
+        {th.channels.map((c) => (
+          <div key={c.id} className="th-item">
+            {field(t.mesh.name, c.name, (v) => v && setCh(c, { name: v }))}
+            {field(t.thermal.flow, c.flow, (v) => v && setCh(c, { flow: v }))}
+            {field(t.thermal.tIn, c.tIn, (v) => v && setCh(c, { tIn: v }))}
+            <button className="link-btn" onClick={() => setTh({ channels: th.channels.filter((x) => x.id !== c.id), bcs: th.bcs.map((b) => (b.channel === c.id ? { ...b, channel: undefined } : b)) }, `s.channel(${q(node.id)}, ${q(c.name)}, flow=None)`)}>
+              {t.thermal.remove}
+            </button>
+          </div>
+        ))}
+        <button
+          className="btn secondary"
+          onClick={() => {
+            const c: AirChannel = { id: `ch${sk.nextId}`, name: t.thermal.chName(th.channels.length + 1), flow: '60', tIn: th.tAmb };
+            ed.commit({ ...updateNode(sk, node.id, { thermal: { ...th, channels: [...th.channels, c] } }), nextId: sk.nextId + 1 }, [chCode(c)]);
+          }}
+        >
+          + {t.thermal.chAdd}
+        </button>
+        <p className="help-line">{t.thermal.chHelp}</p>
+      </section>
+      <section>
+        <h3>{t.thermal.bcs}</h3>
+        {th.bcs.map((b) => (
+          <div key={b.id} className="th-item">
+            {field(t.mesh.name, b.name, (v) => v && setBc(b, { name: v }))}
+            <label className="field">
+              <span>{t.thermal.bcType}</span>
+              <select aria-label={`${t.thermal.bcType}: ${b.name}`} value={b.type} onChange={(e) => setBc(b, { type: e.target.value as ThermalBC['type'] })}>
+                <option value="convection">{t.thermal.types.convection}</option>
+                <option value="temperature">{t.thermal.types.temperature}</option>
+                <option value="insulated">{t.thermal.types.insulated}</option>
+              </select>
+            </label>
+            {b.type === 'convection' && (
+              <>
+                {field(t.thermal.bcH, b.h ?? '', (v) => setBc(b, { h: v || undefined }), th.h)}
+                <label className="field">
+                  <span>{t.thermal.bcRef}</span>
+                  <select aria-label={`${t.thermal.bcRef}: ${b.name}`} value={b.channel ?? ''} onChange={(e) => setBc(b, { channel: e.target.value || undefined })}>
+                    <option value="">{t.thermal.ambient}</option>
+                    {th.channels.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+            {b.type === 'temperature' && field(t.thermal.bcT, b.t ?? '', (v) => setBc(b, { t: v || undefined }), th.tAmb)}
+            <p className="muted">
+              {t.thermal.curves(b.curves.length)}{' '}
+              <button className="link-btn" disabled={!selCurves.length} onClick={() => setBc(b, { curves: selCurves })}>
+                {t.thermal.useSel(selCurves.length)}
+              </button>
+            </p>
+            <button className="link-btn" onClick={() => setTh({ bcs: th.bcs.filter((x) => x.id !== b.id) }, `s.thermal_bc(${q(node.id)}, ${q(b.name)}, curves=None)`)}>
+              {t.thermal.remove}
+            </button>
+          </div>
+        ))}
+        <button
+          className="btn secondary"
+          onClick={() => {
+            const b: ThermalBC = { id: `tb${sk.nextId}`, name: t.thermal.bcName(th.bcs.length + 1), curves: selCurves, type: 'convection' };
+            ed.commit({ ...updateNode(sk, node.id, { thermal: { ...th, bcs: [...th.bcs, b] } }), nextId: sk.nextId + 1 }, [bcCode(b)]);
+          }}
+        >
+          + {t.thermal.bcAdd}
+        </button>
+      </section>
+    </>
+  );
+}
+
 function PhysicsProps({ ed, node, onSelect }: { ed: SketchEditor; node: PhysicsNode; onSelect: (s: TreeSel) => void }) {
   const t = useT();
+  if (node.physics === 'thermal' && node.thermal)
+    return (
+      <div className="props-body">
+        <section>
+          <h3>
+            {t.tree.physicsProps}: {displayName(node.name)}
+          </h3>
+        </section>
+        <ThermalProps ed={ed} node={node} />
+        <SolveSection ed={ed} node={node} onSelect={onSelect} />
+      </div>
+    );
   const sk = ed.sketch;
   const { values } = evaluateVariables(sk.variables, sk.settings.unit);
   const set = (patch: Partial<PhysicsNode>, code: string) => ed.commit(updateNode(sk, node.id, patch), [code]);
@@ -702,7 +851,7 @@ export function ModelTree({ ed, sel, onSelect, name = 'magfem' }: { ed: SketchEd
           {(
             [
               { key: 'mesh', icon: ICON.mesh, label: t.tree.addMesh, kinds: ['mesh'], add: t.tree.addToMesh, match: (n: TreeNode) => n.kind === 'mesh' },
-              { key: 'solver', icon: Icons.solver, label: t.tree.solver, kinds: ['physics-magnetic', 'physics-circuit'], add: t.tree.addToSolver, match: (n: TreeNode) => n.kind === 'physics' },
+              { key: 'solver', icon: Icons.solver, label: t.tree.solver, kinds: ['physics-magnetic', 'physics-circuit', 'physics-thermal'], add: t.tree.addToSolver, match: (n: TreeNode) => n.kind === 'physics' },
               { key: 'results', icon: ICON.post, label: t.tree.results, kinds: ['post'], add: t.tree.addToResults, match: (n: TreeNode) => n.kind === 'post' },
             ] as const
           ).map((sec) => (

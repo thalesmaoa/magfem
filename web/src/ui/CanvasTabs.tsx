@@ -298,7 +298,7 @@ function LinePane({ ed, id, lx, ly }: { ed: SketchEditor; id: string; lx: boolea
   return (
     <div className="chart-pane">
       {!sol ? <p className="muted">{t.solve.noSolution}</p> : !prof ? <p className="muted">{t.post.noCurve}</p> : (
-        <XYChart x={prof.s} y={prof[qty]} xLabel="s (mm)" yLabel={quantityLabel(qty, 'mag', sol.axisymmetric)} logX={lx} logY={ly} color={node.color} />
+        <XYChart x={prof.s} y={prof[qty]} xLabel="s (mm)" yLabel={quantityLabel(qty, 'mag', sol.axisymmetric, !!sol.thermal)} logX={lx} logY={ly} color={node.color} />
       )}
     </div>
   );

@@ -3,7 +3,7 @@ import { T } from '../i18n';
 import { q } from './code';
 import { newPhysics, PLOT_QUANTITIES, type Id, type PlotKind, type PlotQuantity, type SchPart, type Sketch, type TableItem, type TreeNode } from './types';
 
-export type AddKind = 'physics-magnetic' | 'physics-circuit' | 'mesh' | 'post';
+export type AddKind = 'physics-magnetic' | 'physics-circuit' | 'physics-thermal' | 'mesh' | 'post';
 
 /** Seleção na árvore (estado da interface, não do documento). */
 export type TreeSel =
@@ -37,7 +37,12 @@ export function addNode(sk: Sketch, kind: AddKind, name: string): { sketch: Sket
       code: `${id} = s.add_physics(name=${q(name)}, circuit=True)`,
     };
   }
-  if (kind === 'physics-magnetic') {
+  if (kind === 'physics-thermal') {
+    // Térmica em regime: perdas da primeira física magnética que não seja transitória.
+    const src = sk.nodes.find((n) => n.kind === 'physics' && n.physics !== 'thermal' && n.analysis !== 'transient');
+    node = { ...newPhysics(id, name), physics: 'thermal', thermal: { source: src?.id, tAmb: '25', h: '10', coupleR: true, bcs: [], channels: [] } };
+    code = `${id} = s.add_physics(name=${q(name)}, thermal=True${src ? `, source=${q(src.id)}` : ''})`;
+  } else if (kind === 'physics-magnetic') {
     node = newPhysics(id, name);
     code = `${id} = s.add_physics(name=${q(name)})`;
   } else if (kind === 'mesh') {

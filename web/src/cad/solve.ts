@@ -105,6 +105,21 @@ export interface Solution {
   frame?: number;
   /** Tempo do quadro (s). */
   time?: number;
+  /**
+   * Solução térmica (física térmica): A = temperatura por nó (°C), bx/by = fluxo de calor −k∇T (W/m²) por
+   * triângulo, e a malha só com o domínio térmico (sem o ar).
+   */
+  thermal?: {
+    tmax: number;
+    tmin: number;
+    /** Perdas totais e calor que sai (W, total). */
+    pIn: number;
+    pOut: number;
+    /** Perdas por triângulo da malha completa (W/m³) e temperatura média por região (°C). */
+    q: Float64Array;
+    regionT: [number, number][];
+    channels: { id: Id; name: string; tAir: number; tOut: number; power: number }[];
+  };
 }
 
 /** Ambiente das expressões: variáveis do projeto + t (s, sem unidade). */
@@ -169,7 +184,11 @@ function pairOrder(xy: Float64Array, a: number[], b: number[]): [number[], numbe
   return [A, B];
 }
 
-export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, outerDefault: Id[]): { input: MagInput; problems: string[] } {
+/**
+ * Monta a entrada do solver magnético. `sigmaScale` (índice da região → fator) corrige a condutividade dos
+ * condutores maciços pela temperatura (acoplamento térmico).
+ */
+export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, outerDefault: Id[], sigmaScale?: Map<number, number>): { input: MagInput; problems: string[] } {
   const t = T();
   const problems: string[] = [];
   const axisymmetric = sk.settings.problem === 'axisymmetric';
@@ -200,7 +219,7 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
       bhRegion[r.index] = m.bh.filter(([h, b]) => h > 0 && b > 0).map(([h, b]) => [f * b + (1 - f) * MU0 * h, h]);
     // Correntes parasitas só em condutores sem fonte (bobina com corrente imposta = enrolamento, σ ignorado).
     // Chapas laminadas não conduzem como bloco: as parasitas dentro da chapa entram só nas perdas no ferro.
-    if (!a.current && !a.circuit && m.sigma > 0 && !lam) sigma[r.index] = m.sigma * 1e6;
+    if (!a.current && !a.circuit && m.sigma > 0 && !lam) sigma[r.index] = m.sigma * 1e6 * (sigmaScale?.get(r.index) ?? 1);
     try {
       // Corrente: do circuito (se a região estiver ligada a um) ou da própria região.
       const circ = a.circuit ? sk.circuits.find((c) => c.id === a.circuit) : undefined;
@@ -534,8 +553,10 @@ export function nodeValues(sol: Solution, q: 'b' | 'h' | 'a' | 'j', comp: Compon
 }
 
 /** Rótulo da grandeza para legendas e gráficos. */
-export function quantityLabel(q: string, comp: Component, axisymmetric: boolean): string {
+export function quantityLabel(q: string, comp: Component, axisymmetric: boolean, thermal = false): string {
   const c = comp === 'mag' ? '' : axisymmetric ? (comp === 'x' ? '_r' : '_z') : comp === 'x' ? '_x' : '_y';
+  // Térmica: A = temperatura, B = fluxo de calor −k∇T.
+  if (thermal) return q === 'a' ? 'T (°C)' : q === 'b' || q === 'h' || q === 'bn' || q === 'bt' ? (comp === 'mag' ? '|q| (W/m²)' : `q${c} (W/m²)`) : q;
   if (q === 'b') return comp === 'mag' ? '|B| (T)' : `B${c} (T)`;
   if (q === 'h') return comp === 'mag' ? '|H| (A/m)' : `H${c} (A/m)`;
   if (q === 'a') return axisymmetric ? 'ψ (Wb/rad)' : 'A (Wb/m)';

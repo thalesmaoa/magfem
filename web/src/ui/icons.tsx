@@ -305,6 +305,13 @@ export const Icons = {
       <path d="M10 5v5M7.5 7.5L10 10l2.5-2.5" />
     </S>
   ),
+  thermal: (
+    <S>
+      <path d="M8.5 3.5a1.5 1.5 0 0 1 3 0v8.2a3.5 3.5 0 1 1-3 0z" />
+      <path d="M10 8v5.5" />
+      <path d="M14 5h2.5M14 8h2" />
+    </S>
+  ),
   sine: (
     <S>
       <path d="M2 10h16" opacity=".35" />

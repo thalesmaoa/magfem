@@ -40,7 +40,9 @@ import { buildMeshInput, inputKey, minTriangleAngle, type MeshResult, expandCurv
 import { solver } from '../worker/client';
 import type { MagOut, TriangulateOut } from '../wasm/core';
 import { buildMagInput, depthOf, frameOf, regionJ, smoothSolution, typicalSize, type Solution } from './solve';
-import type { LegendLayout, PostNode, SchematicNode } from './types';
+import { elementLosses, rhoFactor, thermalProblem, thermalSolution } from './heat';
+import { solveThermalProblem, type ThermalResult } from './thermal';
+import type { LegendLayout, Material, PhysicsNode, PostNode, SchematicNode } from './types';
 import { buildNetlist, sourceSteps } from './schematic';
 import { addNode, physicsSketch } from './tree';
 import { minDistanceSets, signedDistanceTo } from './inspect';
@@ -357,14 +359,102 @@ export class SketchEditor {
       if (this.meshStale(id)) this.meshes.delete(id);
     }
     const key = this.solveKey();
-    for (const [id, s] of data.solutions ?? []) if (!this.solutions.has(id) && s.key === key && this.sketch.nodes.some((n) => n.id === id)) this.solutions.set(id, s);
+    void key;
+    for (const [id, s] of data.solutions ?? []) if (!this.solutions.has(id) && s.key === this.keyFor(id) && this.sketch.nodes.some((n) => n.id === id)) this.solutions.set(id, s);
     this.changed();
+  }
+
+  /** Chave da solução de uma física: a do modelo, mais as condições térmicas (física térmica). */
+  keyFor(id: Id): string {
+    const n = this.sketch.nodes.find((x) => x.id === id);
+    return n?.kind === 'physics' && n.physics === 'thermal' ? `${this.solveKey()}|${JSON.stringify(n.thermal ?? null)}` : this.solveKey();
   }
 
   /** A solução ficou para trás (algo que a afeta mudou depois de resolver)? */
   solutionStale(id: Id): boolean {
     const s = this.solutions.get(id);
-    return !!s && s.key !== this.solveKey();
+    return !!s && s.key !== this.keyFor(id);
+  }
+
+  /** Condutividade dos condutores maciços corrigida pela temperatura (acoplamento térmico), por física. */
+  private sigmaScale = new Map<Id, Map<number, number>>();
+
+  /**
+   * Térmica em regime acoplada a uma física magnética: perdas → temperatura → resistividade dos condutores →
+   * (condutores maciços: AC de novo) → perdas… até a temperatura das regiões mudar menos de 0,1 K.
+   */
+  private async solveThermal(node: PhysicsNode): Promise<boolean> {
+    const t = T();
+    const id = node.id;
+    const fail = (msg: string) => {
+      this.solveErrors.set(id, msg);
+      this.flash(msg);
+      this.solveBusy = null;
+      this.changed();
+      return false;
+    };
+    const th = node.thermal;
+    const src = th?.source ? this.sketch.nodes.find((n) => n.id === th.source) : undefined;
+    if (!th || src?.kind !== 'physics' || src.physics === 'thermal') return fail(t.thermal.noSource);
+    if (src.analysis === 'transient') return fail(t.thermal.transientSource);
+    this.solveErrors.delete(id);
+    this.sigmaScale.delete(src.id);
+    const t0 = performance.now();
+    const arr = this.arrangement();
+    const mats = new Map(this.sketch.materials.map((m) => [m.id, m]));
+    const regionMat = new Map<number, Material | undefined>();
+    for (const a of this.sketch.regionAssigns) {
+      const r = findRegion(arr, a);
+      if (r) regionMat.set(r.index, a.material ? mats.get(a.material) : undefined);
+    }
+    let regionT: Map<number, number> | undefined;
+    let res: ThermalResult | null = null;
+    let q: Float64Array | null = null;
+    let iterations = 0;
+    let sol: Solution | undefined;
+    for (let it = 0; it < 12; it++) {
+      iterations = it + 1;
+      sol = this.solutions.get(src.id);
+      if (!sol || this.solutionStale(src.id) || it > 0) {
+        // Primeira volta: só resolve o magnético se faltar; depois, só se houver condutores maciços afetados.
+        if (it === 0 || this.sigmaScale.has(src.id)) {
+          if (!(await this.solve(src.id))) return fail(this.solveErrors.get(src.id) ?? t.thermal.noSource);
+          sol = this.solutions.get(src.id);
+        }
+      }
+      if (!sol) return fail(t.thermal.noSource);
+      this.solveBusy = id;
+      q = elementLosses(this.sketch, arr, sol, regionT);
+      const { pb } = thermalProblem(this.sketch, arr, sol.mesh, q, th);
+      res = solveThermalProblem(pb);
+      // Temperatura média de cada região (por área).
+      const sum = new Map<number, [number, number]>();
+      const { xy, triangles, triRegion } = sol.mesh;
+      for (let e = 0; e < triangles.length / 3; e++) {
+        const v = [triangles[3 * e], triangles[3 * e + 1], triangles[3 * e + 2]];
+        const Te = (res.T[v[0]] + res.T[v[1]] + res.T[v[2]]) / 3;
+        if (!Number.isFinite(Te)) continue;
+        const ar = Math.abs((xy[2 * v[1]] - xy[2 * v[0]]) * (xy[2 * v[2] + 1] - xy[2 * v[0] + 1]) - (xy[2 * v[2]] - xy[2 * v[0]]) * (xy[2 * v[1] + 1] - xy[2 * v[0] + 1]));
+        const s = sum.get(triRegion[e]) ?? [0, 0];
+        sum.set(triRegion[e], [s[0] + Te * ar, s[1] + ar]);
+      }
+      const next = new Map([...sum].map(([r, [a, w]]) => [r, a / w]));
+      const change = regionT ? Math.max(0, ...[...next].map(([r, v]) => Math.abs(v - (regionT!.get(r) ?? v)))) : Infinity;
+      regionT = next;
+      if (!th.coupleR || change < 0.1) break;
+      // Condutores maciços com correntes parasitas: o AC muda com σ(T) → nova solução magnética na próxima volta.
+      const scale = new Map<number, number>();
+      for (const [r, m] of regionMat) if (sol.harmonic && sol.harmonic.sigma[r] > 0 && m?.alphaR) scale.set(r, 1 / rhoFactor(m, next.get(r)));
+      if (scale.size) this.sigmaScale.set(src.id, scale);
+      else this.sigmaScale.delete(src.id);
+    }
+    if (!res || !sol || !q) return fail(t.thermal.noSource);
+    this.solutions.set(id, { ...thermalSolution(sol, res, q, this.sketch, arr), ms: performance.now() - t0, iterations, key: this.keyFor(id) } as Solution & { key: string });
+    this.shownSolution = id;
+    this.solveBusy = null;
+    this.schedulePersist();
+    this.changed();
+    return true;
   }
 
   /** Resolve o problema do nó de física: gera a malha se preciso e chama o solver no Worker. */
@@ -372,6 +462,7 @@ export class SketchEditor {
     const t = T();
     const node = this.sketch.nodes.find((n) => n.id === id);
     if (!node || node.kind !== 'physics') return false;
+    if (node.physics === 'thermal') return this.solveThermal(node);
     const fail = (msg: string) => {
       this.solveErrors.set(id, msg);
       this.flash(msg);
@@ -398,7 +489,7 @@ export class SketchEditor {
     const key = this.solveKey();
     // Correntes desta física (cada física pode ter as suas).
     const psk = physicsSketch(this.sketch, id);
-    const { input, problems } = buildMagInput(psk, this.arrangement(), mesh, this.defaultOuter());
+    const { input, problems } = buildMagInput(psk, this.arrangement(), mesh, this.defaultOuter(), this.sigmaScale.get(id));
     if (problems.length) return fail(problems.join(' · '));
     let netInfo: { schematic: Id; partOf: Id[]; nodeOf: Map<string, number>; netNodes: number } | null = null;
     // Transitório: correntes = funções de t (avaliadas a cada passo), passo dt até t_final (A(0) = 0).

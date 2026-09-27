@@ -420,7 +420,7 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
               onClick={() => onSelect({ kind: 'results', id: ph.id })}
               extra={
                 <>
-                  <span className={`crefs${sol && ed.solutionStale(ph.id) ? ' bad' : ''}`}>{sol ? `${sol.bmax.toPrecision(3)} T` : '—'}</span>
+                  <span className={`crefs${sol && ed.solutionStale(ph.id) ? ' bad' : ''}`}>{sol ? (sol.thermal ? `${sol.thermal.tmax.toFixed(1)} °C` : `${sol.bmax.toPrecision(3)} T`) : '—'}</span>
                   <ChoiceMenu
                     label={t.post.newView}
                     items={[
@@ -430,7 +430,9 @@ export function ResultsTree({ ed, sel, onSelect }: { ed: SketchEditor; sel: Tree
                         note: t.table.newViewNote,
                         onClick: () => {
                           const v = addView(ed.sketch, ph.id);
-                          const p = addPlot(v.sketch, v.node.id, 'surface', plotName('surface', 'b'), 'b');
+                          // Térmica: o mapa nasce com a temperatura (A = T); magnética: |B|.
+                          const thermal = ph.kind === 'physics' && ph.physics === 'thermal';
+                          const p = addPlot(v.sketch, v.node.id, 'surface', thermal ? `${t.post.plots.surface}: T` : plotName('surface', 'b'), thermal ? 'a' : 'b');
                           if (ed.commit(p.sketch, [v.code, p.code])) {
                             openRow(ph.id);
                             onSelect({ kind: 'node', id: v.node.id });
@@ -727,19 +729,47 @@ export function ResultsProps({ ed, id, onSelect }: { ed: SketchEditor; id: Id; o
                 </button>
               </>
             )}
-            <label className="field">
-              <span>{t.solve.bmax}</span>
-              <span className="cval">{fmt(sol.bmax, 'T')}</span>
-            </label>
-            <label className="field">
-              <span>{t.solve.energy}</span>
-              <span className="cval">{fmt(sol.energy, 'J')}</span>
-            </label>
+            {sol.thermal ? (
+              <>
+                <label className="field">
+                  <span>{t.thermal.tmax}</span>
+                  <span className="cval">{sol.thermal.tmax.toFixed(1)} °C</span>
+                </label>
+                <label className="field">
+                  <span>{t.thermal.tmin}</span>
+                  <span className="cval">{sol.thermal.tmin.toFixed(1)} °C</span>
+                </label>
+                <label className="field">
+                  <span>{t.thermal.pIn}</span>
+                  <span className="cval">{fmt(sol.thermal.pIn, 'W')}</span>
+                </label>
+                <label className="field">
+                  <span>{t.thermal.pOut}</span>
+                  <span className="cval">{fmt(sol.thermal.pOut, 'W')}</span>
+                </label>
+                {sol.thermal.channels.map((c) => (
+                  <p key={c.id} className="muted">
+                    {t.thermal.chResult(c.name, c.tAir.toFixed(1), c.tOut.toFixed(1), fmt(c.power, 'W'))}
+                  </p>
+                ))}
+              </>
+            ) : (
+              <>
+                <label className="field">
+                  <span>{t.solve.bmax}</span>
+                  <span className="cval">{fmt(sol.bmax, 'T')}</span>
+                </label>
+                <label className="field">
+                  <span>{t.solve.energy}</span>
+                  <span className="cval">{fmt(sol.energy, 'J')}</span>
+                </label>
+              </>
+            )}
             <p className="help-line">{t.post.add}: +</p>
           </>
         )}
       </section>
-      {sol && ed.sketch.circuits.length > 0 && (
+      {sol && !sol.thermal && ed.sketch.circuits.length > 0 && (
         <section>
           <h3>{t.circuit.results}</h3>
           <CircuitTable ed={ed} physics={id} />
@@ -977,7 +1007,7 @@ export function PlotProps({ ed, node }: { ed: SketchEditor; node: PostNode }) {
                 <button className="btn secondary" onClick={() => openTab({ kind: 'chart', plot: node.id })}>
                   {t.post.openChart}
                 </button>
-                <Chart s={prof.s} y={prof[quantity as 'b' | 'bn' | 'bt' | 'h' | 'a']} unit={quantityLabel(quantity, 'mag', sol!.axisymmetric).replace(/^.*\(/, '').replace(')', '')} />
+                <Chart s={prof.s} y={prof[quantity as 'b' | 'bn' | 'bt' | 'h' | 'a']} unit={quantityLabel(quantity, 'mag', sol!.axisymmetric, !!sol!.thermal).replace(/^.*\(/, '').replace(')', '')} />
                 <label className="field">
                   <span>{t.post.flux}</span>
                   <span className="cval strong">{fmt(prof.flux, 'Wb')}</span>

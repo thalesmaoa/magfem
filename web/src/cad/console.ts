@@ -28,7 +28,7 @@ import {
 import { addNode, addPlot, addSchematic, addTable, addTableItem, addView, duplicateNode, movePlot, removeNode, updateNode } from './tree';
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
-import { BOUNDARY_TYPES, type Boundary, DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, type SchWire, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
+import { BOUNDARY_TYPES, type Boundary, DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, type SchWire, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch, type ThermalBC, type AirChannel } from './types';
 import { computeArrangement, findRegion } from './regions';
 import { duplicateMaterial, addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
@@ -887,10 +887,73 @@ export class CommandConsole {
       case 'add_physics':
       case 'add_mesh':
       case 'add_post': {
-        const kind = fn === 'add_physics' ? (kw.circuit === true ? 'physics-circuit' : 'physics-magnetic') : fn === 'add_mesh' ? 'mesh' : 'post';
-        const name = kw.name ? String(kw.name) : fn === 'add_physics' ? T().tree.magnetic : fn === 'add_mesh' ? T().tree.addMesh : T().tree.addPost;
-        const r = addNode(sk, kind, name);
+        const kind = fn === 'add_physics' ? (kw.circuit === true ? 'physics-circuit' : kw.thermal === true ? 'physics-thermal' : 'physics-magnetic') : fn === 'add_mesh' ? 'mesh' : 'post';
+        const name = kw.name ? String(kw.name) : fn === 'add_physics' ? (kw.thermal === true ? T().thermal.name : T().tree.magnetic) : fn === 'add_mesh' ? T().tree.addMesh : T().tree.addPost;
+        let r = addNode(sk, kind, name);
+        if (kind === 'physics-thermal' && kw.source !== undefined && r.node.kind === 'physics' && r.node.thermal)
+          r = { ...r, sketch: updateNode(r.sketch, r.node.id, { thermal: { ...r.node.thermal, source: kw.source === null ? undefined : String(kw.source) } }) };
         return this.commitWithId(r.sketch, r.node.id, kw.id);
+      }
+      case 'thermal': {
+        // s.thermal("n5", source="n2", t_amb="25", h="10", h_faces="5", couple_r=True)
+        need(1);
+        const node = sk.nodes.find((n) => n.id === String(a[0]));
+        if (node?.kind !== 'physics' || node.physics !== 'thermal' || !node.thermal) throw new ConsoleError(t.notFound(String(a[0])));
+        const th = { ...node.thermal };
+        if (kw.source !== undefined) th.source = kw.source === null ? undefined : String(kw.source);
+        if (kw.t_amb !== undefined) th.tAmb = String(kw.t_amb);
+        if (kw.h !== undefined) th.h = String(kw.h);
+        if (kw.h_faces !== undefined) th.hFaces = kw.h_faces === null ? undefined : String(kw.h_faces);
+        if (kw.couple_r !== undefined) th.coupleR = !!kw.couple_r;
+        this.commit(updateNode(sk, node.id, { thermal: th }));
+        return null;
+      }
+      case 'thermal_bc': {
+        // s.thermal_bc("n5", "Canal", curves=["l3"], type="convection", h="60", t="30", channel="Ventilador"); curves=None remove.
+        need(2);
+        const node = sk.nodes.find((n) => n.id === String(a[0]));
+        if (node?.kind !== 'physics' || !node.thermal) throw new ConsoleError(t.notFound(String(a[0])));
+        const th = node.thermal;
+        const name = String(a[1]);
+        const cur = th.bcs.find((b) => b.name === name || b.id === name);
+        if (kw.curves === null) {
+          this.commit(updateNode(sk, node.id, { thermal: { ...th, bcs: th.bcs.filter((b) => b !== cur) } }));
+          return null;
+        }
+        const chan = kw.channel !== undefined && kw.channel !== null ? th.channels.find((c) => c.name === String(kw.channel) || c.id === String(kw.channel))?.id : undefined;
+        const next: ThermalBC = {
+          ...(cur ?? { id: kw.id !== undefined ? String(kw.id) : `tb${sk.nextId}`, name, curves: [], type: 'convection' as const }),
+          ...(kw.curves !== undefined ? { curves: (seq(kw.curves) ?? [kw.curves]).map((v) => this.id(v)) } : {}),
+          ...(kw.type !== undefined ? { type: String(kw.type) as ThermalBC['type'] } : {}),
+          ...(kw.h !== undefined ? { h: kw.h === null ? undefined : String(kw.h) } : {}),
+          ...(kw.t !== undefined ? { t: kw.t === null ? undefined : String(kw.t) } : {}),
+          ...(kw.channel !== undefined ? { channel: chan } : {}),
+        };
+        const bcs = cur ? th.bcs.map((b) => (b === cur ? next : b)) : [...th.bcs, next];
+        this.commit({ ...updateNode(sk, node.id, { thermal: { ...th, bcs } }), nextId: cur ? sk.nextId : sk.nextId + 1 });
+        return next.id;
+      }
+      case 'channel': {
+        // s.channel("n5", "Ventilador", flow="120", t_in="25"); flow=None remove.
+        need(2);
+        const node = sk.nodes.find((n) => n.id === String(a[0]));
+        if (node?.kind !== 'physics' || !node.thermal) throw new ConsoleError(t.notFound(String(a[0])));
+        const th = node.thermal;
+        const name = String(a[1]);
+        const cur = th.channels.find((c) => c.name === name || c.id === name);
+        if (kw.flow === null) {
+          this.commit(updateNode(sk, node.id, { thermal: { ...th, channels: th.channels.filter((c) => c !== cur), bcs: th.bcs.map((b) => (b.channel === cur?.id ? { ...b, channel: undefined } : b)) } }));
+          return null;
+        }
+        const next: AirChannel = {
+          ...(cur ?? { id: kw.id !== undefined ? String(kw.id) : `ch${sk.nextId}`, name, flow: '60', tIn: th.tAmb }),
+          ...(kw.flow !== undefined ? { flow: String(kw.flow) } : {}),
+          ...(kw.t_in !== undefined ? { tIn: String(kw.t_in) } : {}),
+          ...(kw.name !== undefined ? { name: String(kw.name) } : {}),
+        };
+        const channels = cur ? th.channels.map((c) => (c === cur ? next : c)) : [...th.channels, next];
+        this.commit({ ...updateNode(sk, node.id, { thermal: { ...th, channels } }), nextId: cur ? sk.nextId : sk.nextId + 1 });
+        return next.id;
       }
       case 'current': {
         // s.current("n2", "Bobina", "10*sin(2*pi*60*t)"): corrente de um circuito (ou atribuição de região) só nesta física.
@@ -930,6 +993,9 @@ export class CommandConsole {
         // Laminação (None volta a maciço / tira a espessura).
         if (kw.lam_fill !== undefined) patch.lamFill = kw.lam_fill === null ? undefined : Number(kw.lam_fill);
         if (kw.lam_thickness !== undefined) patch.lamThickness = kw.lam_thickness === null ? undefined : Number(kw.lam_thickness);
+        // Térmico: condutividade (W/m·K) e coeficiente de temperatura da resistividade (1/K).
+        if (kw.kth !== undefined) patch.kth = kw.kth === null ? undefined : Number(kw.kth);
+        if (kw.alpha_r !== undefined) patch.alphaR = kw.alpha_r === null ? undefined : Number(kw.alpha_r);
         const cur = findMaterial(sk, String(a[0]));
         if (cur) {
           this.commit(updateMaterial(sk, cur.id, patch));
@@ -1384,6 +1450,9 @@ const NODE_METHODS = {
     remove: 'remove("n2")',
     solve: 'solve("n2")',
     current: 'current("n2", "Bobina", "10*sin(2*pi*60*t)")  # corrente só nesta física (None volta à do circuito)',
+    thermal: 'thermal("n5", source="n2", t_amb="25", h="10", h_faces="5", couple_r=True)  # física térmica (add_physics(thermal=True))',
+    thermal_bc: 'thermal_bc("n5", "Canal", curves=["l3"], type="convection" | "temperature" | "insulated", h="60", t="30", channel="Ventilador")',
+    channel: 'channel("n5", "Ventilador", flow="120", t_in="25")  # canal de ar (ventilador): vazão em m³/h',
   },
   r: {
     view: 'view("n2", name="Vista 2")',

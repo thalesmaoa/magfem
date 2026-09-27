@@ -118,9 +118,18 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
       add(`m.add(name=${q(node.name)}, id=${q(node.id)})`);
       add(`m.settings(${q(node.id)}, size=${node.size?.trim() ? q(node.size) : '"auto"'}, min_angle=${n(node.minAngle ?? 30)})`);
     } else if (node.kind === 'physics') {
-      add(`s.add_physics(name=${q(node.name)}, id=${q(node.id)})`);
+      add(`s.add_physics(name=${q(node.name)}, id=${q(node.id)}${node.physics === 'thermal' ? ', thermal=True' : ''})`);
       add(`s.physics(${q(node.id)}, analysis=${q(node.analysis)}, frequency=${q(node.frequency)}, dt=${q(node.dt)}, t_end=${q(node.tEnd)}${node.schematic ? `, schematic=${q(node.schematic)}` : ''})`);
       for (const [ref, v] of Object.entries(node.currents ?? {})) add(`s.current(${q(node.id)}, ${q(ref)}, ${q(v)})`);
+      const th = node.thermal;
+      if (node.physics === 'thermal' && th) {
+        add(`s.thermal(${q(node.id)}, source=${th.source ? q(th.source) : 'None'}, t_amb=${q(th.tAmb)}, h=${q(th.h)}${th.hFaces ? `, h_faces=${q(th.hFaces)}` : ''}, couple_r=${th.coupleR ? 'True' : 'False'})`);
+        for (const c of th.channels) add(`s.channel(${q(node.id)}, ${q(c.name)}, flow=${q(c.flow)}, t_in=${q(c.tIn)}, id=${q(c.id)})`);
+        for (const b of th.bcs) {
+          const ch = b.channel ? th.channels.find((c) => c.id === b.channel)?.name : undefined;
+          add(`s.thermal_bc(${q(node.id)}, ${q(b.name)}, curves=[${b.curves.map(q).join(', ')}], type=${q(b.type)}${b.h ? `, h=${q(b.h)}` : ''}${b.t ? `, t=${q(b.t)}` : ''}${ch ? `, channel=${q(ch)}` : ''}, id=${q(b.id)})`);
+        }
+      }
     }
   }
   // Vistas e gráficos na ordem da árvore.
@@ -221,5 +230,7 @@ export function materialLine(m: Material): string {
   if (m.bh) kw.push(`bh=[${m.bh.map((p) => `(${n(p[0])}, ${n(p[1])})`).join(', ')}]`);
   if (m.lamFill !== undefined) kw.push(`lam_fill=${n(m.lamFill)}`);
   if (m.lamThickness !== undefined) kw.push(`lam_thickness=${n(m.lamThickness)}`);
+  if (m.kth !== undefined) kw.push(`kth=${n(m.kth)}`);
+  if (m.alphaR !== undefined) kw.push(`alpha_r=${n(m.alphaR)}`);
   return `m.material(${q(m.name)}, ${kw.join(', ')})`;
 }

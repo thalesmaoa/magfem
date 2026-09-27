@@ -26,6 +26,10 @@ analítica. Eles rodam a cada mudança no código.
 | R CC com fio AWG (axissimétrico) | $N\,2\pi r/(\sigma A_{fio})$ | < 0,2 % |
 | Pelicular, fio redondo | $1 + (a/\delta)^4/48$ e $a/(2\delta) + 1/4$ | < 1e-5 |
 | Proximidade, fio redondo em campo uniforme | $N\,\ell\,\pi\sigma\omega^2\hat B^2 a^4/8$ (baixa frequência) | < 0,1 % |
+| Térmica: placa com geração e convecção | $T = T_{amb} + qL/2h + q x(L-x)/2k$ | < 0,1 K |
+| Térmica: cilindro axissimétrico | $T = T_{amb} + qR/2h + q(R^2-r^2)/4k$ | < 0,1 K |
+| Térmica: ventilador (balanço do ar) | $T_{saída} = T_{entrada} + P/(\rho c_p Q)$ | < 1e-3 |
+| Térmica com σ(T) (bloco CC) | $T = T_{amb} + P_{20}(1+\alpha(T-20))/(hS)$ | < 0,05 K |
 | Proximidade, fio retangular (Dowell) | $\sigma\omega^2\hat B^2 t^3/24$ por largura | < 0,1 % |
 | Perdas por correntes parasitas | $\propto f^2$ em baixa frequência | razão 3,97 (≈ 4) |
 

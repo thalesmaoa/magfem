@@ -105,6 +105,49 @@ export interface Translations {
   /** Nomes dos materiais padrão (gravados em português no projeto; mostrados no idioma da interface). */
   wire: { kind: string; none: string; awg: string; round: string; rect: string; d: string; w: string; h: string; parallel: string; summary: (label: string, mm2: number, fill: number) => string; help: string; helpNone: string };
   lam: { kind: string; solid: string; laminated: string; fill: string; thickness: string; help: string; keAuto: (ke: number) => string };
+  thermal: {
+    name: string;
+    add: string;
+    steady: string;
+    addNote: string;
+    noSource: string;
+    transientSource: string;
+    source: string;
+    tAmb: string;
+    h: string;
+    hHelp: string;
+    hFaces: string;
+    hFacesHelp: string;
+    coupleR: string;
+    bcs: string;
+    bcAdd: string;
+    bcName: (n: number) => string;
+    bcType: string;
+    types: { convection: string; temperature: string; insulated: string };
+    bcH: string;
+    bcT: string;
+    bcRef: string;
+    ambient: string;
+    useSel: (n: number) => string;
+    curves: (n: number) => string;
+    remove: string;
+    channels: string;
+    chAdd: string;
+    chName: (n: number) => string;
+    flow: string;
+    tIn: string;
+    chHelp: string;
+    help: string;
+    results: string;
+    tmax: string;
+    tmin: string;
+    pIn: string;
+    pOut: string;
+    chResult: (name: string, tAir: string, tOut: string, p: string) => string;
+    kth: string;
+    alphaR: string;
+    thermalHelp: string;
+  };
   matNames: { air: string; cu: string; al: string; m400: string; s1010: string };
   docs: { link: string; hint: string };
   cite: {
@@ -811,6 +854,49 @@ const PT: Translations = {
     thickness: 'Espessura da chapa (mm)',
     help: 'Chapas empilhadas na profundidade: o campo usa B = f·B_aço + (1−f)·μ0·H; não há correntes parasitas de bloco; as perdas no ferro ficam no volume de aço (f·V) com B_aço = B/f. Sem k_e, ele sai da espessura e de σ: k_e = π²·σ·d²/6.',
     keAuto: (ke) => `k_e pela espessura: ${Number(ke.toPrecision(3))} W/m³ (π²·σ·d²/6)`,
+  },
+  thermal: {
+    name: 'Térmica',
+    add: 'Térmica (regime)',
+    steady: 'Regime',
+    addNote: 'temperatura a partir das perdas de uma física AC ou CC',
+    noSource: 'Escolha nas propriedades da térmica a física magnética de onde vêm as perdas (AC ou magnetostática).',
+    transientSource: 'A térmica em regime usa as perdas de uma física AC (harmônica) ou magnetostática, não do transitório.',
+    source: 'Perdas de',
+    tAmb: 'Temperatura ambiente (°C)',
+    h: 'Convecção nas superfícies (W/m²·K)',
+    hHelp: 'Vale para toda superfície do sólido exposta ao ar ou à borda. Natural: 5–10; ventilado: 25–100.',
+    hFaces: 'Faces frente/trás (W/m²·K)',
+    hFacesHelp: 'Plano: resfriamento pelas faces da frente e de trás, que o 2D não vê (vazio = sem).',
+    coupleR: 'Resistividade com a temperatura (itera com o AC)',
+    bcs: 'Condições em curvas',
+    bcAdd: 'Nova condição',
+    bcName: (n) => `Condição ${n}`,
+    bcType: 'Tipo',
+    types: { convection: 'Convecção', temperature: 'Temperatura fixa', insulated: 'Isolada' },
+    bcH: 'h (W/m²·K)',
+    bcT: 'T (°C)',
+    bcRef: 'Troca calor com',
+    ambient: 'o ambiente',
+    useSel: (n) => `Usar as ${n} curva(s) selecionada(s)`,
+    curves: (n) => `${n} curva(s)`,
+    remove: 'Remover',
+    channels: 'Canais de ar (ventilador)',
+    chAdd: 'Novo canal de ar',
+    chName: (n) => `Ventilador ${n}`,
+    flow: 'Vazão (m³/h)',
+    tIn: 'Temperatura de entrada (°C)',
+    chHelp: 'O ar renovado leva o calor das curvas ligadas ao canal: T_saída = T_entrada + P/(ρ·c_p·Q), e a convecção usa a média entre entrada e saída.',
+    help: 'Regime permanente: −∇·(k∇T) = perdas. O ar fica fora do domínio: as superfícies expostas trocam calor por convecção.',
+    results: 'Temperatura',
+    tmax: 'T máxima',
+    tmin: 'T mínima',
+    pIn: 'Perdas totais',
+    pOut: 'Calor dissipado',
+    chResult: (name, tAir, tOut, p) => `${name}: ar médio ${tAir} °C, saída ${tOut} °C, ${p}`,
+    kth: 'Condutividade térmica k (W/m·K)',
+    alphaR: 'Coef. de temperatura da resistividade (1/K)',
+    thermalHelp: 'Térmica: k conduz o calor (vazio = valor típico do grupo); α corrige a resistividade: ρ(T) = ρ20·(1 + α·(T − 20)).',
   },
   matNames: { air: 'Ar', cu: 'Cobre', al: 'Alumínio', m400: 'Aço M400-50A', s1010: 'Aço 1010' },
   docs: { link: 'Documentação', hint: 'Guia, tutorial, referência da API e teoria (abre numa nova aba)' },
@@ -1630,6 +1716,49 @@ const EN: Translations = {
     thickness: 'Sheet thickness (mm)',
     help: 'Sheets stacked along the depth: the field uses B = f·B_steel + (1−f)·μ0·H; there are no bulk eddy currents; iron losses are in the steel volume (f·V) with B_steel = B/f. Without k_e, it comes from the thickness and σ: k_e = π²·σ·d²/6.',
     keAuto: (ke) => `k_e from the thickness: ${Number(ke.toPrecision(3))} W/m³ (π²·σ·d²/6)`,
+  },
+  thermal: {
+    name: 'Thermal',
+    add: 'Thermal (steady)',
+    steady: 'Steady',
+    addNote: 'temperature from the losses of an AC or DC physics',
+    noSource: 'In the thermal properties, choose the magnetic physics the losses come from (AC or magnetostatic).',
+    transientSource: 'The steady thermal uses the losses of an AC (harmonic) or magnetostatic physics, not a transient one.',
+    source: 'Losses from',
+    tAmb: 'Ambient temperature (°C)',
+    h: 'Surface convection (W/m²·K)',
+    hHelp: 'Applies to every solid surface exposed to air or to the border. Natural: 5–10; forced: 25–100.',
+    hFaces: 'Front/back faces (W/m²·K)',
+    hFacesHelp: 'Planar: cooling through the front and back faces, which 2D does not see (empty = none).',
+    coupleR: 'Resistivity with temperature (iterates with AC)',
+    bcs: 'Conditions on curves',
+    bcAdd: 'New condition',
+    bcName: (n) => `Condition ${n}`,
+    bcType: 'Type',
+    types: { convection: 'Convection', temperature: 'Fixed temperature', insulated: 'Insulated' },
+    bcH: 'h (W/m²·K)',
+    bcT: 'T (°C)',
+    bcRef: 'Exchanges heat with',
+    ambient: 'the ambient',
+    useSel: (n) => `Use the ${n} selected curve(s)`,
+    curves: (n) => `${n} curve(s)`,
+    remove: 'Remove',
+    channels: 'Air channels (fan)',
+    chAdd: 'New air channel',
+    chName: (n) => `Fan ${n}`,
+    flow: 'Flow (m³/h)',
+    tIn: 'Inlet temperature (°C)',
+    chHelp: 'The renewed air carries away the heat of the curves linked to the channel: T_out = T_in + P/(ρ·c_p·Q), and convection uses the mean of inlet and outlet.',
+    help: 'Steady state: −∇·(k∇T) = losses. Air stays out of the domain: exposed surfaces exchange heat by convection.',
+    results: 'Temperature',
+    tmax: 'Max T',
+    tmin: 'Min T',
+    pIn: 'Total losses',
+    pOut: 'Heat dissipated',
+    chResult: (name, tAir, tOut, p) => `${name}: mean air ${tAir} °C, outlet ${tOut} °C, ${p}`,
+    kth: 'Thermal conductivity k (W/m·K)',
+    alphaR: 'Resistivity temperature coefficient (1/K)',
+    thermalHelp: 'Thermal: k conducts heat (empty = typical value of the group); α corrects the resistivity: ρ(T) = ρ20·(1 + α·(T − 20)).',
   },
   matNames: { air: 'Air', cu: 'Copper', al: 'Aluminum', m400: 'M400-50A steel', s1010: '1010 steel' },
   docs: { link: 'Docs', hint: 'Guide, tutorial, API reference and theory (opens in a new tab)' },
