@@ -29,6 +29,11 @@ with a $1/r$ weight evaluated at the centroid radius of each element.
 Newton-Raphson with a line search. Magnets through their remanence, $\mathbf{H} = \nu(\mathbf{B} - \mathbf{B}_r)$,
 with the direction set on the region.
 
+**Laminated sheets.** With stacking factor $f$, sheet and insulation are in parallel along the depth:
+$B(H) = f\,B_{steel}(H) + (1-f)\,\mu_0 H$ (linear: $\mu_{ef} = f\mu_r + 1 - f$), with no bulk conductivity. Iron losses use
+the steel volume and $B_{steel} = B/f$, i.e. coefficients $k_h f^{1-\alpha}$ and $k_e/f$ over the region volume; the
+classical eddy term in a sheet of thickness $d$ is $k_e = \pi^2\sigma d^2/6$.
+
 **Sources.** $J = N\,I/S$, with $N$ turns, current $I$ (of the region or circuit) and region area $S$.
 
 ## Boundary conditions
@@ -78,7 +83,7 @@ $A(t) = \mathrm{Re}(\hat{A}\,e^{j\omega t})$.
 
 - Energy: $W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV$.
 - Flux linkage: $\lambda = \sum (N/S)\int A\, d\Omega \times$ depth (planar) or
-  $\sum (N/S)\int 2\pi\psi\, d\Omega$ (axisymmetric); $L = \lambda/I$; $R_{DC} = \sum N^2 \ell/(\sigma S)$.
+  $\sum (N/S)\int 2\pi\psi\, d\Omega$ (axisymmetric); $L = \lambda/I$; $R_{DC} = \sum N^2 \ell/(\sigma S)$, or $\sum |N|\,\ell/(\sigma A_{turn})$ with the wire set.
 - Flux through a curve: $\Phi = -\Delta A \times$ depth (planar) or $2\pi\,\Delta\psi$ (axisymmetric).
 - Interpolation: gradient recovered at the nodes (per region) and a quadratic interpolant per triangle.
 

@@ -18,6 +18,8 @@
       <script src="../_static/documentation_options.js?v=8d563738"></script>
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -273,6 +275,10 @@ Steinmetz coefficients for iron losses (k_h, α, k_e; used in AC analysis).</p><
 <li><p><strong>FEMM 4.2 library</strong>: 245 ready materials in the search. <strong>Import from FEMM…</strong> also reads the <code class="docutils literal notranslate"><span class="pre">matlib.dat</span></code> of your
 installation.</p></li>
 <li><p>For magnets, the <strong>magnetization direction</strong> (angle) is set on the region.</p></li>
+<li><p><strong>Laminated sheets</strong> (Construction › Laminated sheets): stacking factor <span class="math notranslate nohighlight">\(f\)</span> and sheet thickness <span class="math notranslate nohighlight">\(d\)</span>. The field uses
+the equivalent material <span class="math notranslate nohighlight">\(B = f\,B_{steel}(H) + (1-f)\,\mu_0 H\)</span> (induced voltage and force come out right with the full
+depth); there are no bulk eddy currents; iron losses are in the steel volume (<span class="math notranslate nohighlight">\(f\,V\)</span>) with <span class="math notranslate nohighlight">\(B_{steel} = B/f\)</span>. Without
+<span class="math notranslate nohighlight">\(k_e\)</span>, it is computed from the thickness: <span class="math notranslate nohighlight">\(k_e = \pi^2 \sigma d^2/6\)</span> (enter the sheet’s <span class="math notranslate nohighlight">\(\sigma\)</span>).</p></li>
 </ul>
 </section>
 <section id="circuits-and-currents">
@@ -289,6 +295,10 @@ kept, but splitting the current among parallel regions is not implemented yet.</
 <li><p>A region can also have its own current, without a circuit.</p></li>
 </ul>
 <p>The current density is J = N·I / region area.</p>
+<p><strong>Coil wire</strong> (in the region properties): round by AWG or by diameter, or rectangular (width × height), with parallel
+strands. The DC R becomes <span class="math notranslate nohighlight">\(R = |N|\,\ell/(\sigma A_{turn})\)</span>, with <span class="math notranslate nohighlight">\(\ell = 2\pi r\)</span> in axisymmetric problems or the depth in
+planar ones (no end turns), and the circuit table shows the <strong>fill factor</strong> <span class="math notranslate nohighlight">\(|N|\,A_{turn}/A_{region}\)</span> (above 100 %, the
+turns do not fit). Without a wire, the whole region counts as copper.</p>
 </section>
 <section id="boundaries">
 <h2>Boundaries<a class="headerlink" href="#boundaries" title="Link to this heading"></a></h2>

@@ -19,6 +19,8 @@
       <script src="../_static/doctools.js?v=9bcbadda"></script>
       <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script src="../_static/translations.js?v=71a39b36"></script>
+      <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Índice" href="../genindex.html" />
     <link rel="search" title="Buscar" href="../search.html" />
@@ -274,6 +276,10 @@ coeficientes de Steinmetz para perdas no ferro (k_h, α, k_e; usados na análise
 <li><p><strong>Biblioteca do FEMM 4.2</strong>: 245 materiais prontos na busca. <strong>Importar do FEMM…</strong> também lê o <code class="docutils literal notranslate"><span class="pre">matlib.dat</span></code> da
 sua instalação.</p></li>
 <li><p>Para ímãs, a <strong>direção de magnetização</strong> (ângulo) é definida na região.</p></li>
+<li><p><strong>Chapas laminadas</strong> (Construção › Chapas laminadas): fator de empilhamento <span class="math notranslate nohighlight">\(f\)</span> e espessura da chapa <span class="math notranslate nohighlight">\(d\)</span>. O campo
+usa o material equivalente <span class="math notranslate nohighlight">\(B = f\,B_{aço}(H) + (1-f)\,\mu_0 H\)</span> (tensão induzida e força saem certas com a
+profundidade total); não há correntes parasitas de bloco; as perdas no ferro ficam no volume de aço (<span class="math notranslate nohighlight">\(f\,V\)</span>) com
+<span class="math notranslate nohighlight">\(B_{aço} = B/f\)</span>. Sem <span class="math notranslate nohighlight">\(k_e\)</span>, ele é calculado da espessura: <span class="math notranslate nohighlight">\(k_e = \pi^2 \sigma d^2/6\)</span> (informe o <span class="math notranslate nohighlight">\(\sigma\)</span> da chapa).</p></li>
 </ul>
 </section>
 <section id="circuitos-e-correntes">
@@ -290,6 +296,10 @@ FEMM é guardado, mas a divisão da corrente entre regiões em paralelo ainda n�
 <li><p>Uma região também pode ter corrente própria, sem circuito.</p></li>
 </ul>
 <p>A densidade de corrente é J = N·I / área da região.</p>
+<p><strong>Fio da bobina</strong> (nas propriedades da região): redondo por AWG ou pelo diâmetro, ou retangular (largura × altura),
+com fios em paralelo. O R CC passa a ser <span class="math notranslate nohighlight">\(R = |N|\,\ell/(\sigma A_{espira})\)</span>, com <span class="math notranslate nohighlight">\(\ell = 2\pi r\)</span> no axissimétrico ou a
+profundidade no plano (sem cabeceiras), e a tabela de circuitos mostra o <strong>fator de enchimento</strong>
+<span class="math notranslate nohighlight">\(|N|\,A_{espira}/A_{região}\)</span> (acima de 100 %, as espiras não cabem). Sem fio, a região toda conta como cobre.</p>
 </section>
 <section id="contornos">
 <h2>Contornos<a class="headerlink" href="#contornos" title="Link para este cabeçalho"></a></h2>

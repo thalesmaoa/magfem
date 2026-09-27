@@ -268,6 +268,10 @@ B_z = \frac{1}{r}\frac{\partial \psi}{\partial r},
 <p><strong>Materiais.</strong> Linear, <span class="math notranslate nohighlight">\(\nu = 1/(\mu_0\mu_r)\)</span>, ou não linear pela curva B-H: <span class="math notranslate nohighlight">\(H(B)\)</span> por uma cúbica monótona e
 Newton-Raphson com busca linear. Ímãs pela remanência, <span class="math notranslate nohighlight">\(\mathbf{H} = \nu(\mathbf{B} - \mathbf{B}_r)\)</span>, com a direção
 definida na região.</p>
+<p><strong>Chapas laminadas.</strong> Com fator de empilhamento <span class="math notranslate nohighlight">\(f\)</span>, chapa e isolante ficam em paralelo na profundidade:
+<span class="math notranslate nohighlight">\(B(H) = f\,B_{aço}(H) + (1-f)\,\mu_0 H\)</span> (linear: <span class="math notranslate nohighlight">\(\mu_{ef} = f\mu_r + 1 - f\)</span>), sem condutividade de bloco. As perdas
+no ferro usam o volume de aço e <span class="math notranslate nohighlight">\(B_{aço} = B/f\)</span>, ou seja, coeficientes <span class="math notranslate nohighlight">\(k_h f^{1-\alpha}\)</span> e <span class="math notranslate nohighlight">\(k_e/f\)</span> sobre o volume da
+região; a parcela clássica das parasitas na chapa de espessura <span class="math notranslate nohighlight">\(d\)</span> é <span class="math notranslate nohighlight">\(k_e = \pi^2\sigma d^2/6\)</span>.</p>
 <p><strong>Fontes.</strong> <span class="math notranslate nohighlight">\(J = N\,I/S\)</span>, com <span class="math notranslate nohighlight">\(N\)</span> espiras, corrente <span class="math notranslate nohighlight">\(I\)</span> (da região ou do circuito) e área <span class="math notranslate nohighlight">\(S\)</span> da região.</p>
 </section>
 <section id="condicoes-de-contorno">
@@ -320,7 +324,7 @@ elemento, iterada com relaxação (como no FEMM). O campo é mostrado ao longo d
 <ul class="simple">
 <li><p>Energia: <span class="math notranslate nohighlight">\(W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV\)</span>.</p></li>
 <li><p>Fluxo concatenado: <span class="math notranslate nohighlight">\(\lambda = \sum (N/S)\int A\, d\Omega \times\)</span> profundidade (plano) ou
-<span class="math notranslate nohighlight">\(\sum (N/S)\int 2\pi\psi\, d\Omega\)</span> (axissimétrico); <span class="math notranslate nohighlight">\(L = \lambda/I\)</span>; <span class="math notranslate nohighlight">\(R_{CC} = \sum N^2 \ell/(\sigma S)\)</span>.</p></li>
+<span class="math notranslate nohighlight">\(\sum (N/S)\int 2\pi\psi\, d\Omega\)</span> (axissimétrico); <span class="math notranslate nohighlight">\(L = \lambda/I\)</span>; <span class="math notranslate nohighlight">\(R_{CC} = \sum N^2 \ell/(\sigma S)\)</span>, ou <span class="math notranslate nohighlight">\(\sum |N|\,\ell/(\sigma A_{espira})\)</span> com o fio definido.</p></li>
 <li><p>Fluxo por uma curva: <span class="math notranslate nohighlight">\(\Phi = -\Delta A \times\)</span> profundidade (plano) ou <span class="math notranslate nohighlight">\(2\pi\,\Delta\psi\)</span> (axissimétrico).</p></li>
 <li><p>Interpolação: gradiente recuperado nos nós (por região) e interpolante quadrático por triângulo.</p></li>
 </ul>

@@ -267,6 +267,10 @@ B_z = \frac{1}{r}\frac{\partial \psi}{\partial r},
 <p><strong>Materials.</strong> Linear, <span class="math notranslate nohighlight">\(\nu = 1/(\mu_0\mu_r)\)</span>, or nonlinear through the B-H curve: <span class="math notranslate nohighlight">\(H(B)\)</span> as a monotone cubic and
 Newton-Raphson with a line search. Magnets through their remanence, <span class="math notranslate nohighlight">\(\mathbf{H} = \nu(\mathbf{B} - \mathbf{B}_r)\)</span>,
 with the direction set on the region.</p>
+<p><strong>Laminated sheets.</strong> With stacking factor <span class="math notranslate nohighlight">\(f\)</span>, sheet and insulation are in parallel along the depth:
+<span class="math notranslate nohighlight">\(B(H) = f\,B_{steel}(H) + (1-f)\,\mu_0 H\)</span> (linear: <span class="math notranslate nohighlight">\(\mu_{ef} = f\mu_r + 1 - f\)</span>), with no bulk conductivity. Iron losses use
+the steel volume and <span class="math notranslate nohighlight">\(B_{steel} = B/f\)</span>, i.e. coefficients <span class="math notranslate nohighlight">\(k_h f^{1-\alpha}\)</span> and <span class="math notranslate nohighlight">\(k_e/f\)</span> over the region volume; the
+classical eddy term in a sheet of thickness <span class="math notranslate nohighlight">\(d\)</span> is <span class="math notranslate nohighlight">\(k_e = \pi^2\sigma d^2/6\)</span>.</p>
 <p><strong>Sources.</strong> <span class="math notranslate nohighlight">\(J = N\,I/S\)</span>, with <span class="math notranslate nohighlight">\(N\)</span> turns, current <span class="math notranslate nohighlight">\(I\)</span> (of the region or circuit) and region area <span class="math notranslate nohighlight">\(S\)</span>.</p>
 </section>
 <section id="boundary-conditions">
@@ -319,7 +323,7 @@ each element, iterated with relaxation (as in FEMM). The field is shown over one
 <ul class="simple">
 <li><p>Energy: <span class="math notranslate nohighlight">\(W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV\)</span>.</p></li>
 <li><p>Flux linkage: <span class="math notranslate nohighlight">\(\lambda = \sum (N/S)\int A\, d\Omega \times\)</span> depth (planar) or
-<span class="math notranslate nohighlight">\(\sum (N/S)\int 2\pi\psi\, d\Omega\)</span> (axisymmetric); <span class="math notranslate nohighlight">\(L = \lambda/I\)</span>; <span class="math notranslate nohighlight">\(R_{DC} = \sum N^2 \ell/(\sigma S)\)</span>.</p></li>
+<span class="math notranslate nohighlight">\(\sum (N/S)\int 2\pi\psi\, d\Omega\)</span> (axisymmetric); <span class="math notranslate nohighlight">\(L = \lambda/I\)</span>; <span class="math notranslate nohighlight">\(R_{DC} = \sum N^2 \ell/(\sigma S)\)</span>, or <span class="math notranslate nohighlight">\(\sum |N|\,\ell/(\sigma A_{turn})\)</span> with the wire set.</p></li>
 <li><p>Flux through a curve: <span class="math notranslate nohighlight">\(\Phi = -\Delta A \times\)</span> depth (planar) or <span class="math notranslate nohighlight">\(2\pi\,\Delta\psi\)</span> (axisymmetric).</p></li>
 <li><p>Interpolation: gradient recovered at the nodes (per region) and a quadratic interpolant per triangle.</p></li>
 </ul>

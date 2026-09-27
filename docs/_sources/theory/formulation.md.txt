@@ -29,6 +29,11 @@ com peso $1/r$ avaliado no raio do centroide de cada elemento.
 Newton-Raphson com busca linear. Ímãs pela remanência, $\mathbf{H} = \nu(\mathbf{B} - \mathbf{B}_r)$, com a direção
 definida na região.
 
+**Chapas laminadas.** Com fator de empilhamento $f$, chapa e isolante ficam em paralelo na profundidade:
+$B(H) = f\,B_{aço}(H) + (1-f)\,\mu_0 H$ (linear: $\mu_{ef} = f\mu_r + 1 - f$), sem condutividade de bloco. As perdas
+no ferro usam o volume de aço e $B_{aço} = B/f$, ou seja, coeficientes $k_h f^{1-\alpha}$ e $k_e/f$ sobre o volume da
+região; a parcela clássica das parasitas na chapa de espessura $d$ é $k_e = \pi^2\sigma d^2/6$.
+
 **Fontes.** $J = N\,I/S$, com $N$ espiras, corrente $I$ (da região ou do circuito) e área $S$ da região.
 
 ## Condições de contorno
@@ -78,7 +83,7 @@ $A(t) = \mathrm{Re}(\hat{A}\,e^{j\omega t})$.
 
 - Energia: $W = \tfrac{1}{2}\int \nu\,|\mathbf{B} - \mathbf{B}_r|^2\, dV$.
 - Fluxo concatenado: $\lambda = \sum (N/S)\int A\, d\Omega \times$ profundidade (plano) ou
-  $\sum (N/S)\int 2\pi\psi\, d\Omega$ (axissimétrico); $L = \lambda/I$; $R_{CC} = \sum N^2 \ell/(\sigma S)$.
+  $\sum (N/S)\int 2\pi\psi\, d\Omega$ (axissimétrico); $L = \lambda/I$; $R_{CC} = \sum N^2 \ell/(\sigma S)$, ou $\sum |N|\,\ell/(\sigma A_{espira})$ com o fio definido.
 - Fluxo por uma curva: $\Phi = -\Delta A \times$ profundidade (plano) ou $2\pi\,\Delta\psi$ (axissimétrico).
 - Interpolação: gradiente recuperado nos nós (por região) e interpolante quadrático por triângulo.
 

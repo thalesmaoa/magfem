@@ -32,6 +32,10 @@ direita (**Problema e bibliotecas › Materiais**):
 - **Biblioteca do FEMM 4.2**: 245 materiais prontos na busca. **Importar do FEMM…** também lê o `matlib.dat` da
   sua instalação.
 - Para ímãs, a **direção de magnetização** (ângulo) é definida na região.
+- **Chapas laminadas** (Construção › Chapas laminadas): fator de empilhamento $f$ e espessura da chapa $d$. O campo
+  usa o material equivalente $B = f\,B_{aço}(H) + (1-f)\,\mu_0 H$ (tensão induzida e força saem certas com a
+  profundidade total); não há correntes parasitas de bloco; as perdas no ferro ficam no volume de aço ($f\,V$) com
+  $B_{aço} = B/f$. Sem $k_e$, ele é calculado da espessura: $k_e = \pi^2 \sigma d^2/6$ (informe o $\sigma$ da chapa).
 
 ## Circuitos e correntes
 
@@ -48,6 +52,11 @@ circuito.
 - Uma região também pode ter corrente própria, sem circuito.
 
 A densidade de corrente é J = N·I / área da região.
+
+**Fio da bobina** (nas propriedades da região): redondo por AWG ou pelo diâmetro, ou retangular (largura × altura),
+com fios em paralelo. O R CC passa a ser $R = |N|\,\ell/(\sigma A_{espira})$, com $\ell = 2\pi r$ no axissimétrico ou a
+profundidade no plano (sem cabeceiras), e a tabela de circuitos mostra o **fator de enchimento**
+$|N|\,A_{espira}/A_{região}$ (acima de 100 %, as espiras não cabem). Sem fio, a região toda conta como cobre.
 
 ## Contornos
 

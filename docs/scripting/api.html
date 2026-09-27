@@ -460,7 +460,7 @@ strings (<code class="docutils literal notranslate"><span class="pre">&quot;l3&q
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.material(&quot;Cobre&quot;,</span> <span class="pre">mur=1,</span> <span class="pre">sigma=58,</span> <span class="pre">br=0,</span> <span class="pre">color=&quot;#e0914f&quot;,</span> <span class="pre">bh=[(H,</span> <span class="pre">B),</span> <span class="pre">...],</span> <span class="pre">kh=,</span> <span class="pre">alpha=,</span> <span class="pre">ke=,</span> <span class="pre">group=)</span></code></p></td>
-<td><p>cria ou edita um material (σ em MS/m, Br em T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> apaga a curva)</p></td>
+<td><p>cria ou edita um material (σ em MS/m, Br em T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> apaga a curva; chapas: <code class="docutils literal notranslate"><span class="pre">lam_fill=0.95,</span> <span class="pre">lam_thickness=0.5</span></code> em mm, <code class="docutils literal notranslate"><span class="pre">None</span></code> volta a maciço)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.del_material(nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.duplicate_material(nome)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.restore_material(nome)</span></code></p></td>
 <td><p>apaga, duplica e restaura o padrão</p></td>
@@ -472,7 +472,7 @@ strings (<code class="docutils literal notranslate"><span class="pre">&quot;l3&q
 <td><p>apaga</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.region((x,</span> <span class="pre">y),</span> <span class="pre">name=,</span> <span class="pre">material=,</span> <span class="pre">circuit=,</span> <span class="pre">current=,</span> <span class="pre">turns=,</span> <span class="pre">angle=,</span> <span class="pre">label=(dx,</span> <span class="pre">dy))</span></code></p></td>
-<td><p>atribui à região que contém o ponto; devolve a área</p></td>
+<td><p>atribui à região que contém o ponto; devolve a área. Fio: <code class="docutils literal notranslate"><span class="pre">wire_awg=18</span></code>, <code class="docutils literal notranslate"><span class="pre">wire_d=1.2</span></code> ou <code class="docutils literal notranslate"><span class="pre">wire_rect=(2,</span> <span class="pre">5)</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">wire_parallel=2</span></code>; <code class="docutils literal notranslate"><span class="pre">wire=None</span></code> tira</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.regions()</span></code></p></td>
 <td><p>lista <code class="docutils literal notranslate"><span class="pre">[((x,</span> <span class="pre">y),</span> <span class="pre">área,</span> <span class="pre">material)]</span></code></p></td>

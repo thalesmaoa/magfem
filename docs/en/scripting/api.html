@@ -459,7 +459,7 @@
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.material(&quot;Copper&quot;,</span> <span class="pre">mur=1,</span> <span class="pre">sigma=58,</span> <span class="pre">br=0,</span> <span class="pre">color=&quot;#e0914f&quot;,</span> <span class="pre">bh=[(H,</span> <span class="pre">B),</span> <span class="pre">...],</span> <span class="pre">kh=,</span> <span class="pre">alpha=,</span> <span class="pre">ke=,</span> <span class="pre">group=)</span></code></p></td>
-<td><p>creates or edits a material (σ in MS/m, Br in T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> removes the curve)</p></td>
+<td><p>creates or edits a material (σ in MS/m, Br in T; <code class="docutils literal notranslate"><span class="pre">bh=None</span></code> removes the curve; sheets: <code class="docutils literal notranslate"><span class="pre">lam_fill=0.95,</span> <span class="pre">lam_thickness=0.5</span></code> in mm, <code class="docutils literal notranslate"><span class="pre">None</span></code> back to solid)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.del_material(name)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.duplicate_material(name)</span></code>, <code class="docutils literal notranslate"><span class="pre">m.restore_material(name)</span></code></p></td>
 <td><p>deletes, duplicates and restores the default</p></td>
@@ -471,7 +471,7 @@
 <td><p>deletes</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">m.region((x,</span> <span class="pre">y),</span> <span class="pre">name=,</span> <span class="pre">material=,</span> <span class="pre">circuit=,</span> <span class="pre">current=,</span> <span class="pre">turns=,</span> <span class="pre">angle=,</span> <span class="pre">label=(dx,</span> <span class="pre">dy))</span></code></p></td>
-<td><p>assigns to the region containing the point; returns the area</p></td>
+<td><p>assigns to the region containing the point; returns the area. Wire: <code class="docutils literal notranslate"><span class="pre">wire_awg=18</span></code>, <code class="docutils literal notranslate"><span class="pre">wire_d=1.2</span></code> or <code class="docutils literal notranslate"><span class="pre">wire_rect=(2,</span> <span class="pre">5)</span></code> (mm), <code class="docutils literal notranslate"><span class="pre">wire_parallel=2</span></code>; <code class="docutils literal notranslate"><span class="pre">wire=None</span></code> removes it</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m.regions()</span></code></p></td>
 <td><p>list <code class="docutils literal notranslate"><span class="pre">[((x,</span> <span class="pre">y),</span> <span class="pre">area,</span> <span class="pre">material)]</span></code></p></td>

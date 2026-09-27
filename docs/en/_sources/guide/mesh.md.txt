@@ -32,6 +32,10 @@ Under **Mesh › Materials**, each region has a searchable material list. The li
 - **FEMM 4.2 library**: 245 ready materials in the search. **Import from FEMM…** also reads the `matlib.dat` of your
   installation.
 - For magnets, the **magnetization direction** (angle) is set on the region.
+- **Laminated sheets** (Construction › Laminated sheets): stacking factor $f$ and sheet thickness $d$. The field uses
+  the equivalent material $B = f\,B_{steel}(H) + (1-f)\,\mu_0 H$ (induced voltage and force come out right with the full
+  depth); there are no bulk eddy currents; iron losses are in the steel volume ($f\,V$) with $B_{steel} = B/f$. Without
+  $k_e$, it is computed from the thickness: $k_e = \pi^2 \sigma d^2/6$ (enter the sheet's $\sigma$).
 
 ## Circuits and currents
 
@@ -48,6 +52,11 @@ physics uses the circuit's default current.
 - A region can also have its own current, without a circuit.
 
 The current density is J = N·I / region area.
+
+**Coil wire** (in the region properties): round by AWG or by diameter, or rectangular (width × height), with parallel
+strands. The DC R becomes $R = |N|\,\ell/(\sigma A_{turn})$, with $\ell = 2\pi r$ in axisymmetric problems or the depth in
+planar ones (no end turns), and the circuit table shows the **fill factor** $|N|\,A_{turn}/A_{region}$ (above 100 %, the
+turns do not fit). Without a wire, the whole region counts as copper.
 
 ## Boundaries
 
