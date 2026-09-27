@@ -82,11 +82,11 @@ The [console](./console.md) commands, grouped by object. Arguments in brackets a
 
 | Command | Description |
 |---|---|
-| `m.material("Copper", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | creates or edits a material (σ in MS/m, Br in T; `bh=None` removes the curve) |
+| `m.material("Copper", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | creates or edits a material (σ in MS/m, Br in T; `bh=None` removes the curve; sheets: `lam_fill=0.95, lam_thickness=0.5` in mm, `None` back to solid) |
 | `m.del_material(name)`, `m.duplicate_material(name)`, `m.restore_material(name)` | deletes, duplicates and restores the default |
 | `m.circuit("Coil", current="10")` | creates or edits a circuit |
 | `m.del_circuit("Coil")` | deletes |
-| `m.region((x, y), name=, material=, circuit=, current=, turns=, angle=, label=(dx, dy))` | assigns to the region containing the point; returns the area |
+| `m.region((x, y), name=, material=, circuit=, current=, turns=, angle=, label=(dx, dy))` | assigns to the region containing the point; returns the area. Wire: `wire_awg=18`, `wire_d=1.2` or `wire_rect=(2, 5)` (mm), `wire_parallel=2`; `wire=None` removes it |
 | `m.regions()` | list `[((x, y), area, material)]` |
 | `m.boundary_def("Name", type=, value=, a1=, a2=, c0=, c1=, color=)` | creates or edits a boundary |
 | `m.boundary(["l1", "l2"], "Name" \| "dirichlet" \| "neumann" \| "periodic" \| "antiperiodic" \| None)` | applies a boundary to the curves |

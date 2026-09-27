@@ -351,6 +351,23 @@ export interface Material {
   kh?: number;
   alpha?: number;
   ke?: number;
+  /**
+   * Chapas laminadas (empilhadas na profundidade): fator de empilhamento (0–1) e espessura da chapa (mm).
+   * Ausente = material maciço. Laminado: curva equivalente B = f·B_aço + (1−f)·μ0·H, sem correntes de bloco, e
+   * perdas no volume de aço (f·V) com B_aço = B/f; sem ke, ke = π²·σ·d²/6.
+   */
+  lamFill?: number;
+  lamThickness?: number;
+}
+
+/** Fio de uma bobina (dimensões em mm): AWG, redondo pelo diâmetro ou retangular, com fios em paralelo. */
+export interface Wire {
+  kind: 'awg' | 'round' | 'rect';
+  awg?: number;
+  d?: number;
+  w?: number;
+  h?: number;
+  parallel?: number;
 }
 
 /** Material (e fonte) atribuído a uma região; a região é reencontrada pelas curvas do contorno. */
@@ -374,6 +391,8 @@ export interface RegionAssign {
   current?: string;
   /** Espiras (bobina). */
   turns?: number;
+  /** Fio da bobina (R CC pela seção do fio e fator de enchimento); ausente = região toda de cobre (enchimento 1). */
+  wire?: Wire;
   /** Direção de magnetização (graus, expressão) — ímãs. */
   magnetAngle?: string;
 }

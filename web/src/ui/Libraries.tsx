@@ -187,6 +187,48 @@ export function MaterialEditor({ ed, id, onRemoved }: { ed: SketchEditor; id: Id
       {num(t.mesh.mur, 'mur')}
       {num(t.mesh.sigma, 'sigma')}
       {num(t.mesh.br, 'br', true)}
+      <label className="field">
+        <span>{t.lam.kind}</span>
+        <select
+          aria-label={t.lam.kind}
+          value={m.lamFill !== undefined ? 'lam' : 'solid'}
+          onChange={(e) => (e.target.value === 'lam' ? set({ lamFill: 0.95, lamThickness: 0.5 }, 'lam_fill=0.95, lam_thickness=0.5') : set({ lamFill: undefined, lamThickness: undefined }, 'lam_fill=None, lam_thickness=None'))}
+        >
+          <option value="solid">{t.lam.solid}</option>
+          <option value="lam">{t.lam.laminated}</option>
+        </select>
+      </label>
+      {m.lamFill !== undefined && (
+        <>
+          <label className="field">
+            <span>{t.lam.fill}</span>
+            <LazyInput
+              value={String(m.lamFill)}
+              ariaLabel={t.lam.fill}
+              onCommit={(v) => {
+                const n = Number(v.replace(',', '.'));
+                if (Number.isFinite(n) && n > 0 && n <= 1) set({ lamFill: n }, `lam_fill=${n}`);
+                else ed.flash(t.msg.positive);
+              }}
+            />
+          </label>
+          <label className="field">
+            <span>{t.lam.thickness}</span>
+            <LazyInput
+              value={m.lamThickness !== undefined ? String(m.lamThickness) : ''}
+              placeholder="—"
+              ariaLabel={t.lam.thickness}
+              onCommit={(v) => {
+                if (!v.trim()) return set({ lamThickness: undefined }, 'lam_thickness=None');
+                const n = Number(v.replace(',', '.'));
+                if (Number.isFinite(n) && n > 0) set({ lamThickness: n }, `lam_thickness=${n}`);
+              }}
+            />
+          </label>
+          {m.ke === undefined && m.lamThickness && m.sigma > 0 && <p className="muted">{t.lam.keAuto((Math.PI ** 2 * m.sigma * 1e6 * (m.lamThickness * 1e-3) ** 2) / 6)}</p>}
+          <p className="help-line">{t.lam.help}</p>
+        </>
+      )}
       <p className="help-line">{t.mesh.steinmetzHelp}</p>
       {num('k_h (W/m³)', 'kh', true)}
       {num('α', 'alpha', true)}

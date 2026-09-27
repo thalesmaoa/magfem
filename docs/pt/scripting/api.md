@@ -82,11 +82,11 @@ strings (`"l3"`, `"p5"`, `"n2"`); onde se espera um id, também vale o **nome** 
 
 | Comando | Descrição |
 |---|---|
-| `m.material("Cobre", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | cria ou edita um material (σ em MS/m, Br em T; `bh=None` apaga a curva) |
+| `m.material("Cobre", mur=1, sigma=58, br=0, color="#e0914f", bh=[(H, B), ...], kh=, alpha=, ke=, group=)` | cria ou edita um material (σ em MS/m, Br em T; `bh=None` apaga a curva; chapas: `lam_fill=0.95, lam_thickness=0.5` em mm, `None` volta a maciço) |
 | `m.del_material(nome)`, `m.duplicate_material(nome)`, `m.restore_material(nome)` | apaga, duplica e restaura o padrão |
 | `m.circuit("Bobina", current="10")` | cria ou edita um circuito |
 | `m.del_circuit("Bobina")` | apaga |
-| `m.region((x, y), name=, material=, circuit=, current=, turns=, angle=, label=(dx, dy))` | atribui à região que contém o ponto; devolve a área |
+| `m.region((x, y), name=, material=, circuit=, current=, turns=, angle=, label=(dx, dy))` | atribui à região que contém o ponto; devolve a área. Fio: `wire_awg=18`, `wire_d=1.2` ou `wire_rect=(2, 5)` (mm), `wire_parallel=2`; `wire=None` tira |
 | `m.regions()` | lista `[((x, y), área, material)]` |
 | `m.boundary_def("Nome", type=, value=, a1=, a2=, c0=, c1=, color=)` | cria ou edita um contorno |
 | `m.boundary(["l1", "l2"], "Nome" \| "dirichlet" \| "neumann" \| "periodic" \| "antiperiodic" \| None)` | aplica um contorno às curvas |

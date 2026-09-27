@@ -21,6 +21,9 @@ analítica. Eles rodam a cada mudança no código.
 | AC: J negativo | $\hat{A}(-J) = -\hat{A}(J)$ | exato |
 | Força num condutor em campo uniforme | $F = I \times B$ | 0,3 % (superfície) / 1,4 % (linha) |
 | Perdas no ferro em campo uniforme | $k_h f B^2 V$ | exato |
+| Chapas laminadas: perdas com fator $f$ e $k_e = \pi^2\sigma d^2/6$ | volume de aço $f V$ com $B/f$ | exato |
+| Chapas laminadas: material equivalente | $\nu = 1/(\mu_0(f\mu_r + 1 - f))$; $B = fB_{aço} + (1-f)\mu_0H$ | exato |
+| R CC com fio AWG (axissimétrico) | $N\,2\pi r/(\sigma A_{fio})$ | < 0,2 % |
 | Perdas por correntes parasitas | $\propto f^2$ em baixa frequência | razão 3,97 (≈ 4) |
 
 Os testes ficam em `core/tests` (núcleo nativo), `web/src/**/*.test.ts` (unitários) e `web/e2e` (ponta a ponta).

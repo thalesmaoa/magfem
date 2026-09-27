@@ -7,7 +7,9 @@ import { addCircuit, assignBoundary, assignRegion, pointCode, regionKey, removeC
 import { autoSize, regionSizes, sizeOf, QUALITY_BANDS, qualityCounts } from '../cad/meshgen';
 import { findRegion, type Region } from '../cad/regions';
 import { addNode, updateNode, type MeshSub, type TreeSel } from '../cad/tree';
-import type { Id, MeshNode } from '../cad/types';
+import type { Id, MeshNode, RegionAssign, Wire } from '../cad/types';
+import { turnArea, wireLabel } from '../cad/wire';
+import { wireKw } from '../cad/script';
 import { T, useT, displayName } from '../i18n';
 import { LazyInput } from './common';
 import { openDrawer } from './drawerStore';
@@ -397,6 +399,66 @@ function selectedRegion(ed: SketchEditor): Region | null {
   return key ? findRegion(ed.arrangement(), key) : null;
 }
 
+/**
+ * Fio da bobina: AWG, redondo (diâmetro) ou retangular, com fios em paralelo. Mostra a seção e o fator de
+ * enchimento (|N|·A_espira/A_região); sem fio, a região toda conta como cobre (enchimento 1).
+ */
+function WireFields({ a, areaMm2, set }: { a: RegionAssign; areaMm2: number; set: (patch: Partial<RegionAssign>, code: string) => void }) {
+  const t = useT();
+  const w = a.wire;
+  const apply = (next: Wire | undefined) => set({ wire: next }, next ? wireKw(next).join(', ') : 'wire=None');
+  const numIn = (label: string, value: number | undefined, onV: (n: number) => void) => (
+    <label className="field">
+      <span>{label}</span>
+      <LazyInput
+        value={value !== undefined ? String(value) : ''}
+        ariaLabel={label}
+        onCommit={(v) => {
+          const n = Number(v.replace(',', '.'));
+          if (Number.isFinite(n) && (n > 0 || label.startsWith('AWG'))) onV(n);
+        }}
+      />
+    </label>
+  );
+  const at = w ? turnArea(w) : null;
+  const fill = at ? (Math.abs(a.turns ?? 1) * at) / (areaMm2 * 1e-6) : null;
+  return (
+    <>
+      <label className="field">
+        <span>{t.wire.kind}</span>
+        <select
+          aria-label={t.wire.kind}
+          value={w?.kind ?? ''}
+          onChange={(e) => {
+            const k = e.target.value;
+            apply(k === 'awg' ? { kind: 'awg', awg: 18 } : k === 'round' ? { kind: 'round', d: 1 } : k === 'rect' ? { kind: 'rect', w: 2, h: 5 } : undefined);
+          }}
+        >
+          <option value="">{t.wire.none}</option>
+          <option value="awg">{t.wire.awg}</option>
+          <option value="round">{t.wire.round}</option>
+          <option value="rect">{t.wire.rect}</option>
+        </select>
+      </label>
+      {w?.kind === 'awg' && numIn('AWG', w.awg, (n) => apply({ ...w, awg: Math.round(n) }))}
+      {w?.kind === 'round' && numIn(t.wire.d, w.d, (n) => apply({ ...w, d: n }))}
+      {w?.kind === 'rect' && (
+        <>
+          {numIn(t.wire.w, w.w, (n) => apply({ ...w, w: n }))}
+          {numIn(t.wire.h, w.h, (n) => apply({ ...w, h: n }))}
+        </>
+      )}
+      {w && numIn(t.wire.parallel, w.parallel ?? 1, (n) => apply({ ...w, parallel: Math.max(1, Math.round(n)) }))}
+      {w && at !== null && (
+        <p className={fill !== null && fill > 1 ? 'err-text' : 'muted'}>
+          {t.wire.summary(wireLabel(w), at * 1e6, fill ?? 0)}
+        </p>
+      )}
+      <p className="help-line">{w ? t.wire.help : t.wire.helpNone}</p>
+    </>
+  );
+}
+
 function RegionMaterialProps({ ed }: { ed: SketchEditor }) {
   const t = useT();
   const sk = ed.sketch;
@@ -474,6 +536,7 @@ function RegionMaterialProps({ ed }: { ed: SketchEditor }) {
               }}
             />
           </label>
+          {(a?.circuit || a?.current) && <WireFields a={a} areaMm2={r.area} set={set} />}
           {!!m.br && (
             <label className="field">
               <span>{t.mesh.magnetAngle}</span>

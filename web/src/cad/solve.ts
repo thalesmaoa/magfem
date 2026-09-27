@@ -4,7 +4,8 @@ import { asLength, evaluate, evaluateVariables } from './expr';
 import { arcAngles } from './geometry';
 import type { MeshResult } from './meshgen';
 import { findRegion, type Arrangement } from './regions';
-import { BOUNDARY_UNSUPPORTED, OUTER_BOUNDARY, type Boundary, type Id, type Sketch } from './types';
+import { BOUNDARY_UNSUPPORTED, OUTER_BOUNDARY, type Boundary, type Id, type Material, type Sketch } from './types';
+import { turnArea } from './wire';
 
 export const MU0 = 4e-7 * Math.PI;
 
@@ -188,11 +189,17 @@ export function buildMagInput(sk: Sketch, arr: Arrangement, mesh: MeshResult, ou
     const m = a.material ? mats.get(a.material) : undefined;
     if (!m) continue;
     assigned.add(r.index);
-    nu[r.index] = 1 / (MU0 * m.mur);
-    if (m.kh || m.ke) iron[r.index] = [m.kh ?? 0, m.alpha ?? 2, m.ke ?? 0];
-    if (m.bh && m.bh.length >= 2) bhRegion[r.index] = m.bh.filter(([h, b]) => h > 0 && b > 0).map(([h, b]) => [b, h]);
+    const lam = laminationOf(m);
+    const f = lam?.fill ?? 1;
+    // Laminado: chapas e isolante em paralelo na profundidade → μ equivalente = f·μ_aço + (1 − f)·μ0.
+    nu[r.index] = 1 / (MU0 * (f * m.mur + (1 - f)));
+    const ir = ironCoefficients(m);
+    if (ir) iron[r.index] = ir;
+    if (m.bh && m.bh.length >= 2)
+      bhRegion[r.index] = m.bh.filter(([h, b]) => h > 0 && b > 0).map(([h, b]) => [f * b + (1 - f) * MU0 * h, h]);
     // Correntes parasitas só em condutores sem fonte (bobina com corrente imposta = enrolamento, σ ignorado).
-    if (!a.current && !a.circuit && m.sigma > 0) sigma[r.index] = m.sigma * 1e6;
+    // Chapas laminadas não conduzem como bloco: as parasitas dentro da chapa entram só nas perdas no ferro.
+    if (!a.current && !a.circuit && m.sigma > 0 && !lam) sigma[r.index] = m.sigma * 1e6;
     try {
       // Corrente: do circuito (se a região estiver ligada a um) ou da própria região.
       const circ = a.circuit ? sk.circuits.find((c) => c.id === a.circuit) : undefined;
@@ -729,6 +736,30 @@ export interface CircuitResult {
   P: number | null;
   regions: number;
   turns: number;
+  /** Maior fator de enchimento entre as regiões com fio definido (null = nenhuma tem fio). */
+  fill: number | null;
+}
+
+/** Laminação do material (fator de empilhamento em (0, 1] e espessura em mm), ou null se maciço. */
+export function laminationOf(m: Material): { fill: number; thickness?: number } | null {
+  if (m.lamFill === undefined || !(m.lamFill > 0)) return null;
+  return { fill: Math.min(1, m.lamFill), thickness: m.lamThickness && m.lamThickness > 0 ? m.lamThickness : undefined };
+}
+
+/**
+ * Coeficientes de Steinmetz por volume da REGIÃO, a partir do B médio da região: p = kh·f·B^α + ke·(f·B)².
+ * Laminado com fator f: as perdas ocorrem no volume de aço (f·V) com B_aço = B/f, o que dá kh·f^(1−α) e ke/f;
+ * sem ke informado e com espessura d e σ, a parcela clássica das parasitas é ke = π²·σ·d²/6.
+ */
+export function ironCoefficients(m: Material): [number, number, number] | null {
+  const lam = laminationOf(m);
+  const alpha = m.alpha ?? 2;
+  let ke = m.ke ?? 0;
+  if (m.ke === undefined && lam?.thickness && m.sigma > 0) ke = (Math.PI ** 2 * m.sigma * 1e6 * (lam.thickness * 1e-3) ** 2) / 6;
+  const kh = m.kh ?? 0;
+  if (!kh && !ke) return null;
+  const f = lam?.fill ?? 1;
+  return [kh * Math.pow(f, 1 - alpha), alpha, ke / f];
 }
 
 export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): CircuitResult[] {
@@ -765,7 +796,7 @@ export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): Cir
       const e = part ? cr.partOf.indexOf(part.id) : -1;
       if (e >= 0) I = cr.elI[sol.frame * cr.partOf.length + e] ?? I;
     }
-    let lambda = 0, R = 0, rOk = true, regions = 0, turns = 0;
+    let lambda = 0, R = 0, rOk = true, regions = 0, turns = 0, fill: number | null = null;
     for (const a of sk.regionAssigns) {
       if (a.circuit !== c.id) continue;
       const reg = findRegion(arr, a);
@@ -777,11 +808,14 @@ export function circuitResults(sk: Sketch, arr: Arrangement, sol: Solution): Cir
       lambda += sol.axisymmetric ? (N / area[i]) * 2 * Math.PI * intA[i] : (N / area[i]) * intA[i] * depth;
       const sigma = (a.material ? mats.get(a.material)?.sigma ?? 0 : 0) * 1e6; // MS/m → S/m
       const len = sol.axisymmetric ? 2 * Math.PI * (rA[i] / area[i]) : depth;
-      if (sigma > 0) R += (N * N * len) / (sigma * area[i]);
+      // Com o fio definido: R = |N|·ℓ/(σ·A_espira) e enchimento = |N|·A_espira/A_região; sem fio, a região toda é cobre.
+      const aw = a.wire ? turnArea(a.wire) : null;
+      if (aw) fill = Math.max(fill ?? 0, (Math.abs(N) * aw) / area[i]);
+      if (sigma > 0) R += aw ? (Math.abs(N) * len) / (sigma * aw) : (N * N * len) / (sigma * area[i]);
       else rOk = false;
     }
     const Rv = rOk && regions ? R : null;
-    return { id: c.id, name: c.name, I, lambda, L: I ? lambda / I : null, R: Rv, V: Rv !== null ? Rv * I : null, P: Rv !== null ? Rv * I * I : null, regions, turns };
+    return { id: c.id, name: c.name, I, lambda, L: I ? lambda / I : null, R: Rv, V: Rv !== null ? Rv * I : null, P: Rv !== null ? Rv * I * I : null, regions, turns, fill };
   });
 }
 

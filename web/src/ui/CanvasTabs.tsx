@@ -529,6 +529,7 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
             <th>{c.R}</th>
             <th>{c.V}</th>
             <th>{c.P}</th>
+            <th>{c.fill}</th>
           </tr>
         </thead>
         <tbody>
@@ -542,6 +543,7 @@ export function CircuitTable({ ed, physics, big }: { ed: SketchEditor; physics: 
               <td>{eng(r.R, 'Ω')}</td>
               <td>{eng(r.V, 'V')}</td>
               <td>{eng(r.P, 'W')}</td>
+              <td className={r.fill !== null && r.fill > 1 ? 'bad' : undefined}>{r.fill !== null ? `${Math.round(r.fill * 100)} %` : '—'}</td>
             </tr>
           ))}
         </tbody>

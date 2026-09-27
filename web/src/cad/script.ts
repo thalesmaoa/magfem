@@ -1,7 +1,7 @@
 // Script da API que recria o modelo exatamente (mesmos ids), para rodar no console ou pelo WebSocket.
 import { q } from './code';
 import { computeArrangement, findRegion } from './regions';
-import type { Constraint, Material, PostNode, Sketch } from './types';
+import type { Constraint, Material, PostNode, Sketch, Wire } from './types';
 
 const n = (v: number) => {
   const r = Number(v.toPrecision(12));
@@ -106,6 +106,7 @@ export function generateScript(sk: Sketch, title = 'MagFEM'): string {
     if (a.current) kw.push(`current=${q(a.current)}`);
     if (a.turns !== undefined) kw.push(`turns=${n(a.turns)}`);
     if (a.magnetAngle) kw.push(`angle=${q(a.magnetAngle)}`);
+    if (a.wire) kw.push(...wireKw(a.wire));
     if (a.labelOffset) kw.push(`label=${xy(a.labelOffset)}`);
     add(`m.region(${xy(r!.label)}, ${kw.join(', ')})`);
     if (a.meshSize) add(`m.mesh_size(${xy(r!.label)}, ${q(a.meshSize)})`);
@@ -206,10 +207,19 @@ export function curvesCode(list: NonNullable<PostNode['curves']>): string {
     .join(', ')}]`;
 }
 
+/** Argumentos do console para o fio de uma região. */
+export function wireKw(w: Wire): string[] {
+  const kw = w.kind === 'awg' ? [`wire_awg=${n(w.awg ?? 0)}`] : w.kind === 'round' ? [`wire_d=${n(w.d ?? 0)}`] : [`wire_rect=(${n(w.w ?? 0)}, ${n(w.h ?? 0)})`];
+  if ((w.parallel ?? 1) > 1) kw.push(`wire_parallel=${n(w.parallel!)}`);
+  return kw;
+}
+
 export function materialLine(m: Material): string {
   const kw = [`id=${q(m.id)}`, `group=${q(m.group ?? 'custom')}`, `color=${q(m.color)}`, `mur=${n(m.mur)}`, `sigma=${n(m.sigma)}`];
   if (m.br) kw.push(`br=${n(m.br)}`);
   for (const k of ['kh', 'alpha', 'ke'] as const) if (m[k] !== undefined) kw.push(`${k}=${n(m[k]!)}`);
   if (m.bh) kw.push(`bh=[${m.bh.map((p) => `(${n(p[0])}, ${n(p[1])})`).join(', ')}]`);
+  if (m.lamFill !== undefined) kw.push(`lam_fill=${n(m.lamFill)}`);
+  if (m.lamThickness !== undefined) kw.push(`lam_thickness=${n(m.lamThickness)}`);
   return `m.material(${q(m.name)}, ${kw.join(', ')})`;
 }

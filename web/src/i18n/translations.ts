@@ -103,6 +103,8 @@ export interface Translations {
   phase: (n: number) => string;
   console: { title: string; show: string; hide: string; popout: string; dock: string; resize: string; windowTitle: string };
   /** Nomes dos materiais padrão (gravados em português no projeto; mostrados no idioma da interface). */
+  wire: { kind: string; none: string; awg: string; round: string; rect: string; d: string; w: string; h: string; parallel: string; summary: (label: string, mm2: number, fill: number) => string; help: string; helpNone: string };
+  lam: { kind: string; solid: string; laminated: string; fill: string; thickness: string; help: string; keAuto: (ke: number) => string };
   matNames: { air: string; cu: string; al: string; m400: string; s1010: string };
   docs: { link: string; hint: string };
   cite: {
@@ -575,7 +577,7 @@ export interface Translations {
     table: string;
     tableMenu: string;
     openTable: string;
-    cols: { name: string; I: string; turns: string; lambda: string; L: string; R: string; V: string; P: string };
+    cols: { name: string; I: string; turns: string; lambda: string; L: string; R: string; V: string; P: string; fill: string };
     note: string;
     empty: string;
   };
@@ -787,6 +789,29 @@ const PT: Translations = {
   theme: { title: 'Tema', auto: 'automático (segue o sistema)', light: 'claro', dark: 'escuro' },
   phase: (n) => `Fase ${n}`,
   console: { title: 'Console', show: 'Mostrar console', hide: 'Ocultar console', popout: 'Abrir em outra janela', dock: 'Voltar para baixo do desenho', resize: 'Arraste para mudar a altura', windowTitle: 'MagFEM — console' },
+  wire: {
+    kind: 'Fio',
+    none: '— região toda de cobre —',
+    awg: 'Redondo (AWG)',
+    round: 'Redondo (diâmetro)',
+    rect: 'Retangular',
+    d: 'Diâmetro (mm)',
+    w: 'Largura (mm)',
+    h: 'Altura (mm)',
+    parallel: 'Fios em paralelo',
+    summary: (label, mm2, fill) => `${label}: ${Number(mm2.toPrecision(4))} mm² por espira · enchimento ${Math.round(fill * 100)} %${fill > 1 ? ' — as espiras não cabem na região!' : ''}`,
+    help: 'R CC = |N|·ℓ_espira/(σ·A_espira), com ℓ = 2πr (axissimétrico) ou a profundidade (plano, sem cabeceiras). O campo usa a corrente média na região (J = N·I/área).',
+    helpNone: 'Sem fio, a resistência supõe a região toda de cobre (enchimento 1). Defina o fio para o R CC real e o fator de enchimento.',
+  },
+  lam: {
+    kind: 'Construção',
+    solid: 'Maciço',
+    laminated: 'Chapas laminadas',
+    fill: 'Fator de empilhamento (0–1)',
+    thickness: 'Espessura da chapa (mm)',
+    help: 'Chapas empilhadas na profundidade: o campo usa B = f·B_aço + (1−f)·μ0·H; não há correntes parasitas de bloco; as perdas no ferro ficam no volume de aço (f·V) com B_aço = B/f. Sem k_e, ele sai da espessura e de σ: k_e = π²·σ·d²/6.',
+    keAuto: (ke) => `k_e pela espessura: ${Number(ke.toPrecision(3))} W/m³ (π²·σ·d²/6)`,
+  },
   matNames: { air: 'Ar', cu: 'Cobre', al: 'Alumínio', m400: 'Aço M400-50A', s1010: 'Aço 1010' },
   docs: { link: 'Documentação', hint: 'Guia, tutorial, referência da API e teoria (abre numa nova aba)' },
   cite: {
@@ -1319,8 +1344,8 @@ Atribuição: l = g.line((0, 0), (10, 0)) e depois use l. Setas ↑/↓ = comand
     table: 'Tabela de circuitos',
     tableMenu: 'Circuitos (tabela)',
     openTable: 'Abrir tabela em aba',
-    cols: { name: 'Circuito', I: 'I (A)', turns: 'Espiras', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'R CC (Ω)', V: 'V CC (V)', P: 'Perdas I²R (W)' },
-    note: 'Indutância aparente λ/I (com vários circuitos, inclui o acoplamento). R CC com fator de enchimento 1; no plano, sem as cabeceiras.',
+    cols: { name: 'Circuito', I: 'I (A)', turns: 'Espiras', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'R CC (Ω)', V: 'V CC (V)', P: 'Perdas I²R (W)', fill: 'Enchimento' },
+    note: 'Indutância aparente λ/I (com vários circuitos, inclui o acoplamento). R CC pela seção do fio definido na região (sem fio: região toda de cobre); no plano, sem as cabeceiras.',
     empty: 'Nenhum circuito. Crie em Malha › Circuitos.',
   },
   script: {
@@ -1583,6 +1608,29 @@ const EN: Translations = {
   theme: { title: 'Theme', auto: 'automatic (follows the system)', light: 'light', dark: 'dark' },
   phase: (n) => `phase ${n}`,
   console: { title: 'Console', show: 'Show console', hide: 'Hide console', popout: 'Open in a separate window', dock: 'Dock below the drawing', resize: 'Drag to change the height', windowTitle: 'MagFEM — console' },
+  wire: {
+    kind: 'Wire',
+    none: '— whole region is copper —',
+    awg: 'Round (AWG)',
+    round: 'Round (diameter)',
+    rect: 'Rectangular',
+    d: 'Diameter (mm)',
+    w: 'Width (mm)',
+    h: 'Height (mm)',
+    parallel: 'Parallel strands',
+    summary: (label, mm2, fill) => `${label}: ${Number(mm2.toPrecision(4))} mm² per turn · fill ${Math.round(fill * 100)} %${fill > 1 ? ' — the turns do not fit in the region!' : ''}`,
+    help: 'DC R = |N|·ℓ_turn/(σ·A_turn), with ℓ = 2πr (axisymmetric) or the depth (planar, no end turns). The field uses the average current in the region (J = N·I/area).',
+    helpNone: 'Without a wire, the resistance assumes the whole region is copper (fill 1). Set the wire for the real DC R and the fill factor.',
+  },
+  lam: {
+    kind: 'Construction',
+    solid: 'Solid',
+    laminated: 'Laminated sheets',
+    fill: 'Stacking factor (0–1)',
+    thickness: 'Sheet thickness (mm)',
+    help: 'Sheets stacked along the depth: the field uses B = f·B_steel + (1−f)·μ0·H; there are no bulk eddy currents; iron losses are in the steel volume (f·V) with B_steel = B/f. Without k_e, it comes from the thickness and σ: k_e = π²·σ·d²/6.',
+    keAuto: (ke) => `k_e from the thickness: ${Number(ke.toPrecision(3))} W/m³ (π²·σ·d²/6)`,
+  },
   matNames: { air: 'Air', cu: 'Copper', al: 'Aluminum', m400: 'M400-50A steel', s1010: '1010 steel' },
   docs: { link: 'Docs', hint: 'Guide, tutorial, API reference and theory (opens in a new tab)' },
   cite: {
@@ -2115,8 +2163,8 @@ Assignment: l = g.line((0, 0), (10, 0)) then use l. Up/Down arrows = previous co
     table: 'Circuit table',
     tableMenu: 'Circuits (table)',
     openTable: 'Open table in a tab',
-    cols: { name: 'Circuit', I: 'I (A)', turns: 'Turns', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'DC R (Ω)', V: 'DC V (V)', P: 'I²R losses (W)' },
-    note: 'Apparent inductance λ/I (with several circuits it includes coupling). DC R with fill factor 1; planar excludes end turns.',
+    cols: { name: 'Circuit', I: 'I (A)', turns: 'Turns', lambda: 'λ (Wb)', L: 'L = λ/I (H)', R: 'DC R (Ω)', V: 'DC V (V)', P: 'I²R losses (W)', fill: 'Fill' },
+    note: 'Apparent inductance λ/I (with several circuits it includes coupling). DC R from the wire set on the region (no wire: whole region is copper); planar excludes end turns.',
     empty: 'No circuits. Create one under Mesh › Circuits.',
   },
   script: {

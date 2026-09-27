@@ -29,7 +29,7 @@ import { addNode, addPlot, addSchematic, addTable, addTableItem, addView, duplic
 import { offsetCurves, setOffsetDistance } from './offset';
 import { circularArray, ensureAxisLine, linearArray, mirrorEntities, setPattern } from './patterns';
 import { BOUNDARY_TYPES, type Boundary, DEFAULT_MATERIALS, TABLE_ITEMS, type TableItem, type SchematicNode, type SchPart, type SchWire, emptySketch, isCurve, isDimension, ORIGIN_ID, PLOT_KINDS, type Constraint, type Group, type MaterialGroup, type PointEnt, PLOT_QUANTITIES, type PlotKind, type PlotQuantity, type BoundaryType, type ConstraintType, type Id, type Material, type ProblemType, type RegionAssign, type Sketch } from './types';
-import { computeArrangement } from './regions';
+import { computeArrangement, findRegion } from './regions';
 import { duplicateMaterial, addBoundaryDef, addCircuit, findCircuit, removeCircuit, updateCircuit, addMaterial, assignOf, assignRegion, findBoundary, findMaterial, regionAtOrThrow, regionKey, removeMaterial, setBoundary, updateBoundaryDef, updateMaterial } from './mesh';
 import { deleteVariable, renameVariable, setVariable } from './vars';
 
@@ -927,6 +927,9 @@ export class CommandConsole {
         if (kw.bh !== undefined) patch.bh = kw.bh === null ? undefined : (seq(kw.bh) ?? []).map((p) => (seq(p) ?? []).map(Number) as [number, number]);
         if (kw.name !== undefined) patch.name = String(kw.name);
         if (kw.group !== undefined) patch.group = String(kw.group) as MaterialGroup;
+        // Laminação (None volta a maciço / tira a espessura).
+        if (kw.lam_fill !== undefined) patch.lamFill = kw.lam_fill === null ? undefined : Number(kw.lam_fill);
+        if (kw.lam_thickness !== undefined) patch.lamThickness = kw.lam_thickness === null ? undefined : Number(kw.lam_thickness);
         const cur = findMaterial(sk, String(a[0]));
         if (cur) {
           this.commit(updateMaterial(sk, cur.id, patch));
@@ -1001,6 +1004,19 @@ export class CommandConsole {
           }
         }
         if (kw.label !== undefined) patch.labelOffset = kw.label === null ? undefined : this.xy(kw.label);
+        // Fio da bobina: wire_awg=18 | wire_d=1.2 | wire_rect=(2, 5) (mm), wire_parallel=2; wire=None tira.
+        if (kw.wire === null) patch.wire = undefined;
+        const par = kw.wire_parallel !== undefined ? Math.max(1, Math.round(Number(kw.wire_parallel))) : undefined;
+        if (kw.wire_awg !== undefined) patch.wire = { kind: 'awg', awg: Number(kw.wire_awg), ...(par ? { parallel: par } : {}) };
+        if (kw.wire_d !== undefined) patch.wire = { kind: 'round', d: Number(kw.wire_d), ...(par ? { parallel: par } : {}) };
+        if (kw.wire_rect !== undefined) {
+          const wh = (seq(kw.wire_rect) ?? []).map(Number);
+          patch.wire = { kind: 'rect', w: wh[0], h: wh[1], ...(par ? { parallel: par } : {}) };
+        }
+        if (par && !patch.wire && kw.wire === undefined) {
+          const cur = sk.regionAssigns.find((x) => findRegion(arr, x)?.index === r.index)?.wire;
+          if (cur) patch.wire = { ...cur, parallel: par };
+        }
         if (kw.name !== undefined) patch.name = kw.name === null || !String(kw.name).trim() ? undefined : String(kw.name).trim();
         let next = assignRegion(sk, arr, regionKey(r), patch);
         if (kw.id !== undefined) {
