@@ -185,7 +185,10 @@
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#condicoes-de-contorno">Condições de contorno</a></li>
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#solucao">Solução</a></li>
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#transitorio">Transitório</a></li>
-<li class="toctree-l2"><a class="reference internal" href="formulation.html#harmonico-ac">Harmônico (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="formulation.html#harmonico-ac">Harmônico (AC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="formulation.html#perdas-ca-nos-fios">Perdas CA nos fios</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#pos-processamento">Pós-processamento</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="formulation.html#forca-e-torque">Força e torque</a></li>
 </ul>
@@ -331,7 +334,19 @@ analítica. Eles rodam a cada mudança no código.</p>
 <td><p><span class="math notranslate nohighlight">\(N\,2\pi r/(\sigma A_{fio})\)</span></p></td>
 <td><p>&lt; 0,2 %</p></td>
 </tr>
-<tr class="row-odd"><td><p>Perdas por correntes parasitas</p></td>
+<tr class="row-odd"><td><p>Pelicular, fio redondo</p></td>
+<td><p><span class="math notranslate nohighlight">\(1 + (a/\delta)^4/48\)</span> e <span class="math notranslate nohighlight">\(a/(2\delta) + 1/4\)</span></p></td>
+<td><p>&lt; 1e-5</p></td>
+</tr>
+<tr class="row-even"><td><p>Proximidade, fio redondo em campo uniforme</p></td>
+<td><p><span class="math notranslate nohighlight">\(N\,\ell\,\pi\sigma\omega^2\hat B^2 a^4/8\)</span> (baixa frequência)</p></td>
+<td><p>&lt; 0,1 %</p></td>
+</tr>
+<tr class="row-odd"><td><p>Proximidade, fio retangular (Dowell)</p></td>
+<td><p><span class="math notranslate nohighlight">\(\sigma\omega^2\hat B^2 t^3/24\)</span> por largura</p></td>
+<td><p>&lt; 0,1 %</p></td>
+</tr>
+<tr class="row-even"><td><p>Perdas por correntes parasitas</p></td>
 <td><p><span class="math notranslate nohighlight">\(\propto f^2\)</span> em baixa frequência</p></td>
 <td><p>razão 3,97 (≈ 4)</p></td>
 </tr>

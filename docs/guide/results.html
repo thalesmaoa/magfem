@@ -185,7 +185,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#condicoes-de-contorno">Condições de contorno</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#solucao">Solução</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#transitorio">Transitório</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#harmonico-ac">Harmônico (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#harmonico-ac">Harmônico (AC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#perdas-ca-nos-fios">Perdas CA nos fios</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#pos-processamento">Pós-processamento</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#forca-e-torque">Força e torque</a></li>
 </ul>
@@ -304,6 +307,11 @@ cor e espaçamento das setas.</p>
 </tr>
 </tbody>
 </table>
+<p>Na análise <strong>harmônica (AC)</strong>, circuitos com fio definido ganham <strong>R CA</strong> e as perdas por <strong>efeito pelicular</strong> e de
+<strong>proximidade</strong> (variáveis <code class="docutils literal notranslate"><span class="pre">&lt;circuito&gt;_Rac</span></code>, <code class="docutils literal notranslate"><span class="pre">_Pskin</span></code> e <code class="docutils literal notranslate"><span class="pre">_Pprox</span></code>). O pelicular usa o fator <span class="math notranslate nohighlight">\(R_{ca}/R_{cc}\)</span> do fio
+(Bessel no redondo, Dowell no retangular); a proximidade soma, em cada elemento da bobina, a perda dos fios que ele
+contém sob o <span class="math notranslate nohighlight">\(\hat B\)</span> local do campo. As correntes parasitas nos fios não alteram o campo (bom para fio fino em
+relação a <span class="math notranslate nohighlight">\(\delta\)</span>).</p>
 <p>Cada saída tem um nome editável (o padrão é o prefixo do item mais a grandeza, como <code class="docutils literal notranslate"><span class="pre">S1_fx</span></code>). As variáveis de
 circuito se chamam <code class="docutils literal notranslate"><span class="pre">&lt;circuito&gt;_I</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;circuito&gt;_lambda</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;circuito&gt;_L</span></code> e <code class="docutils literal notranslate"><span class="pre">&lt;circuito&gt;_R</span></code>.</p>
 <p><img alt="Tabela de circuitos" src="../_images/table-pt.png" /></p>

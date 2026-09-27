@@ -184,7 +184,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#boundary-conditions">Boundary conditions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#solution">Solution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#transient">Transient</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#harmonic-ac">Harmonic (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#harmonic-ac">Harmonic (AC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#ac-losses-in-the-wires">AC losses in the wires</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#post-processing">Post-processing</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#force-and-torque">Force and torque</a></li>
 </ul>
@@ -298,7 +301,8 @@ kept, but splitting the current among parallel regions is not implemented yet.</
 <p><strong>Coil wire</strong> (in the region properties): round by AWG or by diameter, or rectangular (width × height), with parallel
 strands. The DC R becomes <span class="math notranslate nohighlight">\(R = |N|\,\ell/(\sigma A_{turn})\)</span>, with <span class="math notranslate nohighlight">\(\ell = 2\pi r\)</span> in axisymmetric problems or the depth in
 planar ones (no end turns), and the circuit table shows the <strong>fill factor</strong> <span class="math notranslate nohighlight">\(|N|\,A_{turn}/A_{region}\)</span> (above 100 %, the
-turns do not fit). Without a wire, the whole region counts as copper.</p>
+turns do not fit). Without a wire, the whole region counts as copper. In harmonic analysis, the wire also gives the
+<strong>skin and proximity</strong> losses and the <strong>AC R</strong> (see <a class="reference internal" href="results.html"><span class="std std-doc">Results</span></a>).</p>
 </section>
 <section id="boundaries">
 <h2>Boundaries<a class="headerlink" href="#boundaries" title="Link to this heading"></a></h2>

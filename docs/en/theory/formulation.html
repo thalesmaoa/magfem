@@ -184,7 +184,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#boundary-conditions">Boundary conditions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#solution">Solution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#transient">Transient</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#harmonic-ac">Harmonic (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#harmonic-ac">Harmonic (AC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ac-losses-in-the-wires">AC losses in the wires</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#post-processing">Post-processing</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#force-and-torque">Force and torque</a></li>
 </ul>
@@ -317,6 +320,20 @@ each element, iterated with relaxation (as in FEMM). The field is shown over one
 <li><p>Eddy-current losses: <span class="math notranslate nohighlight">\(\tfrac{1}{2}\,\sigma\,\omega^2 |\hat{A}|^2\)</span> (<span class="math notranslate nohighlight">\(\psi/r\)</span> in axisymmetric problems).</p></li>
 <li><p>Iron losses (Steinmetz): <span class="math notranslate nohighlight">\(p = k_h f \hat{B}^{\alpha} + k_e (f \hat{B})^2\)</span>.</p></li>
 </ul>
+<section id="ac-losses-in-the-wires">
+<h3>AC losses in the wires<a class="headerlink" href="#ac-losses-in-the-wires" title="Link to this heading"></a></h3>
+<p>With <span class="math notranslate nohighlight">\(\delta = \sqrt{2/(\omega\mu_0\sigma)}\)</span> and <span class="math notranslate nohighlight">\(k = (1-j)/\delta\)</span>, for a round wire of radius <span class="math notranslate nohighlight">\(a\)</span>:</p>
+<ul class="simple">
+<li><p><strong>Skin:</strong> <span class="math notranslate nohighlight">\(R_{ac}/R_{dc} = \mathrm{Re}\left[\tfrac{ka}{2}\,J_0(ka)/J_1(ka)\right]\)</span> (low frequency
+<span class="math notranslate nohighlight">\(1 + (a/\delta)^4/48\)</span>; high, <span class="math notranslate nohighlight">\(a/(2\delta) + 1/4 + 3\delta/(32a)\)</span>). <span class="math notranslate nohighlight">\(P_{skin} = F\,R_{dc}\,\hat I^2/2\)</span>.</p></li>
+<li><p><strong>Proximity</strong> (transverse field of peak <span class="math notranslate nohighlight">\(\hat B\)</span>), per metre of wire:
+<span class="math notranslate nohighlight">\(P' = \tfrac{\pi\omega^2\sigma}{2}|D|^2\int_0^a |J_1(kr)|^2 r\,dr\)</span>, <span class="math notranslate nohighlight">\(D = 2\hat B/(k J_0(ka))\)</span>; low frequency
+<span class="math notranslate nohighlight">\(\pi\sigma\omega^2\hat B^2 a^4/8\)</span>. Summed over the coil elements with <span class="math notranslate nohighlight">\(|N|\cdot n_{par}/A\)</span> strands per area.</p></li>
+<li><p><strong>Rectangular</strong> (<span class="math notranslate nohighlight">\(w \times h\)</span>): Dowell in each direction, <span class="math notranslate nohighlight">\(P' = w\,P'_{foil}(h, \hat B_x) + h\,P'_{foil}(w, \hat B_y)\)</span>, with
+<span class="math notranslate nohighlight">\(P'_{foil} = \tfrac{H_0^2}{\sigma\delta}\,\tfrac{\sinh\xi - \sin\xi}{\cosh\xi + \cos\xi}\)</span>, <span class="math notranslate nohighlight">\(\xi = t/\delta\)</span>; skin from
+the foil of thickness <span class="math notranslate nohighlight">\(\min(w, h)\)</span> (approximation).</p></li>
+</ul>
+</section>
 </section>
 <section id="post-processing">
 <h2>Post-processing<a class="headerlink" href="#post-processing" title="Link to this heading"></a></h2>

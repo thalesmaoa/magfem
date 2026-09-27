@@ -33,6 +33,12 @@ Uma **Tabela** reúne itens, e cada item gera **variáveis de resultado** com no
 | Fórmula | uma expressão sobre as outras variáveis (por exemplo `0.5*Bobina_L*Bobina_I^2`) |
 | Gráfico no tempo | transitório: as variáveis que você escolher, pelo nome (com autocompletar) ou por uma expressão com elas, `t` e as variáveis do projeto (ex.: `Primario_I*Primario_V`, `Primario_V/127` em pu), cada uma no eixo esquerdo ou direito; o botão de estilo de cada curva edita a expressão e define rótulo, cor, tipo de linha, espessura e área preenchida; os limites de t e de cada eixo y ficam nas propriedades (em branco, automático); o mouse mostra os valores; redimensionável pelo canto; exporta CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG e PNG |
 
+Na análise **harmônica (AC)**, circuitos com fio definido ganham **R CA** e as perdas por **efeito pelicular** e de
+**proximidade** (variáveis `<circuito>_Rac`, `_Pskin` e `_Pprox`). O pelicular usa o fator $R_{ca}/R_{cc}$ do fio
+(Bessel no redondo, Dowell no retangular); a proximidade soma, em cada elemento da bobina, a perda dos fios que ele
+contém sob o $\hat B$ local do campo. As correntes parasitas nos fios não alteram o campo (bom para fio fino em
+relação a $\delta$).
+
 Cada saída tem um nome editável (o padrão é o prefixo do item mais a grandeza, como `S1_fx`). As variáveis de
 circuito se chamam `<circuito>_I`, `<circuito>_lambda`, `<circuito>_L` e `<circuito>_R`.
 

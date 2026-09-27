@@ -32,6 +32,12 @@ A **Table** collects items, and each item produces named **result variables** th
 | Formula | an expression of the other variables (for example `0.5*Coil_L*Coil_I^2`) |
 | Time plot | transient: the variables you choose, by name (with autocomplete) or as an expression of them, `t` and the project variables (e.g. `Primary_I*Primary_V`, `Primary_V/127` in pu), each on the left or right axis; each curve's style button edits the expression and sets its label, color, line type, width and area fill; the limits of t and of each y axis are in the properties (empty means automatic); the mouse shows the values; resizable from the corner; exports CSV, MAT (MATLAB v5: `scipy.io.loadmat`, `MAT.jl`, `load`), SVG and PNG |
 
+In **harmonic (AC)** analysis, circuits with a wire set get the **AC R** and the **skin** and **proximity** losses
+(variables `<circuit>_Rac`, `_Pskin` and `_Pprox`). Skin uses the wire's $R_{ac}/R_{dc}$ factor (Bessel for round,
+Dowell for rectangular); proximity adds up, in each coil element, the loss of the strands it holds under the local
+$\hat B$ of the field. The eddy currents in the strands do not change the field (good for wire that is thin compared
+with $\delta$).
+
 Each output has an editable name (by default the item prefix plus the quantity, such as `S1_fx`). Circuit variables
 are named `<circuit>_I`, `<circuit>_lambda`, `<circuit>_L` and `<circuit>_R`.
 

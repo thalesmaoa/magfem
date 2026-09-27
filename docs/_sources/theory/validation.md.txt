@@ -24,6 +24,9 @@ analítica. Eles rodam a cada mudança no código.
 | Chapas laminadas: perdas com fator $f$ e $k_e = \pi^2\sigma d^2/6$ | volume de aço $f V$ com $B/f$ | exato |
 | Chapas laminadas: material equivalente | $\nu = 1/(\mu_0(f\mu_r + 1 - f))$; $B = fB_{aço} + (1-f)\mu_0H$ | exato |
 | R CC com fio AWG (axissimétrico) | $N\,2\pi r/(\sigma A_{fio})$ | < 0,2 % |
+| Pelicular, fio redondo | $1 + (a/\delta)^4/48$ e $a/(2\delta) + 1/4$ | < 1e-5 |
+| Proximidade, fio redondo em campo uniforme | $N\,\ell\,\pi\sigma\omega^2\hat B^2 a^4/8$ (baixa frequência) | < 0,1 % |
+| Proximidade, fio retangular (Dowell) | $\sigma\omega^2\hat B^2 t^3/24$ por largura | < 0,1 % |
 | Perdas por correntes parasitas | $\propto f^2$ em baixa frequência | razão 3,97 (≈ 4) |
 
 Os testes ficam em `core/tests` (núcleo nativo), `web/src/**/*.test.ts` (unitários) e `web/e2e` (ponta a ponta).

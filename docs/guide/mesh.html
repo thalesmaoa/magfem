@@ -185,7 +185,10 @@
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#condicoes-de-contorno">Condições de contorno</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#solucao">Solução</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#transitorio">Transitório</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#harmonico-ac">Harmônico (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#harmonico-ac">Harmônico (AC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#perdas-ca-nos-fios">Perdas CA nos fios</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../theory/formulation.html#pos-processamento">Pós-processamento</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../theory/formulation.html#forca-e-torque">Força e torque</a></li>
 </ul>
@@ -299,7 +302,9 @@ FEMM é guardado, mas a divisão da corrente entre regiões em paralelo ainda n�
 <p><strong>Fio da bobina</strong> (nas propriedades da região): redondo por AWG ou pelo diâmetro, ou retangular (largura × altura),
 com fios em paralelo. O R CC passa a ser <span class="math notranslate nohighlight">\(R = |N|\,\ell/(\sigma A_{espira})\)</span>, com <span class="math notranslate nohighlight">\(\ell = 2\pi r\)</span> no axissimétrico ou a
 profundidade no plano (sem cabeceiras), e a tabela de circuitos mostra o <strong>fator de enchimento</strong>
-<span class="math notranslate nohighlight">\(|N|\,A_{espira}/A_{região}\)</span> (acima de 100 %, as espiras não cabem). Sem fio, a região toda conta como cobre.</p>
+<span class="math notranslate nohighlight">\(|N|\,A_{espira}/A_{região}\)</span> (acima de 100 %, as espiras não cabem). Sem fio, a região toda conta como cobre. Na
+análise harmônica, o fio definido também dá as perdas por <strong>efeito pelicular e de proximidade</strong> e o <strong>R CA</strong> (veja
+<a class="reference internal" href="results.html"><span class="std std-doc">Resultados</span></a>).</p>
 </section>
 <section id="contornos">
 <h2>Contornos<a class="headerlink" href="#contornos" title="Link para este cabeçalho"></a></h2>

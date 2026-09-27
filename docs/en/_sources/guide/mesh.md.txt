@@ -56,7 +56,8 @@ The current density is J = N·I / region area.
 **Coil wire** (in the region properties): round by AWG or by diameter, or rectangular (width × height), with parallel
 strands. The DC R becomes $R = |N|\,\ell/(\sigma A_{turn})$, with $\ell = 2\pi r$ in axisymmetric problems or the depth in
 planar ones (no end turns), and the circuit table shows the **fill factor** $|N|\,A_{turn}/A_{region}$ (above 100 %, the
-turns do not fit). Without a wire, the whole region counts as copper.
+turns do not fit). Without a wire, the whole region counts as copper. In harmonic analysis, the wire also gives the
+**skin and proximity** losses and the **AC R** (see [Results](results.md)).
 
 ## Boundaries
 

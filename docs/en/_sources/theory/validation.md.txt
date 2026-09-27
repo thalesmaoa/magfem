@@ -24,6 +24,9 @@ solution. They run on every code change.
 | Laminated sheets: losses with factor $f$ and $k_e = \pi^2\sigma d^2/6$ | steel volume $f V$ with $B/f$ | exact |
 | Laminated sheets: equivalent material | $\nu = 1/(\mu_0(f\mu_r + 1 - f))$; $B = fB_{steel} + (1-f)\mu_0H$ | exact |
 | DC R with AWG wire (axisymmetric) | $N\,2\pi r/(\sigma A_{wire})$ | < 0.2 % |
+| Skin, round wire | $1 + (a/\delta)^4/48$ and $a/(2\delta) + 1/4$ | < 1e-5 |
+| Proximity, round wire in a uniform field | $N\,\ell\,\pi\sigma\omega^2\hat B^2 a^4/8$ (low frequency) | < 0.1 % |
+| Proximity, rectangular wire (Dowell) | $\sigma\omega^2\hat B^2 t^3/24$ per width | < 0.1 % |
 | Eddy-current losses | $\propto f^2$ at low frequency | ratio 3.97 (≈ 4) |
 
 The tests live in `core/tests` (native core), `web/src/**/*.test.ts` (unit) and `web/e2e` (end-to-end). To run them

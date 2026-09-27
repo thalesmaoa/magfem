@@ -185,7 +185,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#condicoes-de-contorno">Condições de contorno</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#solucao">Solução</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#transitorio">Transitório</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#harmonico-ac">Harmônico (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#harmonico-ac">Harmônico (AC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#perdas-ca-nos-fios">Perdas CA nos fios</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#pos-processamento">Pós-processamento</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#forca-e-torque">Força e torque</a></li>
 </ul>
@@ -318,6 +321,20 @@ elemento, iterada com relaxação (como no FEMM). O campo é mostrado ao longo d
 <li><p>Perdas por correntes parasitas: <span class="math notranslate nohighlight">\(\tfrac{1}{2}\,\sigma\,\omega^2 |\hat{A}|^2\)</span> (<span class="math notranslate nohighlight">\(\psi/r\)</span> no axissimétrico).</p></li>
 <li><p>Perdas no ferro (Steinmetz): <span class="math notranslate nohighlight">\(p = k_h f \hat{B}^{\alpha} + k_e (f \hat{B})^2\)</span>.</p></li>
 </ul>
+<section id="perdas-ca-nos-fios">
+<h3>Perdas CA nos fios<a class="headerlink" href="#perdas-ca-nos-fios" title="Link para este cabeçalho"></a></h3>
+<p>Com <span class="math notranslate nohighlight">\(\delta = \sqrt{2/(\omega\mu_0\sigma)}\)</span> e <span class="math notranslate nohighlight">\(k = (1-j)/\delta\)</span>, para um fio redondo de raio <span class="math notranslate nohighlight">\(a\)</span>:</p>
+<ul class="simple">
+<li><p><strong>Pelicular:</strong> <span class="math notranslate nohighlight">\(R_{ca}/R_{cc} = \mathrm{Re}\left[\tfrac{ka}{2}\,J_0(ka)/J_1(ka)\right]\)</span> (baixa frequência
+<span class="math notranslate nohighlight">\(1 + (a/\delta)^4/48\)</span>; alta, <span class="math notranslate nohighlight">\(a/(2\delta) + 1/4 + 3\delta/(32a)\)</span>). <span class="math notranslate nohighlight">\(P_{pel} = F\,R_{cc}\,\hat I^2/2\)</span>.</p></li>
+<li><p><strong>Proximidade</strong> (campo transversal de pico <span class="math notranslate nohighlight">\(\hat B\)</span>), por metro de fio:
+<span class="math notranslate nohighlight">\(P' = \tfrac{\pi\omega^2\sigma}{2}|D|^2\int_0^a |J_1(kr)|^2 r\,dr\)</span>, <span class="math notranslate nohighlight">\(D = 2\hat B/(k J_0(ka))\)</span>; baixa frequência
+<span class="math notranslate nohighlight">\(\pi\sigma\omega^2\hat B^2 a^4/8\)</span>. Somada nos elementos da bobina com <span class="math notranslate nohighlight">\(|N|\cdot n_{par}/A\)</span> fios por área.</p></li>
+<li><p><strong>Retangular</strong> (<span class="math notranslate nohighlight">\(w \times h\)</span>): Dowell em cada direção, <span class="math notranslate nohighlight">\(P' = w\,P'_{lâm}(h, \hat B_x) + h\,P'_{lâm}(w, \hat B_y)\)</span>, com
+<span class="math notranslate nohighlight">\(P'_{lâm} = \tfrac{H_0^2}{\sigma\delta}\,\tfrac{\sinh\xi - \sin\xi}{\cosh\xi + \cos\xi}\)</span>, <span class="math notranslate nohighlight">\(\xi = t/\delta\)</span>; pelicular
+pela lâmina de espessura <span class="math notranslate nohighlight">\(\min(w, h)\)</span> (aproximação).</p></li>
+</ul>
+</section>
 </section>
 <section id="pos-processamento">
 <h2>Pós-processamento<a class="headerlink" href="#pos-processamento" title="Link para este cabeçalho"></a></h2>

@@ -184,7 +184,10 @@
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#boundary-conditions">Boundary conditions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#solution">Solution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#transient">Transient</a></li>
-<li class="toctree-l2"><a class="reference internal" href="formulation.html#harmonic-ac">Harmonic (AC)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="formulation.html#harmonic-ac">Harmonic (AC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="formulation.html#ac-losses-in-the-wires">AC losses in the wires</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="formulation.html#post-processing">Post-processing</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="formulation.html#force-and-torque">Force and torque</a></li>
 </ul>
@@ -330,7 +333,19 @@ solution. They run on every code change.</p>
 <td><p><span class="math notranslate nohighlight">\(N\,2\pi r/(\sigma A_{wire})\)</span></p></td>
 <td><p>&lt; 0.2 %</p></td>
 </tr>
-<tr class="row-odd"><td><p>Eddy-current losses</p></td>
+<tr class="row-odd"><td><p>Skin, round wire</p></td>
+<td><p><span class="math notranslate nohighlight">\(1 + (a/\delta)^4/48\)</span> and <span class="math notranslate nohighlight">\(a/(2\delta) + 1/4\)</span></p></td>
+<td><p>&lt; 1e-5</p></td>
+</tr>
+<tr class="row-even"><td><p>Proximity, round wire in a uniform field</p></td>
+<td><p><span class="math notranslate nohighlight">\(N\,\ell\,\pi\sigma\omega^2\hat B^2 a^4/8\)</span> (low frequency)</p></td>
+<td><p>&lt; 0.1 %</p></td>
+</tr>
+<tr class="row-odd"><td><p>Proximity, rectangular wire (Dowell)</p></td>
+<td><p><span class="math notranslate nohighlight">\(\sigma\omega^2\hat B^2 t^3/24\)</span> per width</p></td>
+<td><p>&lt; 0.1 %</p></td>
+</tr>
+<tr class="row-even"><td><p>Eddy-current losses</p></td>
 <td><p><span class="math notranslate nohighlight">\(\propto f^2\)</span> at low frequency</p></td>
 <td><p>ratio 3.97 (≈ 4)</p></td>
 </tr>
